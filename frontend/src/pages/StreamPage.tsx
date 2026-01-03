@@ -86,7 +86,7 @@ interface StreamPageProps {
   onStatsChange?: (stats: { fps: number; bitrate: number }) => void;
 }
 
-export function StreamPage({ videoControls, onStatsChange }: StreamPageProps = {}) {
+export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   // Fetch available pipelines dynamically
   const { pipelines } = usePipelines();
 
@@ -892,7 +892,6 @@ export function StreamPage({ videoControls, onStatsChange }: StreamPageProps = {
                   isVideoPaused={settings.paused}
                   transitionSteps={transitionSteps}
                   onTransitionStepsChange={setTransitionSteps}
-                  recordedSynthedBlob={recordedSynthedBlob}
                   confirmedSynthedBlob={confirmedSynthedBlob}
                   isRecordingSynthed={isRecordingSynthed}
                   isSynthCapturing={isSynthCapturing}
