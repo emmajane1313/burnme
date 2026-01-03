@@ -44,11 +44,13 @@ export function useWebRTC(options?: UseWebRTCOptions) {
   const currentStreamRef = useRef<MediaStream | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const queuedCandidatesRef = useRef<RTCIceCandidate[]>([]);
+  const isConnectingRef = useRef(false);
 
   const startStream = useCallback(
     async (initialParameters?: InitialParameters, stream?: MediaStream) => {
-      if (isConnecting || peerConnectionRef.current) return;
+      if (isConnectingRef.current || peerConnectionRef.current) return;
 
+      isConnectingRef.current = true;
       setIsConnecting(true);
 
       try {
@@ -175,6 +177,7 @@ export function useWebRTC(options?: UseWebRTCOptions) {
           if (pc.connectionState === "connected") {
             setIsConnecting(false);
             setIsStreaming(true);
+            isConnectingRef.current = false;
 
             // Log the actual negotiated codec for verification
             const senders = pc.getSenders();
@@ -192,6 +195,14 @@ export function useWebRTC(options?: UseWebRTCOptions) {
           ) {
             setIsConnecting(false);
             setIsStreaming(false);
+            isConnectingRef.current = false;
+            if (peerConnectionRef.current) {
+              peerConnectionRef.current.close();
+              peerConnectionRef.current = null;
+            }
+            dataChannelRef.current = null;
+            sessionIdRef.current = null;
+            queuedCandidatesRef.current = [];
           }
         };
 
@@ -268,10 +279,12 @@ export function useWebRTC(options?: UseWebRTCOptions) {
         } catch (error) {
           console.error("Error in offer/answer exchange:", error);
           setIsConnecting(false);
+          isConnectingRef.current = false;
         }
       } catch (error) {
         console.error("Failed to start stream:", error);
         setIsConnecting(false);
+        isConnectingRef.current = false;
       }
     },
     [isConnecting, options]
@@ -357,6 +370,7 @@ export function useWebRTC(options?: UseWebRTCOptions) {
   );
 
   const stopStream = useCallback(() => {
+    isConnectingRef.current = false;
     // Close peer connection
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();

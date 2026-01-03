@@ -156,6 +156,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [sam3Status, setSam3Status] = useState<string | null>(null);
   const [isSam3Generating, setIsSam3Generating] = useState(false);
   const [isSam3Downloading, setIsSam3Downloading] = useState(false);
+  const startStreamInFlightRef = useRef(false);
   const isDebugEnabled =
     typeof window !== "undefined" &&
     window.localStorage.getItem("burn-debug") === "1";
@@ -858,6 +859,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       stopStream();
       return true;
     }
+    if (startStreamInFlightRef.current) {
+      debugLog("Stream: start ignored (already starting)");
+      return false;
+    }
+    startStreamInFlightRef.current = true;
 
     // Use override pipeline ID if provided, otherwise use current settings
     const pipelineIdToUse = overridePipelineId || settings.pipelineId;
@@ -1075,6 +1081,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       setIsWaitingForFrames(false);
       debugLog("Stream: start failed", error);
       return false;
+    } finally {
+      startStreamInFlightRef.current = false;
     }
   };
 
