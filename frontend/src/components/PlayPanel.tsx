@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
+import { Spinner } from "./ui/spinner";
 import {
   addSynthedVideo,
   downloadMP4P,
@@ -69,6 +70,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
   const [burnPrompt, setBurnPrompt] = useState("");
   const [isAddingBurn, setIsAddingBurn] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [countdownText, setCountdownText] = useState<string | null>(null);
 
   const isExpired = metadata ? Date.now() >= metadata.expiresAt : false;
 
@@ -91,6 +93,36 @@ export function PlayPanel({ className = "" }: { className?: string }) {
     videoRef.current.volume = volume;
     videoRef.current.muted = isMuted;
   }, [volume, isMuted]);
+
+  useEffect(() => {
+    if (!metadata) {
+      setCountdownText(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diffMs = metadata.expiresAt - now;
+      if (diffMs <= 0) {
+        setCountdownText("Burn date passed");
+        return;
+      }
+
+      const totalSeconds = Math.floor(diffMs / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setCountdownText(
+        `Burns in: ${days}d ${hours}h ${minutes}m ${seconds}s`
+      );
+    };
+
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(timer);
+  }, [metadata]);
 
   useEffect(() => {
     return () => {
@@ -251,8 +283,21 @@ export function PlayPanel({ className = "" }: { className?: string }) {
           )}
         </div>
 
+        {countdownText && (
+          <div className="text-xs">
+            <div className="mac-translucent-ruby px-3 py-1 inline-flex items-center">
+              {countdownText}
+            </div>
+          </div>
+        )}
+
         <div className="w-full aspect-video bg-black/40 rounded flex items-center justify-center overflow-hidden">
-          {videoUrl ? (
+          {isLoading ? (
+            <div className="text-center text-xs text-muted-foreground">
+              <Spinner size={22} className="mx-auto mb-2" />
+              Loading MP4P...
+            </div>
+          ) : videoUrl ? (
             <video
               ref={videoRef}
               src={videoUrl}
@@ -319,14 +364,13 @@ export function PlayPanel({ className = "" }: { className?: string }) {
                 className="mac-translucent-slider"
               />
             </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={isMuted}
-                onChange={(event) => setIsMuted(event.target.checked)}
-              />
-              Mute
-            </label>
+            <button
+              type="button"
+              onClick={() => setIsMuted((prev) => !prev)}
+              className="mac-frosted-button px-3 py-1 text-xs"
+            >
+              {isMuted ? "Unmute" : "Mute"}
+            </button>
           </div>
         </div>
 
@@ -376,14 +420,14 @@ export function PlayPanel({ className = "" }: { className?: string }) {
           </div>
         )}
 
-        <Button
-          size="sm"
+        <button
+          type="button"
           onClick={handleExport}
           disabled={!mp4pData || isExporting}
-          className="w-full"
+          className="mac-frosted-button w-full px-4 py-2 text-sm disabled:opacity-50"
         >
           {isExporting ? "Exporting..." : "Export MP4P"}
-        </Button>
+        </button>
       </CardContent>
     </Card>
   );

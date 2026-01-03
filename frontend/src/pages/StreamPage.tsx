@@ -866,7 +866,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
       {viewMode === "upload" ? (
         <>
-          <div className="flex-1 flex relative px-2 md:px-4 py-4 overflow-y-auto justify-center items-start">
+          <div className="mac-upload-skin flex-1 flex relative px-2 md:px-4 py-4 overflow-y-auto justify-center items-start">
             <div className="flex relative gap-2 md:gap-4 w-full h-full max-w-[900px] flex-col md:flex-row">
               <div className="w-full md:w-64 h-full">
                 <InputAndControlsPanel
