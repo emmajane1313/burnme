@@ -56,18 +56,7 @@ export function PromptField({
           <X className="h-4 w-4" />
         </Button>
       )}
-      {onSubmit && (
-        <Button
-          onClick={onSubmit}
-          disabled={disabled}
-          size="sm"
-          variant="ghost"
-          className="rounded-full w-8 h-8 p-0"
-          title="Send prompt"
-        >
-          <span className="text-xs">➤</span>
-        </Button>
-      )}
+      {/* Send button is handled by parent controls row. */}
     </>
   );
 }

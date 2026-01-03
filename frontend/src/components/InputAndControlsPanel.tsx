@@ -795,10 +795,7 @@ export function InputAndControlsPanel({
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-muted-foreground">
-                    Live controls
-                  </div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Button
                     onClick={onTogglePause}
                     disabled={isSynthCapturing}
@@ -806,6 +803,14 @@ export function InputAndControlsPanel({
                     variant="secondary"
                   >
                     {isVideoPaused ? "Play" : "Pause"}
+                  </Button>
+                  <Button
+                    onClick={onPromptSend}
+                    disabled={isSynthCapturing || !isStreaming}
+                    size="xs"
+                    variant="secondary"
+                  >
+                    Send ➤
                   </Button>
                 </div>
 
@@ -847,14 +852,14 @@ export function InputAndControlsPanel({
 
         {!isMP4PMode && (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Synth</h3>
+            <h3 className="text-sm font-medium">Burn</h3>
             <div className="flex flex-wrap items-center text-xs gap-2">
               <Button
                 onClick={onStartSynth}
                 disabled={!canStartSynth || isConnecting}
                 size="xs"
               >
-                Start Synth
+                Start Burn
               </Button>
               <Button
                 onClick={onCancelSynth}
@@ -862,7 +867,7 @@ export function InputAndControlsPanel({
                 size="xs"
                 variant="destructive"
               >
-                Cancel Synth
+                Cancel Burn
               </Button>
             </div>
             {isSynthCapturing && (
@@ -873,13 +878,13 @@ export function InputAndControlsPanel({
             )}
             {recordedSynthedBlob && !isSynthCapturing && (
               <div className="mt-2 text-xs text-muted-foreground">
-                Synth complete.
+                Burn complete.
               </div>
             )}
             {confirmedSynthedBlob && !isSynthCapturing && (
               <div className="mt-2">
                 <Badge variant="secondary" className="text-xs">
-                  Synth ready for export
+                  Burn ready for export
                 </Badge>
               </div>
             )}

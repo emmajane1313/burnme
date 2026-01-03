@@ -62,6 +62,7 @@ interface SettingsPanelProps {
   onSpoutSenderChange?: (spoutSender: SettingsState["spoutSender"]) => void;
   // Whether Spout is available (server-side detection for native Windows, not WSL)
   spoutAvailable?: boolean;
+  isVideoPaused?: boolean;
 }
 
 export function SettingsPanel({
@@ -95,6 +96,7 @@ export function SettingsPanel({
   spoutSender,
   onSpoutSenderChange,
   spoutAvailable = false,
+  isVideoPaused = false,
 }: SettingsPanelProps) {
   // Local slider state management hooks
   const noiseScaleSlider = useLocalSliderValue(noiseScale, onNoiseScaleChange);
@@ -142,6 +144,7 @@ export function SettingsPanel({
   };
 
   const currentPipeline = pipelines?.[pipelineId];
+  const isControlsLocked = isLoading || (isStreaming && !isVideoPaused);
 
   return (
     <Card className={`h-full flex flex-col y2k-panel ${className}`}>
@@ -154,7 +157,7 @@ export function SettingsPanel({
           <Select
             value={pipelineId}
             onValueChange={handlePipelineIdChange}
-            disabled={isStreaming || isLoading}
+            disabled={isControlsLocked}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a pipeline" />
@@ -176,8 +179,8 @@ export function SettingsPanel({
             <LoRAManager
               loras={loras}
               onLorasChange={onLorasChange}
-              disabled={isLoading}
-              isStreaming={isStreaming}
+              disabled={isControlsLocked}
+              isStreaming={isStreaming && !isVideoPaused}
               loraMergeStrategy={loraMergeStrategy}
             />
           </div>
@@ -200,7 +203,7 @@ export function SettingsPanel({
                     size="icon"
                     className="h-8 w-8 shrink-0 rounded-none hover:bg-accent"
                     onClick={decrementSeed}
-                    disabled={isStreaming}
+                    disabled={isControlsLocked}
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </Button>
@@ -213,7 +216,7 @@ export function SettingsPanel({
                         handleSeedChange(value);
                       }
                     }}
-                    disabled={isStreaming}
+                    disabled={isControlsLocked}
                     className="text-center border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min={0}
                     max={2147483647}
@@ -223,7 +226,7 @@ export function SettingsPanel({
                     size="icon"
                     className="h-8 w-8 shrink-0 rounded-none hover:bg-accent"
                     onClick={incrementSeed}
-                    disabled={isStreaming}
+                    disabled={isControlsLocked}
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </Button>
@@ -312,7 +315,7 @@ export function SettingsPanel({
             max={1000}
             step={1}
             incrementAmount={10}
-            disabled={isStreaming}
+            disabled={isControlsLocked}
             labelClassName="text-sm text-foreground w-16"
           />
         )}
@@ -331,7 +334,7 @@ export function SettingsPanel({
                   <Toggle
                     pressed={noiseController}
                     onPressedChange={onNoiseControllerChange || (() => {})}
-                    disabled={isStreaming}
+                    disabled={isControlsLocked}
                     variant="outline"
                     size="sm"
                     className="h-7"
@@ -378,7 +381,7 @@ export function SettingsPanel({
                         value === "none" ? null : (value as "fp8_e4m3fn")
                       );
                     }}
-                    disabled={isStreaming}
+                    disabled={isControlsLocked}
                   >
                     <SelectTrigger className="w-[140px] h-7">
                       <SelectValue />
@@ -436,7 +439,7 @@ export function SettingsPanel({
                       name: e.target.value,
                     });
                   }}
-                  disabled={isStreaming}
+                  disabled={isControlsLocked}
                   className="h-8 text-sm flex-1"
                   placeholder="ScopeOut"
                 />

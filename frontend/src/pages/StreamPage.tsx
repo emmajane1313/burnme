@@ -610,10 +610,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     setConfirmedSynthedBlob(null);
     resetRecording();
 
-    if (isStreaming) {
-      stopStream();
-    }
-
     if (isTimelinePlaying && timelinePlayPauseRef.current) {
       await timelinePlayPauseRef.current();
     }
@@ -640,19 +636,50 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
       }
     };
 
-    const synthStarted = await handleStartStream(
-      settings.pipelineId,
-      [{ text: promptText, weight: 100 }],
-      restartedStream
-    );
+    const canReuseStream = isStreaming && remoteStreamRef.current;
 
-    if (!synthStarted && restartedStream) {
-      pendingSynthRef.current = {
-        stream: restartedStream,
-        prompt: promptText,
-        pipelineId: settings.pipelineId,
-      };
+    if (!canReuseStream) {
+      const synthStarted = await handleStartStream(
+        settings.pipelineId,
+        [{ text: promptText, weight: 100 }],
+        restartedStream
+      );
+
+      if (!synthStarted && restartedStream) {
+        pendingSynthRef.current = {
+          stream: restartedStream,
+          prompt: promptText,
+          pipelineId: settings.pipelineId,
+        };
+      }
+      return;
     }
+
+    // Keep current session alive and just replace the input track
+    const trackReplaced = await updateVideoTrack(restartedStream);
+    if (!trackReplaced) {
+      const synthStarted = await handleStartStream(
+        settings.pipelineId,
+        [{ text: promptText, weight: 100 }],
+        restartedStream
+      );
+
+      if (!synthStarted && restartedStream) {
+        pendingSynthRef.current = {
+          stream: restartedStream,
+          prompt: promptText,
+          pipelineId: settings.pipelineId,
+        };
+      }
+      return;
+    }
+
+    // Send current prompt + parameters without resetting the session
+    sendParameterUpdate({
+      prompts: [{ text: promptText, weight: 100 }],
+      prompt_interpolation_method: interpolationMethod,
+      denoising_step_list: settings.denoisingSteps || [700, 500],
+    });
   };
 
   const handleCancelSynth = async () => {
@@ -929,7 +956,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             onVideoFileUpload={handleVideoFileUpload}
             pipelineId={settings.pipelineId}
             prompts={promptItems}
-            onPromptsChange={handlePromptsSubmit}
+            onPromptsChange={setPromptItems}
             onPromptsSubmit={handlePromptsSubmit}
             onTransitionSubmit={handleTransitionSubmit}
             interpolationMethod={interpolationMethod}
@@ -1123,6 +1150,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             spoutSender={settings.spoutSender}
             onSpoutSenderChange={handleSpoutSenderChange}
             spoutAvailable={spoutAvailable}
+            isVideoPaused={settings.paused}
           />
           </div>
         </div>
