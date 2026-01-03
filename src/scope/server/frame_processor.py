@@ -709,20 +709,20 @@ class FrameProcessor:
 
         video_input = None
         frame_indices = None
-            if requirements is not None:
-                current_chunk_size = requirements.input_size
-                with self.frame_buffer_lock:
-                    if not self.frame_buffer or len(self.frame_buffer) < current_chunk_size:
-                        # Sleep briefly to avoid busy waiting
-                        self.shutdown_event.wait(SLEEP_TIME)
-                        return
-                    if FRAME_DEBUG:
-                        logger.info(
-                            "FrameProcessor chunk: size=%s buffer=%s",
-                            current_chunk_size,
-                            len(self.frame_buffer),
-                        )
-                    video_input, frame_indices = self.prepare_chunk(current_chunk_size)
+        if requirements is not None:
+            current_chunk_size = requirements.input_size
+            with self.frame_buffer_lock:
+                if not self.frame_buffer or len(self.frame_buffer) < current_chunk_size:
+                    # Sleep briefly to avoid busy waiting
+                    self.shutdown_event.wait(SLEEP_TIME)
+                    return
+                if FRAME_DEBUG:
+                    logger.info(
+                        "FrameProcessor chunk: size=%s buffer=%s",
+                        current_chunk_size,
+                        len(self.frame_buffer),
+                    )
+                video_input, frame_indices = self.prepare_chunk(current_chunk_size)
         try:
             # Pass parameters (excluding prepare-only parameters)
             call_params = dict(self.parameters.items())
