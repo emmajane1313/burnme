@@ -19,24 +19,27 @@ export function Header({
           className="h-8 object-contain"
         />
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            className={`win98-button px-3 py-1 text-xs ${
-              mode === "upload" ? "bg-[#0b246a] text-white" : ""
-            }`}
+          <label
             onClick={() => onModeChange?.("upload")}
+            className={`mac-frosted-button px-2 py-1 text-sm text-center ${
+              mode === "upload"
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
           >
             Upload
-          </button>
-          <button
-            type="button"
-            className={`win98-button px-3 py-1 text-xs ${
-              mode === "play" ? "bg-[#0b246a] text-white" : ""
-            }`}
+          </label>
+
+          <label
             onClick={() => onModeChange?.("play")}
+            className={`mac-frosted-button px-2 py-1 text-sm text-center ${
+              mode === "play"
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
           >
             Play
-          </button>
+          </label>
         </div>
       </div>
     </header>
