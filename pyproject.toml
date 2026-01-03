@@ -72,6 +72,9 @@ Issues = "https://github.com/daydreamlive/scope/issues"
 [tool.uv]
 preview = true
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.uv.extra-build-dependencies]
 flash-attn = [{ requirement = "torch", match-runtime = true, marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
 
