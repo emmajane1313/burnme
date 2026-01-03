@@ -133,7 +133,12 @@ class Sam3MaskManager:
 
         frames = []
         for frame_idx in frame_indices:
-            mask_path = self._mask_path(session.mask_dir, frame_idx)
+            if session.frame_count > 0:
+                mask_frame_idx = frame_idx % session.frame_count
+            else:
+                mask_frame_idx = frame_idx
+
+            mask_path = self._mask_path(session.mask_dir, mask_frame_idx)
             if not mask_path.exists():
                 blank = np.zeros((session.height, session.width), dtype=np.uint8)
                 mask_array = blank
