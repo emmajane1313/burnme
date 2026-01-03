@@ -61,6 +61,7 @@ dependencies = [
     "decord>=0.6.0",
     "opencv-python>=4.10.0.84",
     "psutil>=6.1.1",
+    "pycocotools>=2.0.7",
     "triton==3.4.0; sys_platform == 'linux'",
     "triton-windows==3.4.0.post21; sys_platform == 'win32'",
     "SpoutGL>=0.1.1; sys_platform == 'win32'",
