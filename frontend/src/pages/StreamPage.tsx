@@ -27,6 +27,7 @@ import {
   generateSam3Mask,
 } from "../lib/api";
 import { decryptMP4P, type MP4PData } from "../lib/mp4p-api";
+import { toast } from "sonner";
 import { sendLoRAScaleUpdates } from "../utils/loraHelpers";
 
 // Delay before resetting video reinitialization flag (ms)
@@ -325,7 +326,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
     } catch (error) {
       console.error("SAM3 mask generation failed:", error);
-      setSam3Status("Mask generation failed.");
+      const message =
+        error instanceof Error ? error.message : "Mask generation failed.";
+      setSam3Status(message);
+      toast.error("SAM3 Mask Error", {
+        description: message,
+      });
     } finally {
       setIsSam3Generating(false);
     }
