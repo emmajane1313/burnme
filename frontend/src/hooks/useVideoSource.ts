@@ -30,6 +30,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     width: number;
     height: number;
   } | null>(null);
+  const [sourceVideoBlocked, setSourceVideoBlocked] = useState(false);
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
 
@@ -59,6 +60,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     ) => {
       const loop = options?.loop ?? true;
       const video = createVideoFromSource(videoSource, loop);
+      setSourceVideoBlocked(false);
 
       return new Promise<{
         stream: MediaStream;
@@ -99,23 +101,30 @@ export function useVideoSource(props?: UseVideoSourceProps) {
             };
 
             video.onplay = () => {
+              setSourceVideoBlocked(false);
               drawFrame();
+            };
+            video.onpause = () => {
+              if (!video.ended) {
+                setSourceVideoBlocked(true);
+              }
             };
 
             if (options?.onEnded) {
               video.onended = options.onEnded;
             }
 
+            // Capture stream from canvas at original resolution
+            const stream = canvas.captureStream(fps);
+            resolve({ stream, resolution: detectedResolution });
+
             video
               .play()
               .then(() => {
-                // Capture stream from canvas at original resolution
-                const stream = canvas.captureStream(fps);
-                resolve({ stream, resolution: detectedResolution });
+                setSourceVideoBlocked(false);
               })
-              .catch(error => {
-                clearTimeout(timeout);
-                reject(error);
+              .catch(() => {
+                setSourceVideoBlocked(true);
               });
           } catch (error) {
             clearTimeout(timeout);
@@ -218,6 +227,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
       videoElementRef.current.pause();
       videoElementRef.current = null;
     }
+    setSourceVideoBlocked(false);
   }, [localStream]);
 
   const reinitializeVideoSource = useCallback(async () => {
@@ -349,5 +359,18 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     handleVideoFileUpload,
     reinitializeVideoSource,
     restartVideoStream,
+    sourceVideoBlocked,
+    resumeSourceVideo: async () => {
+      const video = videoElementRef.current;
+      if (!video) return false;
+      try {
+        await video.play();
+        setSourceVideoBlocked(false);
+        return true;
+      } catch (error) {
+        setSourceVideoBlocked(true);
+        return false;
+      }
+    },
   };
 }

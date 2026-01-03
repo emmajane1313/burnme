@@ -15,6 +15,7 @@ from .sam3_manager import sam3_mask_manager
 logger = logging.getLogger(__name__)
 SAM3_DEBUG = os.getenv("BURN_DEBUG_SAM3") == "1"
 FRAME_DEBUG = os.getenv("BURN_DEBUG_FRAMES") == "1"
+DEBUG_ALL = os.getenv("BURN_DEBUG_ALL") == "1"
 
 
 # Multiply the # of output frames from pipeline by this to get the max size of the output queue
@@ -205,7 +206,7 @@ class FrameProcessor:
 
         with self.frame_buffer_lock:
             self.frame_buffer.append((self._frame_index, frame))
-            if FRAME_DEBUG and self._frame_index % 30 == 0:
+            if (FRAME_DEBUG or DEBUG_ALL) and self._frame_index % 30 == 0:
                 logger.info(
                     "FrameProcessor input: index=%s buffer=%s",
                     self._frame_index,
@@ -716,7 +717,7 @@ class FrameProcessor:
                     # Sleep briefly to avoid busy waiting
                     self.shutdown_event.wait(SLEEP_TIME)
                     return
-                if FRAME_DEBUG:
+                if FRAME_DEBUG or DEBUG_ALL:
                     logger.info(
                         "FrameProcessor chunk: size=%s buffer=%s",
                         current_chunk_size,

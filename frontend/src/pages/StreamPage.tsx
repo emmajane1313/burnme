@@ -232,6 +232,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     videoResolution,
     handleVideoFileUpload,
     restartVideoStream,
+    sourceVideoBlocked,
+    resumeSourceVideo,
   } = useVideoSource({
     onStreamUpdate: updateVideoTrack,
     onStopStream: stopStream,
@@ -1109,6 +1111,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   prefillVideoFile={mp4pBurnFile}
                   fixedBurnDateTimestamp={mp4pBurnData?.metadata.expiresAt ?? null}
                   hideLocalPreview={hideBurnSourcePreview}
+                  sourceVideoBlocked={sourceVideoBlocked}
+                  onResumeSourceVideo={resumeSourceVideo}
                   pipelineId={settings.pipelineId}
                   prompts={promptItems}
                   onPromptsChange={setPromptItems}

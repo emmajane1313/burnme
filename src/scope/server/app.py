@@ -1,4 +1,5 @@
 import asyncio
+import os
 import base64
 import contextlib
 import io
@@ -108,6 +109,14 @@ logging.getLogger("asyncio").addFilter(stun_filter)
 # Set INFO level for your app modules
 logging.getLogger("scope.server").setLevel(logging.INFO)
 logging.getLogger("scope.core").setLevel(logging.INFO)
+
+# Optional debug override for full logs
+if os.getenv("BURN_DEBUG_ALL") == "1":
+    root_logger.setLevel(logging.DEBUG)
+    for handler in root_logger.handlers:
+        handler.setLevel(logging.DEBUG)
+    logging.getLogger("scope.server").setLevel(logging.DEBUG)
+    logging.getLogger("scope.core").setLevel(logging.DEBUG)
 
 # Set INFO level for uvicorn
 logging.getLogger("uvicorn.error").setLevel(logging.INFO)

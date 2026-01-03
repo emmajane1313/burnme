@@ -1,6 +1,7 @@
 import asyncio
 import fractions
 import logging
+import os
 import threading
 import time
 
@@ -12,6 +13,8 @@ from .frame_processor import FrameProcessor
 from .pipeline_manager import PipelineManager
 
 logger = logging.getLogger(__name__)
+DEBUG_ALL = os.getenv("BURN_DEBUG_ALL") == "1"
+FRAME_DEBUG = os.getenv("BURN_DEBUG_FRAMES") == "1"
 
 
 class VideoProcessingTrack(MediaStreamTrack):
@@ -38,6 +41,7 @@ class VideoProcessingTrack(MediaStreamTrack):
         self._paused = False
         self._paused_lock = threading.Lock()
         self._last_frame = None
+        self._input_frame_index = 0
 
         # Spout input mode - when enabled, frames come from Spout instead of WebRTC
         self._spout_receiver_enabled = False
@@ -55,6 +59,13 @@ class VideoProcessingTrack(MediaStreamTrack):
 
                 # Store raw VideoFrame for later processing (tracks input FPS internally)
                 self.frame_processor.put(input_frame)
+                if (FRAME_DEBUG or DEBUG_ALL) and self._input_frame_index % 30 == 0:
+                    logger.info(
+                        "VideoProcessingTrack input: index=%s pts=%s",
+                        self._input_frame_index,
+                        getattr(input_frame, "pts", None),
+                    )
+                self._input_frame_index += 1
 
             except asyncio.CancelledError:
                 break

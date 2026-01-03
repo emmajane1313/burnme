@@ -58,6 +58,8 @@ interface InputAndControlsPanelProps {
   onSam3Clear?: () => void;
   sam3Status?: string | null;
   isSam3Generating?: boolean;
+  sourceVideoBlocked?: boolean;
+  onResumeSourceVideo?: () => void;
 }
 
 export function InputAndControlsPanel({
@@ -104,6 +106,8 @@ export function InputAndControlsPanel({
   onSam3Clear,
   sam3Status = null,
   isSam3Generating = false,
+  sourceVideoBlocked = false,
+  onResumeSourceVideo,
 }: InputAndControlsPanelProps) {
   const [burnDate, setBurnDate] = useState<string>("");
   const [burnTime, setBurnTime] = useState<string>("");
@@ -171,6 +175,7 @@ export function InputAndControlsPanel({
   }, [localStream]);
 
   const handleResumeLocalPreview = () => {
+    onResumeSourceVideo?.();
     const video = videoRef.current;
     if (!video) return;
     const playPromise = video.play();
@@ -448,7 +453,7 @@ export function InputAndControlsPanel({
                   muted
                   playsInline
                 />
-                {localPreviewBlocked ? (
+                {localPreviewBlocked || sourceVideoBlocked ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40">
                     <button
                       type="button"
