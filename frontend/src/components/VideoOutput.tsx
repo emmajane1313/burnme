@@ -7,6 +7,7 @@ interface VideoOutputProps {
   className?: string;
   remoteStream: MediaStream | null;
   fallbackStream?: MediaStream | null;
+  burnedVideoUrl?: string | null;
   isPipelineLoading?: boolean;
   isConnecting?: boolean;
   pipelineError?: string | null;
@@ -22,6 +23,7 @@ export function VideoOutput({
   className = "",
   remoteStream,
   fallbackStream = null,
+  burnedVideoUrl = null,
   isPipelineLoading = false,
   isConnecting = false,
   pipelineError: _pipelineError = null,
@@ -35,10 +37,18 @@ export function VideoOutput({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = remoteStream || fallbackStream || null;
+    if (!videoRef.current) return;
+
+    if (burnedVideoUrl) {
+      videoRef.current.srcObject = null;
+      videoRef.current.src = burnedVideoUrl;
+      videoRef.current.loop = true;
+      return;
     }
-  }, [remoteStream, fallbackStream]);
+
+    videoRef.current.src = "";
+    videoRef.current.srcObject = remoteStream || fallbackStream || null;
+  }, [remoteStream, fallbackStream, burnedVideoUrl]);
 
   // Listen for video playing event to notify parent
   useEffect(() => {
@@ -70,7 +80,7 @@ export function VideoOutput({
         <CardTitle className="text-base font-medium">Video Output</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex items-center justify-center min-h-0 p-4">
-        {remoteStream || fallbackStream ? (
+        {burnedVideoUrl || remoteStream || fallbackStream ? (
           <div className="relative w-full h-full flex items-center justify-center">
             <video
               ref={videoRef}

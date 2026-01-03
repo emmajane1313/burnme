@@ -50,6 +50,7 @@ interface InputAndControlsPanelProps {
   synthLockedPrompt: string;
   onStartSynth: () => void;
   onCancelSynth: () => void;
+  onDeleteBurn?: () => void;
   onPromptSend?: () => void;
   onTogglePause?: () => void;
 }
@@ -87,6 +88,7 @@ export function InputAndControlsPanel({
   synthLockedPrompt,
   onStartSynth,
   onCancelSynth,
+  onDeleteBurn,
   onPromptSend,
   onTogglePause,
 }: InputAndControlsPanelProps) {
@@ -114,6 +116,7 @@ export function InputAndControlsPanel({
   const [mp4pMetadata, setMp4pMetadata] = useState<MP4PMetadata | null>(null);
   const [isMP4PMode, setIsMP4PMode] = useState(false);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -195,6 +198,7 @@ export function InputAndControlsPanel({
     }
 
     try {
+      setIsExporting(true);
       let mp4pData = await encryptVideo(uploadedVideoFile, burnDateTimestamp);
 
       if (confirmedSynthedBlob) {
@@ -214,6 +218,8 @@ export function InputAndControlsPanel({
       console.log("MP4P file exported successfully");
     } catch (error) {
       console.error("Failed to export MP4P:", error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -869,6 +875,15 @@ export function InputAndControlsPanel({
               >
                 Cancel Burn
               </Button>
+              {confirmedSynthedBlob && !isSynthCapturing && (
+                <Button
+                  onClick={onDeleteBurn}
+                  size="xs"
+                  variant="destructive"
+                >
+                  Delete Burn
+                </Button>
+              )}
             </div>
             {isSynthCapturing && (
               <div className="mt-2 text-xs text-muted-foreground">
@@ -900,12 +915,13 @@ export function InputAndControlsPanel({
                 !burnDateTimestamp ||
                 !confirmedSynthedBlob ||
                 isConnecting ||
-                isSynthCapturing
+                isSynthCapturing ||
+                isExporting
               }
               className="w-full"
               size="sm"
             >
-              Export MP4P
+              {isExporting ? "Exporting..." : "Export MP4P"}
             </Button>
           </div>
         )}

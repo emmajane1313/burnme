@@ -3,8 +3,6 @@ import { Header } from "../components/Header";
 import { InputAndControlsPanel } from "../components/InputAndControlsPanel";
 import { VideoOutput } from "../components/VideoOutput";
 import { SettingsPanel } from "../components/SettingsPanel";
-import { PromptInputWithTimeline } from "../components/PromptInputWithTimeline";
-import type { TimelinePrompt } from "../components/PromptTimeline";
 import { StatusBar } from "../components/StatusBar";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useVideoSource } from "../hooks/useVideoSource";
@@ -127,9 +125,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     height: number;
   } | null>(null);
 
-  const [isLive, setIsLive] = useState(false);
-  const [selectedTimelinePrompt, setSelectedTimelinePrompt] =
-    useState<TimelinePrompt | null>(null);
   const [confirmedSynthedBlob, setConfirmedSynthedBlob] = useState<Blob | null>(
     null
   );
@@ -142,16 +137,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     pipelineId: PipelineId;
   } | null>(null);
   const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
-
-  // Timeline state for left panel
-  const [timelinePrompts, setTimelinePrompts] = useState<TimelinePrompt[]>([]);
-  const [timelineCurrentTime, setTimelineCurrentTime] = useState(0);
-  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
-
-  // External control of timeline selection
-  const [externalSelectedPromptId, setExternalSelectedPromptId] = useState<
-    string | null
-  >(null);
+  const [burnedVideoUrl, setBurnedVideoUrl] = useState<string | null>(null);
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -161,18 +147,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     null
   );
 
-  // Ref to access timeline functions
-  const timelineRef = useRef<{
-    getCurrentTimelinePrompt: () => string;
-    submitLivePrompt: (prompts: PromptItem[]) => void;
-    updatePrompt: (prompt: TimelinePrompt) => void;
-    clearTimeline: () => void;
-    resetPlayhead: () => void;
-    resetTimelineCompletely: () => void;
-    getPrompts: () => TimelinePrompt[];
-    getCurrentTime: () => number;
-    getIsPlaying: () => boolean;
-  }>(null);
 
   // Pipeline management
   const {
@@ -286,11 +260,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
   const handleTransitionSubmit = (transition: PromptTransition) => {
     setPromptItems(transition.target_prompts);
 
-    // Add to timeline if available
-    if (timelineRef.current) {
-      timelineRef.current.submitLivePrompt(transition.target_prompts);
-    }
-
     // Send transition to backend
     sendParameterUpdate({
       transition,
@@ -314,15 +283,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
         VIDEO_REINITIALIZE_DELAY_MS
       );
     }
-
-    // Reset timeline completely but preserve collapse state
-    if (timelineRef.current) {
-      timelineRef.current.resetTimelineCompletely();
-    }
-
-    // Reset selected timeline prompt to exit Edit mode and return to Append mode
-    setSelectedTimelinePrompt(null);
-    setExternalSelectedPromptId(null);
 
     // Get all defaults for the new pipeline + mode from backend schema
     const defaults = getDefaults(pipelineId, modeToUse);
@@ -380,13 +340,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             // Now update the pipeline since download is complete
             const pipelineId = pipelineIdToDownload;
 
-            if (timelineRef.current) {
-              timelineRef.current.resetTimelineCompletely();
-            }
-
-            setSelectedTimelinePrompt(null);
-            setExternalSelectedPromptId(null);
-
             // Preserve the current input mode that the user selected before download
             // Only fall back to pipeline's default mode if no mode is currently set
             const newPipeline = pipelines?.[pipelineId];
@@ -409,7 +362,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
               noiseScale: defaults.noiseScale,
               noiseController: defaults.noiseController,
             });
-
             if (pendingSynthRef.current) {
               const pending = pendingSynthRef.current;
               pendingSynthRef.current = null;
@@ -531,11 +483,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
   };
 
   const handleLivePromptSubmit = (prompts: PromptItem[]) => {
-    // Use the timeline ref to submit the prompt
-    if (timelineRef.current) {
-      timelineRef.current.submitLivePrompt(prompts);
-    }
-
     // Also send the updated parameters to the backend immediately
     // Preserve the full blend while live
     sendParameterUpdate({
@@ -543,34 +490,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
       prompt_interpolation_method: interpolationMethod,
       denoising_step_list: settings.denoisingSteps || [700, 500],
     });
-  };
-
-  const handleTimelinePromptEdit = (prompt: TimelinePrompt | null) => {
-    setSelectedTimelinePrompt(prompt);
-    // Sync external selection state
-    setExternalSelectedPromptId(prompt?.id || null);
-  };
-
-  const handleTimelinePromptUpdate = (prompt: TimelinePrompt) => {
-    setSelectedTimelinePrompt(prompt);
-
-    // Update the prompt in the timeline
-    if (timelineRef.current) {
-      timelineRef.current.updatePrompt(prompt);
-    }
-  };
-
-  // Event-driven timeline state updates for left panel
-  const handleTimelinePromptsChange = (prompts: TimelinePrompt[]) => {
-    setTimelinePrompts(prompts);
-  };
-
-  const handleTimelineCurrentTimeChange = (currentTime: number) => {
-    setTimelineCurrentTime(currentTime);
-  };
-
-  const handleTimelinePlayingChange = (isPlaying: boolean) => {
-    setIsTimelinePlaying(isPlaying);
   };
 
   useEffect(() => {
@@ -586,10 +505,22 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
   }, [synthEndPending, recordedSynthedBlob]);
 
   useEffect(() => {
+    if (!confirmedSynthedBlob) {
+      setBurnedVideoUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(confirmedSynthedBlob);
+    setBurnedVideoUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [confirmedSynthedBlob]);
+
+  useEffect(() => {
     if (!localStream) {
       return;
     }
-    if (isStreaming || isConnecting || isSynthCapturing) {
+    if (isStreaming || isConnecting || isSynthCapturing || confirmedSynthedBlob) {
       return;
     }
     if (pipelineNeedsModels) {
@@ -609,11 +540,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     setSynthEndPending(false);
     setConfirmedSynthedBlob(null);
     resetRecording();
-
-    if (isTimelinePlaying && timelinePlayPauseRef.current) {
-      await timelinePlayPauseRef.current();
-    }
-    timelineRef.current?.resetPlayhead();
 
     const restartedStream = await restartVideoStream({
       loop: false,
@@ -693,18 +619,13 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     await restartVideoStream({ loop: true });
   };
 
-  // Handle ESC key to exit Edit mode and return to Append mode
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && selectedTimelinePrompt) {
-        setSelectedTimelinePrompt(null);
-        setExternalSelectedPromptId(null);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedTimelinePrompt]);
+  const handleDeleteBurn = async () => {
+    setConfirmedSynthedBlob(null);
+    resetRecording();
+    setSynthLockedPrompt("");
+    await restartVideoStream({ loop: true });
+    await handleStartStream();
+  };
 
   // Update temporal interpolation defaults and clear prompts when pipeline changes
   useEffect(() => {
@@ -723,9 +644,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
       }
     }
   }, [settings.pipelineId, pipelines]);
-
-  // Ref to access the timeline's play/pause handler
-  const timelinePlayPauseRef = useRef<(() => Promise<void>) | null>(null);
 
   // Ref to store callback that should execute when video starts playing
   const onVideoPlayingCallbackRef = useRef<(() => void) | null>(null);
@@ -963,14 +881,8 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             onInterpolationMethodChange={setInterpolationMethod}
             temporalInterpolationMethod={temporalInterpolationMethod}
             onTemporalInterpolationMethodChange={setTemporalInterpolationMethod}
-            isLive={isLive}
             onLivePromptSubmit={handleLivePromptSubmit}
-            selectedTimelinePrompt={selectedTimelinePrompt}
-            onTimelinePromptUpdate={handleTimelinePromptUpdate}
             isVideoPaused={settings.paused}
-            isTimelinePlaying={isTimelinePlaying}
-            currentTime={timelineCurrentTime}
-            timelinePrompts={timelinePrompts}
             transitionSteps={transitionSteps}
             onTransitionStepsChange={setTransitionSteps}
             recordedSynthedBlob={recordedSynthedBlob}
@@ -980,6 +892,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             synthLockedPrompt={synthLockedPrompt}
             onStartSynth={handleStartSynth}
             onCancelSynth={handleCancelSynth}
+            onDeleteBurn={handleDeleteBurn}
             onPromptSend={handleSendPrompt}
             onTogglePause={handleTogglePause}
           />
@@ -991,6 +904,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
               className="h-full"
               remoteStream={remoteStream}
               fallbackStream={localStream}
+              burnedVideoUrl={burnedVideoUrl}
               isPipelineLoading={isPipelineLoading}
               isConnecting={isConnecting}
               pipelineError={pipelineError}
@@ -1010,101 +924,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             />
           </div>
         
-          <div className="flex-shrink-0 mt-2">
-            <PromptInputWithTimeline
-              currentPrompt={promptItems[0]?.text || ""}
-              currentPromptItems={promptItems}
-              transitionSteps={transitionSteps}
-              temporalInterpolationMethod={temporalInterpolationMethod}
-              onPromptSubmit={text => {
-                // Update the left panel's prompt state to reflect current timeline prompt
-                const prompts = [{ text, weight: 100 }];
-                setPromptItems(prompts);
-
-                // Send to backend - use transition if streaming and transition steps > 0
-                if (isStreaming && transitionSteps > 0) {
-                  sendParameterUpdate({
-                    transition: {
-                      target_prompts: prompts,
-                      num_steps: transitionSteps,
-                      temporal_interpolation_method:
-                        temporalInterpolationMethod,
-                    },
-                  });
-                } else {
-                  // Send direct prompts without transition
-                  sendParameterUpdate({
-                    prompts,
-                    prompt_interpolation_method: interpolationMethod,
-                    denoising_step_list: settings.denoisingSteps || [700, 500],
-                  });
-                }
-              }}
-              onPromptItemsSubmit={(
-                prompts,
-                blockTransitionSteps,
-                blockTemporalInterpolationMethod
-              ) => {
-                // Update the left panel's prompt state to reflect current timeline prompt blend
-                setPromptItems(prompts);
-
-                // Use transition params from block if provided, otherwise use global settings
-                const effectiveTransitionSteps =
-                  blockTransitionSteps ?? transitionSteps;
-                const effectiveTemporalInterpolationMethod =
-                  blockTemporalInterpolationMethod ??
-                  temporalInterpolationMethod;
-
-                // Update the left panel's transition settings to reflect current block's values
-                if (blockTransitionSteps !== undefined) {
-                  setTransitionSteps(blockTransitionSteps);
-                }
-                if (blockTemporalInterpolationMethod !== undefined) {
-                  setTemporalInterpolationMethod(
-                    blockTemporalInterpolationMethod
-                  );
-                }
-
-                // Send to backend - use transition if streaming and transition steps > 0
-                if (isStreaming && effectiveTransitionSteps > 0) {
-                  sendParameterUpdate({
-                    transition: {
-                      target_prompts: prompts,
-                      num_steps: effectiveTransitionSteps,
-                      temporal_interpolation_method:
-                        effectiveTemporalInterpolationMethod,
-                    },
-                  });
-                } else {
-                  // Send direct prompts without transition
-                  sendParameterUpdate({
-                    prompts,
-                    prompt_interpolation_method: interpolationMethod,
-                    denoising_step_list: settings.denoisingSteps || [700, 500],
-                  });
-                }
-              }}
-              disabled={
-                isPipelineLoading ||
-                isConnecting ||
-                isSynthCapturing
-              }
-              isStreaming={isStreaming}
-              isVideoPaused={settings.paused}
-              timelineRef={timelineRef}
-              onLiveStateChange={setIsLive}
-              onLivePromptSubmit={handleLivePromptSubmit}
-              onStartStream={handleStartStream}
-              onPromptEdit={handleTimelinePromptEdit}
-              externalSelectedPromptId={externalSelectedPromptId}
-              onPlayPauseRef={timelinePlayPauseRef}
-              onVideoPlayingCallbackRef={onVideoPlayingCallbackRef}
-              onResetCache={handleResetCache}
-              onTimelinePromptsChange={handleTimelinePromptsChange}
-              onTimelineCurrentTimeChange={handleTimelineCurrentTimeChange}
-              onTimelinePlayingChange={handleTimelinePlayingChange}
-            />
-          </div>
           </div>
 
           <div className="w-full md:w-64 h-full">
