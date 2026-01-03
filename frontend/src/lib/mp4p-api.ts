@@ -157,6 +157,29 @@ export async function addSynthedVideo(
   return result.data;
 }
 
+export async function decryptMP4P(
+  mp4pData: MP4PData
+): Promise<{ videoBase64: string; metadata: MP4PMetadata }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/decrypt`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ mp4pData }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to decrypt MP4P: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error("Failed to decrypt MP4P file");
+  }
+
+  return { videoBase64: result.videoBase64, metadata: result.metadata };
+}
+
 export async function downloadMP4P(
   mp4pData: MP4PData,
   filename: string

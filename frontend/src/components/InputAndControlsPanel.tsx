@@ -5,7 +5,12 @@ import type { PromptItem, PromptTransition } from "../lib/api";
 import type { PipelineInfo } from "../types";
 import { PromptInput } from "./PromptInput";
 import { Button } from "./ui/button";
-import { encryptVideo, downloadMP4P, addSynthedVideo } from "../lib/mp4p-api";
+import {
+  encryptVideo,
+  downloadMP4P,
+  addSynthedVideo,
+  type MP4PData,
+} from "../lib/mp4p-api";
 
 interface InputAndControlsPanelProps {
   className?: string;
@@ -17,6 +22,10 @@ interface InputAndControlsPanelProps {
   isConnecting: boolean;
   isLoading?: boolean;
   onVideoFileUpload?: (file: File) => Promise<boolean>;
+  baseMp4pData?: MP4PData | null;
+  prefillVideoFile?: File | null;
+  fixedBurnDateTimestamp?: number | null;
+  hideLocalPreview?: boolean;
   pipelineId: string;
   prompts: PromptItem[];
   onPromptsChange: (prompts: PromptItem[]) => void;
@@ -52,6 +61,10 @@ export function InputAndControlsPanel({
   isConnecting,
   isLoading = false,
   onVideoFileUpload,
+  baseMp4pData = null,
+  prefillVideoFile = null,
+  fixedBurnDateTimestamp = null,
+  hideLocalPreview = false,
   pipelineId,
   prompts,
   onPromptsChange,
@@ -113,11 +126,26 @@ export function InputAndControlsPanel({
     }
   }, [localStream]);
 
+  useEffect(() => {
+    if (prefillVideoFile) {
+      setUploadedVideoFile(prefillVideoFile);
+    }
+  }, [prefillVideoFile]);
+
+  useEffect(() => {
+    if (!fixedBurnDateTimestamp) return;
+    const date = new Date(fixedBurnDateTimestamp);
+    setBurnDate(date.toISOString().split("T")[0]);
+    setBurnTime(date.toTimeString().slice(0, 8));
+    setBurnDateTimestamp(fixedBurnDateTimestamp);
+  }, [fixedBurnDateTimestamp]);
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (fixedBurnDateTimestamp) return;
 
     setUploadedVideoFile(file);
 
@@ -134,14 +162,20 @@ export function InputAndControlsPanel({
   };
 
   const handleExportMP4P = async () => {
-    if (!uploadedVideoFile || !burnDateTimestamp) {
+    if ((!uploadedVideoFile && !baseMp4pData) || !burnDateTimestamp) {
       console.error("Missing required data for MP4P export");
       return;
     }
 
     try {
       setIsExporting(true);
-      let mp4pData = await encryptVideo(uploadedVideoFile, burnDateTimestamp);
+      let mp4pData = baseMp4pData;
+      if (!mp4pData && uploadedVideoFile) {
+        mp4pData = await encryptVideo(uploadedVideoFile, burnDateTimestamp);
+      }
+      if (!mp4pData) {
+        throw new Error("Missing MP4P data");
+      }
 
       if (confirmedSynthedBlob) {
         const promptTexts = synthLockedPrompt
@@ -154,7 +188,9 @@ export function InputAndControlsPanel({
         );
       }
 
-      const filename = uploadedVideoFile.name.replace(/\.[^.]+$/, "");
+      const filename = uploadedVideoFile
+        ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
+        : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
       await downloadMP4P(mp4pData, filename);
 
       console.log("MP4P file exported successfully");
@@ -248,6 +284,7 @@ export function InputAndControlsPanel({
 
   useEffect(() => {
     if (!burnDate || !burnTime) return;
+    if (fixedBurnDateTimestamp) return;
     if (!selectedDateIsToday) return;
     const [hour, minute, second] = burnTime.split(":").map(Number);
     const totalSeconds = hour * 3600 + minute * 60 + (second || 0);
@@ -301,6 +338,10 @@ export function InputAndControlsPanel({
     setIsTimePickerOpen(false);
   }, [timeSelection, timeSelectionTouched]);
   useEffect(() => {
+    if (fixedBurnDateTimestamp) {
+      setBurnDateTimestamp(fixedBurnDateTimestamp);
+      return;
+    }
     if (!burnDate) {
       setBurnDateTimestamp(null);
       return;
@@ -325,6 +366,8 @@ export function InputAndControlsPanel({
     isStreaming &&
     !isLoading;
 
+  const isBurnDateLocked = fixedBurnDateTimestamp !== null;
+
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
       <CardHeader className="flex-shrink-0 py-3 px-4">
@@ -343,7 +386,7 @@ export function InputAndControlsPanel({
                 <p>Video error:</p>
                 <p className="text-xs mt-1">{error}</p>
               </div>
-            ) : localStream ? (
+            ) : localStream && !hideLocalPreview ? (
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
@@ -360,17 +403,17 @@ export function InputAndControlsPanel({
                     onChange={handleFileUpload}
                     className="hidden"
                     id="video-upload"
-                    disabled={isStreaming || isConnecting}
+                    disabled={isStreaming || isConnecting || isBurnDateLocked}
                   />
                   <label
                     htmlFor="video-upload"
                     className={`mac-frosted-button px-4 py-3 text-sm text-center ${
-                      isStreaming || isConnecting
+                      isStreaming || isConnecting || isBurnDateLocked
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
                     }`}
                   >
-                    Upload a vid to begin
+                    {isBurnDateLocked ? "Burn source loaded" : "Upload a vid to begin"}
                   </label>
                 </>
               )
@@ -390,9 +433,11 @@ export function InputAndControlsPanel({
                     type="button"
                     className="win98-input text-sm w-full flex items-center justify-between px-3 py-2"
                     onClick={() => {
+                      if (isBurnDateLocked) return;
                       setIsDatePickerOpen(open => !open);
                       setIsTimePickerOpen(false);
                     }}
+                    disabled={isBurnDateLocked}
                   >
                     <span>{formatDateDisplay(burnDate)}</span>
                     <span className="text-xs">▼</span>
@@ -485,9 +530,9 @@ export function InputAndControlsPanel({
                     ref={timeButtonRef}
                     type="button"
                     className="win98-input text-sm w-full flex items-center justify-between px-3 py-2 disabled:opacity-50 tabular-nums"
-                    disabled={!burnDate}
+                    disabled={!burnDate || isBurnDateLocked}
                     onClick={() => {
-                      if (!burnDate) return;
+                      if (!burnDate || isBurnDateLocked) return;
                       setIsTimePickerOpen(open => !open);
                       setIsDatePickerOpen(false);
                       setTimeSelectionTouched(false);
@@ -753,7 +798,7 @@ export function InputAndControlsPanel({
           <Button
             onClick={handleExportMP4P}
             disabled={
-              !uploadedVideoFile ||
+              (!uploadedVideoFile && !baseMp4pData) ||
               !burnDateTimestamp ||
               !confirmedSynthedBlob ||
               isConnecting ||

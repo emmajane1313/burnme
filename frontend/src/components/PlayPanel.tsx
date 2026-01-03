@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import {
-  addSynthedVideo,
   downloadMP4P,
   loadMP4P,
   type MP4PData,
@@ -14,32 +12,6 @@ type BurnVersionOption = {
   label: string;
   index: number;
 };
-
-async function loadMP4PFromData(
-  mp4pData: MP4PData,
-  burnIndex?: number | null
-): Promise<{ metadata: MP4PMetadata; showSynthed: boolean; videoBase64: string | null }> {
-  const response = await fetch(`/api/v1/mp4p/load`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mp4pData, burnIndex }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to load MP4P: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error("Failed to load MP4P file");
-  }
-
-  return {
-    metadata: result.metadata,
-    showSynthed: result.showSynthed,
-    videoBase64: result.videoBase64 ?? null,
-  };
-}
 
 function base64ToUrl(base64: string): string {
   const byteCharacters = atob(base64);
@@ -52,7 +24,13 @@ function base64ToUrl(base64: string): string {
   return URL.createObjectURL(blob);
 }
 
-export function PlayPanel({ className = "" }: { className?: string }) {
+export function PlayPanel({
+  className = "",
+  onCreateBurnVersion,
+}: {
+  className?: string;
+  onCreateBurnVersion?: (mp4pData: MP4PData) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mp4pFile, setMp4pFile] = useState<File | null>(null);
   const [mp4pData, setMp4pData] = useState<MP4PData | null>(null);
@@ -66,11 +44,9 @@ export function PlayPanel({ className = "" }: { className?: string }) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [burnUpload, setBurnUpload] = useState<File | null>(null);
-  const [burnPrompt, setBurnPrompt] = useState("");
-  const [isAddingBurn, setIsAddingBurn] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [countdownText, setCountdownText] = useState<string | null>(null);
+  const [showBurnedOverlay, setShowBurnedOverlay] = useState(false);
 
   const isExpired = metadata ? Date.now() >= metadata.expiresAt : false;
 
@@ -93,6 +69,27 @@ export function PlayPanel({ className = "" }: { className?: string }) {
     videoRef.current.volume = volume;
     videoRef.current.muted = isMuted;
   }, [volume, isMuted]);
+
+  useEffect(() => {
+    if (!metadata || !mp4pFile) return;
+    if (metadata.expiresAt <= Date.now()) return;
+
+    const timeUntilExpire = metadata.expiresAt - Date.now();
+    const timer = window.setTimeout(() => {
+      handleLoad(mp4pFile, selectedBurnIndex);
+      setShowBurnedOverlay(true);
+    }, timeUntilExpire);
+
+    return () => window.clearTimeout(timer);
+  }, [metadata, mp4pFile, selectedBurnIndex]);
+
+  useEffect(() => {
+    if (!showBurnedOverlay) return;
+    const timer = window.setTimeout(() => {
+      setShowBurnedOverlay(false);
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [showBurnedOverlay]);
 
   useEffect(() => {
     if (!metadata) {
@@ -143,6 +140,12 @@ export function PlayPanel({ className = "" }: { className?: string }) {
       const result = await loadMP4P(file, burnIndex);
       setMetadata(result.metadata);
       const expired = Date.now() >= result.metadata.expiresAt;
+      const hasMultipleBurns = (result.metadata.synthedVersions?.length || 0) > 0;
+
+      if (expired && result.showSynthed && burnIndex == null && hasMultipleBurns) {
+        await handleLoad(file, 0);
+        return;
+      }
 
       if (result.showSynthed || !expired) {
         if (result.videoBase64) {
@@ -159,9 +162,17 @@ export function PlayPanel({ className = "" }: { className?: string }) {
         setVideoUrl(null);
       }
 
-      setSelectedBurnIndex(
-        typeof result.selectedBurnIndex === "number" ? result.selectedBurnIndex : burnIndex ?? null
-      );
+      if (result.showSynthed && (burnIndex != null || hasMultipleBurns)) {
+        setSelectedBurnIndex(
+          typeof result.selectedBurnIndex === "number"
+            ? result.selectedBurnIndex
+            : burnIndex ?? 0
+        );
+      } else {
+        setSelectedBurnIndex(
+          typeof result.selectedBurnIndex === "number" ? result.selectedBurnIndex : null
+        );
+      }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Failed to load MP4P");
       setVideoUrl(null);
@@ -180,40 +191,6 @@ export function PlayPanel({ className = "" }: { className?: string }) {
     if (!mp4pFile) return;
     setSelectedBurnIndex(index);
     await handleLoad(mp4pFile, index);
-  };
-
-  const handleAddBurn = async () => {
-    if (!mp4pData || !burnUpload) return;
-    setIsAddingBurn(true);
-    try {
-      const updated = await addSynthedVideo(
-        mp4pData,
-        burnUpload,
-        burnPrompt.trim() ? [burnPrompt.trim()] : []
-      );
-      setMp4pData(updated);
-      setMetadata(updated.metadata);
-      const nextIndex =
-        updated.encryptedSynthedVideos?.length
-          ? updated.encryptedSynthedVideos.length - 1
-          : 0;
-      setSelectedBurnIndex(nextIndex);
-      const result = await loadMP4PFromData(updated, nextIndex);
-      setMetadata(result.metadata);
-      if (result.videoBase64) {
-        const url = base64ToUrl(result.videoBase64);
-        setVideoUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
-      }
-      setBurnUpload(null);
-      setBurnPrompt("");
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Failed to add burn");
-    } finally {
-      setIsAddingBurn(false);
-    }
   };
 
   const handleExport = async () => {
@@ -291,7 +268,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
           </div>
         )}
 
-        <div className="w-full aspect-video bg-black/40 rounded flex items-center justify-center overflow-hidden">
+        <div className="w-full aspect-video bg-black/40 rounded flex items-center justify-center overflow-hidden relative">
           {isLoading ? (
             <div className="text-center text-xs text-muted-foreground">
               <Spinner size={22} className="mx-auto mb-2" />
@@ -315,6 +292,13 @@ export function PlayPanel({ className = "" }: { className?: string }) {
           ) : (
             <div className="text-xs text-muted-foreground">
               {isExpired && metadata ? "No burned video available." : "No video loaded."}
+            </div>
+          )}
+          {showBurnedOverlay && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="mac-translucent-ruby px-4 py-2 text-xs shadow-lg">
+                Burned version unlocked
+              </div>
             </div>
           )}
         </div>
@@ -379,14 +363,16 @@ export function PlayPanel({ className = "" }: { className?: string }) {
             <div className="text-xs font-medium">Burn versions</div>
             <div className="flex flex-wrap gap-2">
               {burnOptions.map((option) => (
-                <Button
+                <button
                   key={option.index}
-                  size="xs"
-                  variant={option.index === selectedBurnIndex ? "secondary" : "outline"}
+                  type="button"
                   onClick={() => handleSelectBurn(option.index)}
+                  className={`mac-frosted-button px-3 py-1 text-xs ${
+                    option.index === selectedBurnIndex ? "ring-2 ring-white/40" : ""
+                  }`}
                 >
                   {option.label}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
@@ -394,29 +380,15 @@ export function PlayPanel({ className = "" }: { className?: string }) {
 
         {isExpired && (
           <div className="space-y-2">
-            <div className="text-xs font-medium">Add burn version</div>
-            <input
-              type="file"
-              accept="video/mp4,video/webm"
-              onChange={(event) =>
-                setBurnUpload(event.target.files ? event.target.files[0] : null)
-              }
-              className="text-xs"
-            />
-            <input
-              type="text"
-              value={burnPrompt}
-              onChange={(event) => setBurnPrompt(event.target.value)}
-              placeholder="Prompt label (optional)"
-              className="win98-input text-xs w-full px-2 py-1"
-            />
-            <Button
-              size="xs"
-              onClick={handleAddBurn}
-              disabled={!burnUpload || isAddingBurn}
+            <div className="text-xs font-medium">Create burn version</div>
+            <button
+              type="button"
+              className="mac-frosted-button px-3 py-1 text-xs"
+              onClick={() => mp4pData && onCreateBurnVersion?.(mp4pData)}
+              disabled={!mp4pData}
             >
-              {isAddingBurn ? "Adding..." : "Add Burn"}
-            </Button>
+              Create Burn
+            </button>
           </div>
         )}
 

@@ -22,6 +22,7 @@ import type {
 } from "../types";
 import type { PromptItem, PromptTransition } from "../lib/api";
 import { checkModelStatus, downloadPipelineModels } from "../lib/api";
+import { decryptMP4P, type MP4PData } from "../lib/mp4p-api";
 import { sendLoRAScaleUpdates } from "../utils/loraHelpers";
 
 // Delay before resetting video reinitialization flag (ms)
@@ -140,6 +141,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
   const [burnedVideoUrl, setBurnedVideoUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"upload" | "play">("upload");
+  const [mp4pBurnData, setMp4pBurnData] = useState<MP4PData | null>(null);
+  const [mp4pBurnFile, setMp4pBurnFile] = useState<File | null>(null);
+  const [hideBurnSourcePreview, setHideBurnSourcePreview] = useState(false);
+
+  useEffect(() => {
+    if (!mp4pBurnData) {
+      setHideBurnSourcePreview(false);
+      setMp4pBurnFile(null);
+    }
+  }, [mp4pBurnData]);
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -225,6 +236,27 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         prompt_interpolation_method: interpolationMethod,
         denoising_step_list: settings.denoisingSteps || [700, 500],
       });
+    }
+  };
+
+  const handleCreateBurnFromMp4p = async (data: MP4PData) => {
+    setMp4pBurnData(data);
+    setViewMode("upload");
+    setHideBurnSourcePreview(true);
+
+    try {
+      const result = await decryptMP4P(data);
+      const videoBlob = new Blob(
+        [Uint8Array.from(atob(result.videoBase64), (c) => c.charCodeAt(0))],
+        { type: "video/mp4" }
+      );
+      const videoFile = new File([videoBlob], "burn-source.mp4", {
+        type: "video/mp4",
+      });
+      setMp4pBurnFile(videoFile);
+      await handleVideoFileUpload(videoFile);
+    } catch (error) {
+      console.error("Failed to load MP4P burn source:", error);
     }
   };
 
@@ -879,6 +911,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   isConnecting={isConnecting}
                   isLoading={isLoading}
                   onVideoFileUpload={handleVideoFileUpload}
+                  baseMp4pData={mp4pBurnData}
+                  prefillVideoFile={mp4pBurnFile}
+                  fixedBurnDateTimestamp={mp4pBurnData?.metadata.expiresAt ?? null}
+                  hideLocalPreview={hideBurnSourcePreview}
                   pipelineId={settings.pipelineId}
                   prompts={promptItems}
                   onPromptsChange={setPromptItems}
@@ -982,7 +1018,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       ) : (
         <div className="flex-1 flex px-4 pb-4 min-h-0 overflow-hidden justify-center items-start">
           <div className="w-full max-w-[720px] h-full">
-            <PlayPanel className="h-full" />
+            <PlayPanel className="h-full" onCreateBurnVersion={handleCreateBurnFromMp4p} />
           </div>
         </div>
       )}
