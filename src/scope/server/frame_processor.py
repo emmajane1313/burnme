@@ -1,4 +1,5 @@
 import logging
+import os
 import queue
 import threading
 import time
@@ -12,6 +13,7 @@ from .pipeline_manager import PipelineManager, PipelineNotAvailableException
 from .sam3_manager import sam3_mask_manager
 
 logger = logging.getLogger(__name__)
+SAM3_DEBUG = os.getenv("BURN_DEBUG_SAM3") == "1"
 
 
 # Multiply the # of output frames from pipeline by this to get the max size of the output queue
@@ -738,6 +740,15 @@ class FrameProcessor:
                         mask_frames = sam3_mask_manager.get_masks_for_frames(
                             mask_id, frame_indices
                         )
+                        if SAM3_DEBUG:
+                            logger.info(
+                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s",
+                                mask_id,
+                                len(frame_indices),
+                                frame_indices[0] if frame_indices else None,
+                                frame_indices[-1] if frame_indices else None,
+                                self.parameters.get("sam3_mask_mode"),
+                            )
                         call_params["mask_frames"] = mask_frames
                         mask_mode = self.parameters.get("sam3_mask_mode")
                         if mask_mode:

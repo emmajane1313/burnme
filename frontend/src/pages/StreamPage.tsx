@@ -156,6 +156,14 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [sam3Status, setSam3Status] = useState<string | null>(null);
   const [isSam3Generating, setIsSam3Generating] = useState(false);
   const [isSam3Downloading, setIsSam3Downloading] = useState(false);
+  const isDebugEnabled =
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("burn-debug") === "1";
+  const debugLog = (...args: unknown[]) => {
+    if (isDebugEnabled) {
+      console.log("[burn-debug]", ...args);
+    }
+  };
 
   useEffect(() => {
     if (!mp4pBurnData) {
@@ -305,9 +313,14 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
     setIsSam3Generating(true);
     setSam3Status("Preparing SAM3...");
+    debugLog("SAM3: start mask generation", {
+      prompt: sam3Prompt.trim(),
+      fileName: uploadedVideoFile.name,
+    });
 
     try {
       const status = await checkModelStatus("sam3");
+      debugLog("SAM3: model status", status);
       if (!status.downloaded) {
         await downloadPipelineModels("sam3");
         await waitForSam3Models();
@@ -315,10 +328,15 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
       const base64 = await fileToBase64(uploadedVideoFile);
       const result = await generateSam3Mask(base64, sam3Prompt.trim());
+      debugLog("SAM3: mask generated", result);
       setSam3MaskId(result.maskId);
       setSam3Status("Mask ready.");
 
       if (isStreaming) {
+        debugLog("SAM3: sending mask to stream", {
+          maskId: result.maskId,
+          mode: sam3MaskMode,
+        });
         sendParameterUpdate({
           sam3_mask_id: result.maskId,
           sam3_mask_mode: sam3MaskMode,
@@ -341,6 +359,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     setSam3MaskId(null);
     setSam3Status("Mask cleared.");
     if (isStreaming) {
+      debugLog("SAM3: clearing mask on stream");
       sendParameterUpdate({ sam3_mask_id: null });
     }
   };
@@ -348,6 +367,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const handleSam3MaskModeChange = (mode: "inside" | "outside") => {
     setSam3MaskMode(mode);
     if (isStreaming && sam3MaskId) {
+      debugLog("SAM3: updating mask mode", { maskId: sam3MaskId, mode });
       sendParameterUpdate({
         sam3_mask_id: sam3MaskId,
         sam3_mask_mode: mode,
@@ -689,12 +709,27 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     void handleStartStream();
   }, [localStream, isStreaming, isConnecting, isSynthCapturing, pipelineNeedsModels]);
 
+  useEffect(() => {
+    if (!isStreaming || !sam3MaskId) {
+      return;
+    }
+    debugLog("SAM3: resending mask on stream connect", {
+      maskId: sam3MaskId,
+      mode: sam3MaskMode,
+    });
+    sendParameterUpdate({
+      sam3_mask_id: sam3MaskId,
+      sam3_mask_mode: sam3MaskMode,
+    });
+  }, [isStreaming, sam3MaskId, sam3MaskMode, sendParameterUpdate]);
+
   const handleStartSynth = async () => {
     const promptText = promptItems[0]?.text?.trim();
     if (!promptText) {
       return;
     }
 
+    debugLog("Burn: start", { prompt: promptText });
     setSynthLockedPrompt(promptText);
     setIsSynthCapturing(true);
     setSynthEndPending(false);
@@ -769,6 +804,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
 
   const handleCancelSynth = async () => {
+    debugLog("Burn: cancel");
     setSynthEndPending(false);
     setIsSynthCapturing(false);
     setSynthLockedPrompt("");
@@ -825,6 +861,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
     // Use override pipeline ID if provided, otherwise use current settings
     const pipelineIdToUse = overridePipelineId || settings.pipelineId;
+    debugLog("Stream: start requested", {
+      pipelineId: pipelineIdToUse,
+      hasOverrideStream: Boolean(overrideStream),
+      hasLocalStream: Boolean(localStream),
+      inputMode: settings.inputMode,
+      sam3MaskId,
+    });
 
     try {
       setIsWaitingForFrames(true);
@@ -919,8 +962,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       if (!loadSuccess) {
         console.error("Failed to load pipeline, cannot start stream");
         setIsWaitingForFrames(false);
+        debugLog("Stream: pipeline load failed", { pipelineId: pipelineIdToUse });
         return false;
       }
+      debugLog("Stream: pipeline loaded", {
+        pipelineId: pipelineIdToUse,
+        resolution,
+      });
 
       // Check video requirements based on input mode
       const needsVideoInput = true;
@@ -935,6 +983,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       if (needsVideoInput && !isSpoutMode && !localStream) {
         console.error("Video input required but no local stream available");
         setIsWaitingForFrames(false);
+        debugLog("Stream: missing local stream for video input");
         return false;
       }
 
@@ -1014,11 +1063,17 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
       // Pipeline is loaded, now start WebRTC stream
       startStream(initialParameters, streamToSend);
+      debugLog("Stream: startStream called", {
+        pipelineId: pipelineIdToUse,
+        hasStream: Boolean(streamToSend),
+        initialParameters,
+      });
 
       return true; // Stream started successfully
     } catch (error) {
       console.error("Error during stream start:", error);
       setIsWaitingForFrames(false);
+      debugLog("Stream: start failed", error);
       return false;
     }
   };

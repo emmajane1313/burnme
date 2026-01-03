@@ -1,5 +1,6 @@
 import base64
 import logging
+import os
 import threading
 import uuid
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from PIL import Image
 from .models_config import get_assets_dir
 
 logger = logging.getLogger(__name__)
+SAM3_DEBUG = os.getenv("BURN_DEBUG_SAM3") == "1"
 
 
 @dataclass
@@ -132,7 +134,10 @@ class Sam3MaskManager:
             raise KeyError(f"Mask session {session_id} not found")
 
         frames = []
-        for frame_idx in frame_indices:
+        hits = 0
+        misses = 0
+        frame_indices_list = list(frame_indices)
+        for frame_idx in frame_indices_list:
             if session.frame_count > 0:
                 mask_frame_idx = frame_idx % session.frame_count
             else:
@@ -142,11 +147,25 @@ class Sam3MaskManager:
             if not mask_path.exists():
                 blank = np.zeros((session.height, session.width), dtype=np.uint8)
                 mask_array = blank
+                misses += 1
             else:
                 mask_array = np.array(Image.open(mask_path).convert("L"), dtype=np.uint8)
+                hits += 1
 
             tensor = torch.from_numpy(mask_array).float().unsqueeze(0).unsqueeze(-1)
             frames.append(tensor)
+        if SAM3_DEBUG:
+            first_idx = frame_indices_list[0] if frame_indices_list else None
+            last_idx = frame_indices_list[-1] if frame_indices_list else None
+            logger.info(
+                "SAM3 mask fetch: session=%s frames=%d hits=%d misses=%d first=%s last=%s",
+                session_id,
+                len(frames),
+                hits,
+                misses,
+                first_idx,
+                last_idx,
+            )
         return frames
 
 
