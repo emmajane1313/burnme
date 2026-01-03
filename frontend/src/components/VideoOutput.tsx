@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Spinner } from "./ui/spinner";
 import type { DownloadProgress } from "../types";
@@ -35,19 +35,55 @@ export function VideoOutput({
   onVideoPlaying,
 }: VideoOutputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [needsUserPlay, setNeedsUserPlay] = useState(false);
+
+  const attemptPlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise
+        .then(() => setAutoplayBlocked(false))
+        .catch(error => {
+          console.warn("Video autoplay failed:", error);
+          setAutoplayBlocked(true);
+        });
+    }
+  };
 
   useEffect(() => {
     if (!videoRef.current) return;
+    setNeedsUserPlay(false);
 
     if (burnedVideoUrl) {
       videoRef.current.srcObject = null;
       videoRef.current.src = burnedVideoUrl;
       videoRef.current.loop = true;
+      attemptPlay();
       return;
     }
 
     videoRef.current.src = "";
     videoRef.current.srcObject = remoteStream || fallbackStream || null;
+    attemptPlay();
+  }, [remoteStream, fallbackStream, burnedVideoUrl]);
+
+  useEffect(() => {
+    if (!remoteStream && !fallbackStream && !burnedVideoUrl) {
+      setNeedsUserPlay(false);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      const video = videoRef.current;
+      if (!video) return;
+      if (video.paused || video.ended) {
+        setNeedsUserPlay(true);
+      }
+    }, 1200);
+
+    return () => clearTimeout(timeout);
   }, [remoteStream, fallbackStream, burnedVideoUrl]);
 
   // Listen for video playing event to notify parent
@@ -57,6 +93,12 @@ export function VideoOutput({
 
     const handlePlaying = () => {
       onVideoPlaying?.();
+      setAutoplayBlocked(false);
+      setNeedsUserPlay(false);
+    };
+
+    const handlePause = () => {
+      setNeedsUserPlay(true);
     };
 
     // Check if video is already playing when effect runs
@@ -67,8 +109,10 @@ export function VideoOutput({
     }
 
     video.addEventListener("playing", handlePlaying);
+    video.addEventListener("pause", handlePause);
     return () => {
       video.removeEventListener("playing", handlePlaying);
+      video.removeEventListener("pause", handlePause);
     };
   }, [onVideoPlaying, remoteStream]);
 
@@ -89,6 +133,20 @@ export function VideoOutput({
               muted
               playsInline
             />
+            {autoplayBlocked || needsUserPlay ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
+                <button
+                  type="button"
+                  onClick={attemptPlay}
+                  className="mac-frosted-button px-4 py-2 text-sm text-white"
+                >
+                  Tap to Play
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  Browser paused autoplay. Click to resume.
+                </p>
+              </div>
+            ) : null}
             {isDownloading || pipelineNeedsModels ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <div className="text-center text-muted-foreground text-lg">
