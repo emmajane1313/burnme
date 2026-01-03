@@ -128,6 +128,7 @@ export function InputAndControlsPanel({
   const timePickerRef = useRef<HTMLDivElement>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [localPreviewBlocked, setLocalPreviewBlocked] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -141,8 +142,42 @@ export function InputAndControlsPanel({
   useEffect(() => {
     if (videoRef.current && localStream) {
       videoRef.current.srcObject = localStream;
+      const playPromise = videoRef.current.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise
+          .then(() => setLocalPreviewBlocked(false))
+          .catch(() => setLocalPreviewBlocked(true));
+      }
     }
   }, [localStream]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlaying = () => setLocalPreviewBlocked(false);
+    const handlePause = () => {
+      if (localStream) {
+        setLocalPreviewBlocked(true);
+      }
+    };
+
+    video.addEventListener("playing", handlePlaying);
+    video.addEventListener("pause", handlePause);
+    return () => {
+      video.removeEventListener("playing", handlePlaying);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, [localStream]);
+
+  const handleResumeLocalPreview = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => setLocalPreviewBlocked(true));
+    }
+  };
 
   useEffect(() => {
     if (prefillVideoFile) {
@@ -405,13 +440,29 @@ export function InputAndControlsPanel({
                 <p className="text-xs mt-1">{error}</p>
               </div>
             ) : localStream && !hideLocalPreview ? (
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                autoPlay
-                muted
-                playsInline
-              />
+              <div className="relative w-full h-full">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  muted
+                  playsInline
+                />
+                {localPreviewBlocked ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40">
+                    <button
+                      type="button"
+                      onClick={handleResumeLocalPreview}
+                      className="mac-frosted-button px-3 py-2 text-xs text-white"
+                    >
+                      Tap to Start Video
+                    </button>
+                    <p className="text-[11px] text-muted-foreground">
+                      Browser paused the source video.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             ) : (
               onVideoFileUpload && (
                 <>

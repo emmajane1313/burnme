@@ -14,6 +14,7 @@ from .sam3_manager import sam3_mask_manager
 
 logger = logging.getLogger(__name__)
 SAM3_DEBUG = os.getenv("BURN_DEBUG_SAM3") == "1"
+FRAME_DEBUG = os.getenv("BURN_DEBUG_FRAMES") == "1"
 
 
 # Multiply the # of output frames from pipeline by this to get the max size of the output queue
@@ -204,6 +205,12 @@ class FrameProcessor:
 
         with self.frame_buffer_lock:
             self.frame_buffer.append((self._frame_index, frame))
+            if FRAME_DEBUG and self._frame_index % 30 == 0:
+                logger.info(
+                    "FrameProcessor input: index=%s buffer=%s",
+                    self._frame_index,
+                    len(self.frame_buffer),
+                )
             self._frame_index += 1
             return True
 
@@ -702,14 +709,20 @@ class FrameProcessor:
 
         video_input = None
         frame_indices = None
-        if requirements is not None:
-            current_chunk_size = requirements.input_size
-            with self.frame_buffer_lock:
-                if not self.frame_buffer or len(self.frame_buffer) < current_chunk_size:
-                    # Sleep briefly to avoid busy waiting
-                    self.shutdown_event.wait(SLEEP_TIME)
-                    return
-                video_input, frame_indices = self.prepare_chunk(current_chunk_size)
+            if requirements is not None:
+                current_chunk_size = requirements.input_size
+                with self.frame_buffer_lock:
+                    if not self.frame_buffer or len(self.frame_buffer) < current_chunk_size:
+                        # Sleep briefly to avoid busy waiting
+                        self.shutdown_event.wait(SLEEP_TIME)
+                        return
+                    if FRAME_DEBUG:
+                        logger.info(
+                            "FrameProcessor chunk: size=%s buffer=%s",
+                            current_chunk_size,
+                            len(self.frame_buffer),
+                        )
+                    video_input, frame_indices = self.prepare_chunk(current_chunk_size)
         try:
             # Pass parameters (excluding prepare-only parameters)
             call_params = dict(self.parameters.items())
