@@ -57,7 +57,10 @@ class Session:
         try:
             # Stop video track first to properly cleanup FrameProcessor
             if self.video_track is not None:
-                await self.video_track.stop()
+                if hasattr(self.video_track, "stop_async"):
+                    await self.video_track.stop_async()
+                else:
+                    self.video_track.stop()
 
             if self.pc.connectionState not in ["closed", "failed"]:
                 await self.pc.close()

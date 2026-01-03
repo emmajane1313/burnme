@@ -141,6 +141,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     prompt: string;
     pipelineId: PipelineId;
   } | null>(null);
+  const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
 
   // Timeline state for left panel
   const [timelinePrompts, setTimelinePrompts] = useState<TimelinePrompt[]>([]);
@@ -244,6 +245,41 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
         prompt_interpolation_method: interpolationMethod,
         denoising_step_list: settings.denoisingSteps || [700, 500],
       });
+    }
+  };
+
+  const handleSendPrompt = () => {
+    const prompts = promptItems.length
+      ? promptItems
+      : [{ text: "", weight: 100 }];
+
+    if (isStreaming) {
+      const effectiveTransitionSteps =
+        transitionSteps > 0 ? transitionSteps : 0;
+
+      if (effectiveTransitionSteps > 0) {
+        sendParameterUpdate({
+          transition: {
+            target_prompts: prompts,
+            num_steps: effectiveTransitionSteps,
+            temporal_interpolation_method: temporalInterpolationMethod,
+          },
+        });
+      } else {
+        sendParameterUpdate({
+          prompts,
+          prompt_interpolation_method: interpolationMethod,
+          denoising_step_list: settings.denoisingSteps || [700, 500],
+        });
+      }
+    }
+  };
+
+  const handleTogglePause = () => {
+    const nextPaused = !settings.paused;
+    updateSettings({ paused: nextPaused });
+    if (isStreaming) {
+      sendParameterUpdate({ paused: nextPaused });
     }
   };
 
@@ -624,6 +660,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     setIsSynthCapturing(false);
     setSynthLockedPrompt("");
     pendingSynthRef.current = null;
+    setIsWaitingForFrames(false);
     stopRecording();
     stopStream();
     await restartVideoStream({ loop: true });
@@ -685,6 +722,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     const pipelineIdToUse = overridePipelineId || settings.pipelineId;
 
     try {
+      setIsWaitingForFrames(true);
       // Check if models are needed but not downloaded
       const pipelineInfo = pipelines?.[pipelineIdToUse];
       if (pipelineInfo?.requiresModels) {
@@ -775,6 +813,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
       );
       if (!loadSuccess) {
         console.error("Failed to load pipeline, cannot start stream");
+        setIsWaitingForFrames(false);
         return false;
       }
 
@@ -790,6 +829,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
 
       if (needsVideoInput && !isSpoutMode && !localStream) {
         console.error("Video input required but no local stream available");
+        setIsWaitingForFrames(false);
         return false;
       }
 
@@ -866,6 +906,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
       return true; // Stream started successfully
     } catch (error) {
       console.error("Error during stream start:", error);
+      setIsWaitingForFrames(false);
       return false;
     }
   };
@@ -912,6 +953,8 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
             synthLockedPrompt={synthLockedPrompt}
             onStartSynth={handleStartSynth}
             onCancelSynth={handleCancelSynth}
+            onPromptSend={handleSendPrompt}
+            onTogglePause={handleTogglePause}
           />
         </div>
 
@@ -928,7 +971,9 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
               isDownloading={isDownloading}
               downloadProgress={downloadProgress}
               pipelineNeedsModels={pipelineNeedsModels}
+              isWaitingForFrames={isWaitingForFrames}
               onVideoPlaying={() => {
+                setIsWaitingForFrames(false);
                 // Execute callback when video starts playing
                 if (onVideoPlayingCallbackRef.current) {
                   onVideoPlayingCallbackRef.current();

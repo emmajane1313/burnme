@@ -9,6 +9,7 @@ interface PromptInputProps {
   className?: string;
   prompts: PromptItem[];
   onPromptsChange?: (prompts: PromptItem[]) => void;
+  onPromptSend?: () => void;
   disabled?: boolean;
   interpolationMethod?: "linear" | "slerp";
   onInterpolationMethodChange?: (method: "linear" | "slerp") => void;
@@ -26,6 +27,7 @@ export function PromptInput({
   className = "",
   prompts,
   onPromptsChange,
+  onPromptSend,
   disabled = false,
   interpolationMethod: _interpolationMethod = "linear",
   onInterpolationMethodChange: _onInterpolationMethodChange,
@@ -67,6 +69,7 @@ export function PromptInput({
           index={0}
           placeholder="a thousand splendid suns"
           showRemove={false}
+          onSubmit={onPromptSend}
           onTextChange={handlePromptTextChange}
           onRemove={handleRemovePrompt}
           disabled={disabled}

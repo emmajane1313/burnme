@@ -14,6 +14,7 @@ interface VideoOutputProps {
   isDownloading?: boolean;
   downloadProgress?: DownloadProgress | null;
   pipelineNeedsModels?: string | null;
+  isWaitingForFrames?: boolean;
   onVideoPlaying?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function VideoOutput({
   isDownloading = false,
   downloadProgress = null,
   pipelineNeedsModels = null,
+  isWaitingForFrames = false,
   onVideoPlaying,
 }: VideoOutputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -92,6 +94,13 @@ export function VideoOutput({
                       {Math.round(downloadProgress.percentage)}%
                     </p>
                   ) : null}
+                </div>
+              </div>
+            ) : isWaitingForFrames ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="text-center text-muted-foreground text-lg">
+                  <Spinner size={24} className="mx-auto mb-3" />
+                  <p>Warming up pipeline...</p>
                 </div>
               </div>
             ) : null}

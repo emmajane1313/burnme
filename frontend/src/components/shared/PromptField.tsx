@@ -8,6 +8,7 @@ interface PromptFieldProps {
   index: number;
   placeholder: string;
   showRemove: boolean;
+  onSubmit?: () => void;
   onTextChange: (index: number, text: string) => void;
   onRemove: (index: number) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
@@ -19,6 +20,7 @@ export function PromptField({
   index,
   placeholder,
   showRemove,
+  onSubmit,
   onTextChange,
   onRemove,
   onKeyDown,
@@ -31,7 +33,14 @@ export function PromptField({
         placeholder={placeholder}
         value={prompt.text}
         onChange={e => onTextChange(index, e.target.value)}
-        onKeyDown={onKeyDown}
+        onKeyDown={e => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            onSubmit?.();
+            return;
+          }
+          onKeyDown?.(e);
+        }}
         disabled={disabled}
         rows={3}
         className={`flex-1 resize-none bg-transparent border-0 text-card-foreground placeholder:text-muted-foreground  disabled:opacity-50 disabled:cursor-not-allowed min-h-[80px]`}
@@ -45,6 +54,18 @@ export function PromptField({
           className="rounded-full w-8 h-8 p-0"
         >
           <X className="h-4 w-4" />
+        </Button>
+      )}
+      {onSubmit && (
+        <Button
+          onClick={onSubmit}
+          disabled={disabled}
+          size="sm"
+          variant="ghost"
+          className="rounded-full w-8 h-8 p-0"
+          title="Send prompt"
+        >
+          <span className="text-xs">➤</span>
         </Button>
       )}
     </>

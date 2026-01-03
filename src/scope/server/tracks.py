@@ -158,7 +158,7 @@ class VideoProcessingTrack(MediaStreamTrack):
             self._paused = paused
         logger.info(f"Video track {'paused' if paused else 'resumed'}")
 
-    async def stop(self):
+    async def stop_async(self):
         self.input_task_running = False
         self._spout_receiver_enabled = False
 
@@ -173,3 +173,16 @@ class VideoProcessingTrack(MediaStreamTrack):
             self.frame_processor.stop()
 
         await super().stop()
+
+    def stop(self):
+        """Synchronous stop for aiortc compatibility."""
+        loop = None
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            loop.create_task(self.stop_async())
+        else:
+            asyncio.run(self.stop_async())

@@ -109,11 +109,20 @@ def http_get(
 
     # Check if we already have the complete file
     if dest_path.exists():
-        if expected_size is None or dest_path.stat().st_size == expected_size:
+        existing_size = dest_path.stat().st_size
+        if expected_size is None or existing_size == expected_size:
             logger.debug(f"File for {url} already exists: {dest_path}")
             if on_progress and expected_size:
                 on_progress(expected_size)
             return
+
+        # Move incomplete file to temp for resuming
+        if expected_size and existing_size < expected_size:
+            temp_path.unlink(missing_ok=True)
+            shutil.move(str(dest_path), str(temp_path))
+        else:
+            # Size mismatch (larger than expected) - start fresh
+            dest_path.unlink(missing_ok=True)
 
     # Check for existing partial download to resume
     resume_from = 0
@@ -175,6 +184,18 @@ def http_get(
                 _write_stream_to_file(
                     response, temp_path, 0, expected_size, on_progress
                 )
+
+        # Verify size before promoting temp file
+        if expected_size:
+            actual_size = temp_path.stat().st_size
+            if actual_size != expected_size:
+                logger.error(
+                    "Download incomplete for %s (expected %d bytes, got %d).",
+                    url,
+                    expected_size,
+                    actual_size,
+                )
+                raise RuntimeError("Download incomplete; will retry")
 
         # Move temp file to final location
         shutil.move(str(temp_path), str(dest_path))

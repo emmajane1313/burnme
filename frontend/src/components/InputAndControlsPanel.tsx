@@ -50,6 +50,8 @@ interface InputAndControlsPanelProps {
   synthLockedPrompt: string;
   onStartSynth: () => void;
   onCancelSynth: () => void;
+  onPromptSend?: () => void;
+  onTogglePause?: () => void;
 }
 
 export function InputAndControlsPanel({
@@ -85,6 +87,8 @@ export function InputAndControlsPanel({
   synthLockedPrompt,
   onStartSynth,
   onCancelSynth,
+  onPromptSend,
+  onTogglePause,
 }: InputAndControlsPanelProps) {
   const [burnDate, setBurnDate] = useState<string>("");
   const [burnTime, setBurnTime] = useState<string>("");
@@ -791,6 +795,19 @@ export function InputAndControlsPanel({
                     </Badge>
                   )}
                 </div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-muted-foreground">
+                    Live controls
+                  </div>
+                  <Button
+                    onClick={onTogglePause}
+                    disabled={isSynthCapturing}
+                    size="xs"
+                    variant="secondary"
+                  >
+                    {isVideoPaused ? "Play" : "Pause"}
+                  </Button>
+                </div>
 
                 {selectedTimelinePrompt ? (
                   <TimelinePromptEditor
@@ -807,6 +824,7 @@ export function InputAndControlsPanel({
                   <PromptInput
                     prompts={prompts}
                     onPromptsChange={onPromptsChange}
+                    onPromptSend={onPromptSend}
                     disabled={isSynthCapturing}
                     interpolationMethod={interpolationMethod}
                     onInterpolationMethodChange={onInterpolationMethodChange}
