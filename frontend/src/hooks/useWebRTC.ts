@@ -327,6 +327,8 @@ export function useWebRTC(options?: UseWebRTCOptions) {
       spout_receiver?: { enabled: boolean; name: string };
       vace_ref_images?: string[];
       vace_context_scale?: number;
+      sam3_mask_id?: string | null;
+      sam3_mask_mode?: "inside" | "outside";
     }) => {
       if (
         dataChannelRef.current &&
