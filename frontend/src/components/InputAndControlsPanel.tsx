@@ -783,6 +783,18 @@ export function InputAndControlsPanel({
         {onSam3Generate && (
           <div className="space-y-2">
             <h3 className="text-sm font-medium">SAM3 Mask</h3>
+            <div className="text-xs text-muted-foreground">
+              Requires HF access to{" "}
+              <a
+                href="https://huggingface.co/facebook/sam3"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                facebook/sam3
+              </a>
+              . Request access before generating masks.
+            </div>
             <input
               type="text"
               value={sam3Prompt}
