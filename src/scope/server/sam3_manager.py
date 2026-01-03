@@ -94,10 +94,16 @@ class Sam3MaskManager:
         ):
             frame_idx = result["frame_index"]
             masks = result["outputs"].get("out_binary_masks")
-            if masks is None or masks.numel() == 0:
+            if masks is None:
                 continue
-
-            merged = masks.any(dim=0).cpu().numpy().astype(np.uint8) * 255
+            if isinstance(masks, np.ndarray):
+                if masks.size == 0:
+                    continue
+                merged = np.any(masks, axis=0).astype(np.uint8) * 255
+            else:
+                if masks.numel() == 0:
+                    continue
+                merged = masks.any(dim=0).cpu().numpy().astype(np.uint8) * 255
             height, width = merged.shape
             frame_count = max(frame_count, frame_idx + 1)
             Image.fromarray(merged, mode="L").save(self._mask_path(session_dir, frame_idx))
