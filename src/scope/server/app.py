@@ -12,6 +12,7 @@ import warnings
 import webbrowser
 from contextlib import asynccontextmanager
 from datetime import datetime
+import asyncio
 from functools import wraps
 from importlib.metadata import version
 from logging.handlers import RotatingFileHandler
@@ -1221,8 +1222,10 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
 @app.post("/api/v1/sam3/mask")
 async def generate_sam3_mask(request: Sam3MaskRequest):
     try:
-        session = sam3_mask_manager.generate_masks(
-            request.videoBase64, request.prompt
+        session = await asyncio.to_thread(
+            sam3_mask_manager.generate_masks,
+            request.videoBase64,
+            request.prompt,
         )
         return {
             "success": True,
