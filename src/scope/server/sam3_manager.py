@@ -47,7 +47,7 @@ class Sam3MaskManager:
                 from sam3.model_builder import build_sam3_video_predictor
             except Exception as exc:  # pragma: no cover - dependency error
                 raise RuntimeError(
-                    "SAM3 is not installed. Install sam3 to enable mask generation."
+                    f"SAM3 import failed: {exc}. Ensure sam3 and its dependencies are installed."
                 ) from exc
 
             self._predictor = build_sam3_video_predictor()
