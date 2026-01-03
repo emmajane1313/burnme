@@ -47,7 +47,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     video.loop = loop;
     video.muted = true;
     video.playsInline = true;
-    video.autoplay = true;
+    video.autoplay = false;
     videoElementRef.current = video;
     return video;
   }, []);
@@ -60,7 +60,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     ) => {
       const loop = options?.loop ?? true;
       const video = createVideoFromSource(videoSource, loop);
-      setSourceVideoBlocked(false);
+      setSourceVideoBlocked(true);
 
       return new Promise<{
         stream: MediaStream;
@@ -88,26 +88,34 @@ export function useVideoSource(props?: UseVideoSourceProps) {
             const ctx = canvas.getContext("2d")!;
 
             const drawFrame = () => {
-              ctx.drawImage(
-                video,
-                0,
-                0,
-                detectedResolution.width,
-                detectedResolution.height
-              );
-              if (!video.paused && !video.ended) {
-                requestAnimationFrame(drawFrame);
+              if (video.readyState >= 2) {
+                ctx.drawImage(
+                  video,
+                  0,
+                  0,
+                  detectedResolution.width,
+                  detectedResolution.height
+                );
               }
             };
 
+            // Keep frames flowing even if the source is paused.
+            const intervalId = window.setInterval(() => {
+              drawFrame();
+            }, Math.max(10, Math.floor(1000 / fps)));
+            (video as HTMLVideoElement & { __burnDrawInterval?: number })
+              .__burnDrawInterval = intervalId;
+
             video.onplay = () => {
               setSourceVideoBlocked(false);
-              drawFrame();
             };
             video.onpause = () => {
               if (!video.ended) {
                 setSourceVideoBlocked(true);
               }
+            };
+            video.onended = () => {
+              window.clearInterval(intervalId);
             };
 
             if (options?.onEnded) {
@@ -118,14 +126,8 @@ export function useVideoSource(props?: UseVideoSourceProps) {
             const stream = canvas.captureStream(fps);
             resolve({ stream, resolution: detectedResolution });
 
-            video
-              .play()
-              .then(() => {
-                setSourceVideoBlocked(false);
-              })
-              .catch(() => {
-                setSourceVideoBlocked(true);
-              });
+            // Explicit start required; no autoplay.
+            setSourceVideoBlocked(true);
           } catch (error) {
             clearTimeout(timeout);
             reject(error);
@@ -224,7 +226,13 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     }
 
     if (videoElementRef.current) {
-      videoElementRef.current.pause();
+      const video = videoElementRef.current as HTMLVideoElement & {
+        __burnDrawInterval?: number;
+      };
+      if (video.__burnDrawInterval) {
+        window.clearInterval(video.__burnDrawInterval);
+      }
+      video.pause();
       videoElementRef.current = null;
     }
     setSourceVideoBlocked(false);

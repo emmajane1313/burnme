@@ -703,6 +703,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     if (!localStream) {
       return;
     }
+    if (sourceVideoBlocked) {
+      return;
+    }
     if (isStreaming || isConnecting || isSynthCapturing || confirmedSynthedBlob) {
       return;
     }
@@ -710,7 +713,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       return;
     }
     void handleStartStream();
-  }, [localStream, isStreaming, isConnecting, isSynthCapturing, pipelineNeedsModels]);
+  }, [localStream, sourceVideoBlocked, isStreaming, isConnecting, isSynthCapturing, pipelineNeedsModels]);
 
   useEffect(() => {
     if (!isStreaming || !sam3MaskId) {

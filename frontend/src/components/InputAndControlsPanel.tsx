@@ -460,10 +460,10 @@ export function InputAndControlsPanel({
                       onClick={handleResumeLocalPreview}
                       className="mac-frosted-button px-3 py-2 text-xs text-white"
                     >
-                      Tap to Start Video
+                      Start Video
                     </button>
                     <p className="text-[11px] text-muted-foreground">
-                      Browser paused the source video.
+                      Click to start the source video.
                     </p>
                   </div>
                 ) : null}
