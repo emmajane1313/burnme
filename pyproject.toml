@@ -37,7 +37,7 @@ dependencies = [
     "torchvision==0.23.0",
     "easydict>=1.13",
     "diffusers>=0.31.0",
-    "ftfy>=6.3.1",
+    "ftfy>=6.1.1,<7",
     "transformers>=4.49.0",
     "einops>=0.8.1",
     "lmdb>=1.7.3",
