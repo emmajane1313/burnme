@@ -1,0 +1,39 @@
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+        exclude: '^\.vscode/'
+      - id: check-toml
+
+  # Python formatting and linting with ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: "(vendor/|/vendor/)"
+      - id: ruff-format
+        exclude: "(vendor/|/vendor/)"
+
+  # Frontend formatting and linting
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd frontend && npm run format'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|md)$
+        pass_filenames: false
+
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd frontend && npm run lint:fix'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false

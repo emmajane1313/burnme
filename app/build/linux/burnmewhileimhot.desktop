@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=Burn me while i'm hot
+Comment=Real-time AI video generation and streaming
+GenericName=AI Video Generator
+Exec=burnmewhileimhot %U
+Icon=burnmewhileimhot
+Type=Application
+StartupNotify=true
+Categories=Utility;AudioVideo;
+MimeType=x-scheme-handler/burnmewhileimhot;
+Keywords=AI;Video;Streaming;Generation;
+Actions=ShowLogs;
+
+[Desktop Action ShowLogs]
+Name=Show Logs
+Exec=burnmewhileimhot --show-logs
+Icon=burnmewhileimhot

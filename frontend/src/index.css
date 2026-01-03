@@ -1,0 +1,245 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@font-face {
+  font-family: "Handjet";
+  src: url("/assets/fonts/handjet.ttf");
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 0 0% 12%;
+    --primary-foreground: 0 0% 90%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 70%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 90%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 0 0% 30%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-transparent text-foreground;
+    font-family: "Handjet", Tahoma, Verdana, Arial, sans-serif;
+  }
+  #root {
+    @apply bg-transparent;
+  }
+}
+
+@layer components {
+  .y2k-panel {
+    --background: 0 0% 75%;
+    --foreground: 0 0% 5%;
+    --card: 0 0% 75%;
+    --card-foreground: 0 0% 5%;
+    --popover: 0 0% 75%;
+    --popover-foreground: 0 0% 5%;
+    --primary: 220 70% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 80%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 85%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 0 0% 80%;
+    --accent-foreground: 0 0% 10%;
+    --border: 0 0% 45%;
+    --input: 0 0% 90%;
+    --ring: 220 70% 28%;
+    background: #c0c0c0;
+    color: #0b0b0b;
+    border: 2px solid #9c9c9c;
+    border-radius: 2px;
+    box-shadow:
+      inset 1px 1px 0 #ffffff,
+      inset -1px -1px 0 #6b6b6b,
+      0 12px 24px rgba(0, 0, 0, 0.35);
+    font-family: "Handjet", Tahoma, Verdana, Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .y2k-panel::before {
+    content: none;
+  }
+
+  .y2k-panel-header {
+    border-bottom: 2px solid #7b7b7b;
+    background: linear-gradient(90deg, #6a0b16, #c24a4a);
+    color: #ffffff;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .win98-button {
+    background: #c0c0c0;
+    color: #0b0b0b;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-button:focus-visible {
+    outline: 1px dotted #000000;
+    outline-offset: -4px;
+  }
+
+  .win98-button:active {
+    box-shadow: inset -1px -1px 0 #ffffff, inset 1px 1px 0 #6b6b6b;
+  }
+
+  .win98-input {
+    background: #ffffff;
+    color: #0b0b0b;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #6b6b6b, inset -1px -1px 0 #ffffff;
+  }
+
+  .win98-select {
+    background: #ffffff;
+    color: #0b0b0b;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #6b6b6b, inset -1px -1px 0 #ffffff;
+  }
+
+  .win98-select-content {
+    background: #f2f2f2;
+    color: #0b0b0b;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-select-item {
+    border-radius: 0;
+  }
+
+  .win98-badge {
+    background: #d4d0c8;
+    color: #0b0b0b;
+    border: 1px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-toggle {
+    background: #c0c0c0;
+    color: #0b0b0b;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-toggle[data-state="on"] {
+    box-shadow: inset -1px -1px 0 #ffffff, inset 1px 1px 0 #6b6b6b;
+  }
+
+  .win98-slider-track {
+    background: #a0a0a0;
+    box-shadow: inset 1px 1px 0 #6b6b6b, inset -1px -1px 0 #ffffff;
+  }
+
+  .win98-slider-range {
+    background: #0b246a;
+  }
+
+  .win98-slider-thumb {
+    background: #c0c0c0;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-timeline-track {
+    background: #d4d0c8;
+    border: 2px solid #7b7b7b;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-timeline-cursor {
+    background: #0b246a;
+    box-shadow: 0 0 0 1px #ffffff;
+  }
+
+  .win98-timeline-box {
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-timeline-box.is-selected {
+    border-color: #0b246a;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b,
+      0 0 0 1px #0b246a;
+  }
+
+  .win98-popover {
+    background: #c0c0c0;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow:
+      inset 1px 1px 0 #ffffff,
+      inset -1px -1px 0 #6b6b6b,
+      0 8px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .win98-dialog {
+    border-radius: 0;
+  }
+
+  .win98-dialog > button {
+    display: none;
+  }
+
+  .win98-progress {
+    background: #d4d0c8;
+    border: 2px solid #7b7b7b;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #6b6b6b;
+  }
+
+  .win98-progress > div {
+    background: #0b246a;
+  }
+
+  .win98-toast {
+    background: #c0c0c0;
+    color: #0b0b0b;
+    border: 2px solid #7b7b7b;
+    border-radius: 0;
+    box-shadow:
+      inset 1px 1px 0 #ffffff,
+      inset -1px -1px 0 #6b6b6b,
+      0 10px 18px rgba(0, 0, 0, 0.35);
+    font-family: "Handjet", Tahoma, Verdana, Arial, sans-serif;
+  }
+
+  .win98-toast[data-type="error"] {
+    background: #f4b3b3;
+    color: #5c0f0f;
+    border-color: #8b1f1f;
+  }
+
+  .win98-toast[data-type="error"] [data-description] {
+    color: #5c0f0f;
+  }
+}
