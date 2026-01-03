@@ -1,6 +1,7 @@
 from .auto_prepare_latents import AutoPrepareLatentsBlock, AutoPreprocessVideoBlock
 from .clean_kv_cache import CleanKVCacheBlock
 from .decode import DecodeBlock
+from .mask_composite import MaskCompositeBlock
 from .denoise import DenoiseBlock
 from .embedding_blending import EmbeddingBlendingBlock
 from .noise_scale_controller import NoiseScaleControllerBlock
@@ -20,6 +21,7 @@ __all__ = [
     "AutoPreprocessVideoBlock",
     "CleanKVCacheBlock",
     "DecodeBlock",
+    "MaskCompositeBlock",
     "DenoiseBlock",
     "EmbeddingBlendingBlock",
     "NoiseScaleControllerBlock",

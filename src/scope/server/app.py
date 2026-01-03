@@ -42,6 +42,7 @@ from .models_config import (
     models_are_downloaded,
 )
 from .pipeline_manager import PipelineManager
+from .sam3_manager import sam3_mask_manager
 from .schema import (
     AssetFileInfo,
     AssetsResponse,
@@ -1110,6 +1111,11 @@ class LoadMP4PRequest(BaseModel):
     burnIndex: int | None = None
 
 
+class Sam3MaskRequest(BaseModel):
+    videoBase64: str
+    prompt: str
+
+
 @app.post("/api/v1/mp4p/encrypt")
 async def encrypt_video_endpoint(request: EncryptVideoRequest):
     try:
@@ -1209,6 +1215,24 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
         }
     except Exception as e:
         logger.error(f"Error loading MP4P: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/v1/sam3/mask")
+async def generate_sam3_mask(request: Sam3MaskRequest):
+    try:
+        session = sam3_mask_manager.generate_masks(
+            request.videoBase64, request.prompt
+        )
+        return {
+            "success": True,
+            "maskId": session.session_id,
+            "frameCount": session.frame_count,
+            "height": session.height,
+            "width": session.width,
+        }
+    except Exception as e:
+        logger.error(f"Error generating SAM3 masks: {e}")
         return {"success": False, "error": str(e)}
 
 

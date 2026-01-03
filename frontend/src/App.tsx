@@ -7,8 +7,8 @@ import { StatusBar } from "./components/StatusBar";
 import "./index.css";
 
 const VIDEO_OPTIONS = [
-  { id: 1, name: "Puppy Love", src: "/assets/videos/puppylove.mp4" },
-  { id: 2, name: "Heart Doves", src: "/assets/videos/heartdoves.mp4" },
+  { id: 1, name: "Heart Doves", src: "/assets/videos/heartdoves.mp4" },
+  { id: 2, name: "Puppy Love", src: "/assets/videos/puppylove.mp4" },
   { id: 3, name: "Epic Battle", src: "/assets/videos/epicbattle.mp4" },
 ];
 
@@ -16,7 +16,8 @@ function App() {
   const [currentVideo, setCurrentVideo] = useState(1);
   const [stats, setStats] = useState({ fps: 0, bitrate: 0 });
 
-  const selectedVideo = VIDEO_OPTIONS.find((v) => v.id === currentVideo) || VIDEO_OPTIONS[0];
+  const selectedVideo =
+    VIDEO_OPTIONS.find(v => v.id === currentVideo) || VIDEO_OPTIONS[0];
 
   return (
     <div className="h-screen flex flex-col">

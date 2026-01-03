@@ -21,7 +21,11 @@ import type {
   DownloadProgress,
 } from "../types";
 import type { PromptItem, PromptTransition } from "../lib/api";
-import { checkModelStatus, downloadPipelineModels } from "../lib/api";
+import {
+  checkModelStatus,
+  downloadPipelineModels,
+  generateSam3Mask,
+} from "../lib/api";
 import { decryptMP4P, type MP4PData } from "../lib/mp4p-api";
 import { sendLoRAScaleUpdates } from "../utils/loraHelpers";
 
@@ -144,6 +148,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [mp4pBurnData, setMp4pBurnData] = useState<MP4PData | null>(null);
   const [mp4pBurnFile, setMp4pBurnFile] = useState<File | null>(null);
   const [hideBurnSourcePreview, setHideBurnSourcePreview] = useState(false);
+  const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
+  const [sam3Prompt, setSam3Prompt] = useState("");
+  const [sam3MaskId, setSam3MaskId] = useState<string | null>(null);
+  const [sam3MaskMode, setSam3MaskMode] = useState<"inside" | "outside">("inside");
+  const [sam3Status, setSam3Status] = useState<string | null>(null);
+  const [isSam3Generating, setIsSam3Generating] = useState(false);
+  const [isSam3Downloading, setIsSam3Downloading] = useState(false);
 
   useEffect(() => {
     if (!mp4pBurnData) {
@@ -239,6 +250,105 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const waitForSam3Models = async () => {
+    setIsSam3Downloading(true);
+    setSam3Status("Downloading SAM3 models...");
+
+    const poll = async (resolve: () => void, reject: (error: Error) => void) => {
+      try {
+        const status = await checkModelStatus("sam3");
+        if (status.progress) {
+          setSam3Status(
+            `Downloading SAM3 models... ${status.progress.percentage.toFixed(0)}%`
+          );
+        }
+
+        if (status.downloaded) {
+          setIsSam3Downloading(false);
+          resolve();
+          return;
+        }
+
+        setTimeout(() => poll(resolve, reject), 2000);
+      } catch (error) {
+        reject(error as Error);
+      }
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      poll(resolve, reject);
+    });
+  };
+
+  const handleGenerateSam3Mask = async () => {
+    if (!uploadedVideoFile) {
+      setSam3Status("Upload a video before generating masks.");
+      return;
+    }
+    if (!sam3Prompt.trim()) {
+      setSam3Status("Enter a mask prompt first.");
+      return;
+    }
+
+    setIsSam3Generating(true);
+    setSam3Status("Preparing SAM3...");
+
+    try {
+      const status = await checkModelStatus("sam3");
+      if (!status.downloaded) {
+        await downloadPipelineModels("sam3");
+        await waitForSam3Models();
+      }
+
+      const base64 = await fileToBase64(uploadedVideoFile);
+      const result = await generateSam3Mask(base64, sam3Prompt.trim());
+      setSam3MaskId(result.maskId);
+      setSam3Status("Mask ready.");
+
+      if (isStreaming) {
+        sendParameterUpdate({
+          sam3_mask_id: result.maskId,
+          sam3_mask_mode: sam3MaskMode,
+        });
+      }
+    } catch (error) {
+      console.error("SAM3 mask generation failed:", error);
+      setSam3Status("Mask generation failed.");
+    } finally {
+      setIsSam3Generating(false);
+    }
+  };
+
+  const handleClearSam3Mask = () => {
+    setSam3MaskId(null);
+    setSam3Status("Mask cleared.");
+    if (isStreaming) {
+      sendParameterUpdate({ sam3_mask_id: null });
+    }
+  };
+
+  const handleSam3MaskModeChange = (mode: "inside" | "outside") => {
+    setSam3MaskMode(mode);
+    if (isStreaming && sam3MaskId) {
+      sendParameterUpdate({
+        sam3_mask_id: sam3MaskId,
+        sam3_mask_mode: mode,
+      });
+    }
+  };
+
   const handleCreateBurnFromMp4p = async (data: MP4PData) => {
     setMp4pBurnData(data);
     setViewMode("upload");
@@ -254,7 +364,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         type: "video/mp4",
       });
       setMp4pBurnFile(videoFile);
-      await handleVideoFileUpload(videoFile);
+      setUploadedVideoFile(videoFile);
+      await handleUploadVideoFile(videoFile);
     } catch (error) {
       console.error("Failed to load MP4P burn source:", error);
     }
@@ -454,6 +565,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendParameterUpdate({
       noise_controller: enabled,
     });
+  };
+
+  const handleUploadVideoFile = async (file: File) => {
+    setUploadedVideoFile(file);
+    setSam3MaskId(null);
+    setSam3Status(null);
+    return handleVideoFileUpload(file);
   };
 
   const handleManageCacheChange = (enabled: boolean) => {
@@ -828,6 +946,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         spout_receiver?: { enabled: boolean; name: string };
         vace_ref_images?: string[];
         vace_context_scale?: number;
+        sam3_mask_id?: string | null;
+        sam3_mask_mode?: "inside" | "outside";
       } = {
         // Signal the intended input mode to the backend so it doesn't
         // briefly fall back to text mode before video frames arrive
@@ -878,6 +998,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.spout_receiver = settings.spoutReceiver;
       }
 
+      if (sam3MaskId) {
+        initialParameters.sam3_mask_id = sam3MaskId;
+        initialParameters.sam3_mask_mode = sam3MaskMode;
+      }
+
       // Reset paused state when starting a fresh stream
       updateSettings({ paused: false });
 
@@ -910,7 +1035,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   isStreaming={isStreaming}
                   isConnecting={isConnecting}
                   isLoading={isLoading}
-                  onVideoFileUpload={handleVideoFileUpload}
+                  onVideoFileUpload={handleUploadVideoFile}
                   baseMp4pData={mp4pBurnData}
                   prefillVideoFile={mp4pBurnFile}
                   fixedBurnDateTimestamp={mp4pBurnData?.metadata.expiresAt ?? null}
@@ -937,6 +1062,18 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onDeleteBurn={handleDeleteBurn}
                   onPromptSend={handleSendPrompt}
                   onTogglePause={handleTogglePause}
+                  sam3Prompt={sam3Prompt}
+                  onSam3PromptChange={setSam3Prompt}
+                  sam3MaskId={sam3MaskId}
+                  sam3MaskMode={sam3MaskMode}
+                  onSam3MaskModeChange={handleSam3MaskModeChange}
+                  onSam3Generate={handleGenerateSam3Mask}
+                  onSam3Clear={handleClearSam3Mask}
+                  sam3Status={
+                    sam3Status ||
+                    (isSam3Downloading ? "Downloading SAM3 models..." : null)
+                  }
+                  isSam3Generating={isSam3Generating}
                 />
               </div>
 

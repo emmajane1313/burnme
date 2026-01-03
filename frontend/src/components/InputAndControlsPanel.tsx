@@ -49,6 +49,15 @@ interface InputAndControlsPanelProps {
   onDeleteBurn?: () => void;
   onPromptSend?: () => void;
   onTogglePause?: () => void;
+  sam3Prompt?: string;
+  onSam3PromptChange?: (value: string) => void;
+  sam3MaskId?: string | null;
+  sam3MaskMode?: "inside" | "outside";
+  onSam3MaskModeChange?: (mode: "inside" | "outside") => void;
+  onSam3Generate?: () => void;
+  onSam3Clear?: () => void;
+  sam3Status?: string | null;
+  isSam3Generating?: boolean;
 }
 
 export function InputAndControlsPanel({
@@ -86,6 +95,15 @@ export function InputAndControlsPanel({
   onDeleteBurn,
   onPromptSend,
   onTogglePause,
+  sam3Prompt = "",
+  onSam3PromptChange,
+  sam3MaskId = null,
+  sam3MaskMode = "inside",
+  onSam3MaskModeChange,
+  onSam3Generate,
+  onSam3Clear,
+  sam3Status = null,
+  isSam3Generating = false,
 }: InputAndControlsPanelProps) {
   const [burnDate, setBurnDate] = useState<string>("");
   const [burnTime, setBurnTime] = useState<string>("");
@@ -761,6 +779,66 @@ export function InputAndControlsPanel({
             </div>
           )}
         </div>
+
+        {onSam3Generate && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">SAM3 Mask</h3>
+            <input
+              type="text"
+              value={sam3Prompt}
+              onChange={(event) => onSam3PromptChange?.(event.target.value)}
+              placeholder="mask prompt (text)"
+              className="win98-input text-xs w-full px-2 py-1"
+              disabled={isSam3Generating}
+            />
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Button
+                size="xs"
+                variant="secondary"
+                onClick={() => onSam3MaskModeChange?.("inside")}
+                className={
+                  sam3MaskMode === "inside" ? "ring-2 ring-white/40" : ""
+                }
+                disabled={isSam3Generating}
+              >
+                Inside Mask
+              </Button>
+              <Button
+                size="xs"
+                variant="secondary"
+                onClick={() => onSam3MaskModeChange?.("outside")}
+                className={
+                  sam3MaskMode === "outside" ? "ring-2 ring-white/40" : ""
+                }
+                disabled={isSam3Generating}
+              >
+                Outside Mask
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Button
+                size="xs"
+                onClick={onSam3Generate}
+                disabled={isSam3Generating || isConnecting || isLoading}
+              >
+                {isSam3Generating ? "Generating..." : "Generate Masks"}
+              </Button>
+              {sam3MaskId && (
+                <Button
+                  size="xs"
+                  variant="destructive"
+                  onClick={onSam3Clear}
+                  disabled={isSam3Generating}
+                >
+                  Clear Mask
+                </Button>
+              )}
+            </div>
+            {sam3Status && (
+              <div className="text-xs text-muted-foreground">{sam3Status}</div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Burn</h3>

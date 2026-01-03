@@ -9,6 +9,7 @@ import torch
 from aiortc.mediastreams import VideoFrame
 
 from .pipeline_manager import PipelineManager, PipelineNotAvailableException
+from .sam3_manager import sam3_mask_manager
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ class FrameProcessor:
         self.frame_buffer = deque(maxlen=max_buffer_size)
         self.frame_buffer_lock = threading.Lock()
         self.output_queue = queue.Queue(maxsize=max_output_queue_size)
+        self._frame_index = 0
 
         # Current parameters used by processing thread
         self.parameters = initial_parameters or {}
@@ -199,7 +201,8 @@ class FrameProcessor:
         self.track_input_frame()
 
         with self.frame_buffer_lock:
-            self.frame_buffer.append(frame)
+            self.frame_buffer.append((self._frame_index, frame))
+            self._frame_index += 1
             return True
 
     def get(self) -> torch.Tensor | None:
@@ -590,7 +593,8 @@ class FrameProcessor:
                     spout_frame = _SpoutFrame(rgb_frame)
 
                     with self.frame_buffer_lock:
-                        self.frame_buffer.append(spout_frame)
+                        self.frame_buffer.append((self._frame_index, spout_frame))
+                        self._frame_index += 1
 
                     frame_count += 1
                     if frame_count % 100 == 0:
@@ -695,6 +699,7 @@ class FrameProcessor:
             )
 
         video_input = None
+        frame_indices = None
         if requirements is not None:
             current_chunk_size = requirements.input_size
             with self.frame_buffer_lock:
@@ -702,7 +707,7 @@ class FrameProcessor:
                     # Sleep briefly to avoid busy waiting
                     self.shutdown_event.wait(SLEEP_TIME)
                     return
-                video_input = self.prepare_chunk(current_chunk_size)
+                video_input, frame_indices = self.prepare_chunk(current_chunk_size)
         try:
             # Pass parameters (excluding prepare-only parameters)
             call_params = dict(self.parameters.items())
@@ -726,6 +731,22 @@ class FrameProcessor:
                 else:
                     # Normal V2V mode: route to video
                     call_params["video"] = video_input
+
+                mask_id = self.parameters.get("sam3_mask_id")
+                if mask_id and frame_indices is not None:
+                    try:
+                        mask_frames = sam3_mask_manager.get_masks_for_frames(
+                            mask_id, frame_indices
+                        )
+                        call_params["mask_frames"] = mask_frames
+                        mask_mode = self.parameters.get("sam3_mask_mode")
+                        if mask_mode:
+                            call_params["sam3_mask_mode"] = mask_mode
+                    except KeyError:
+                        logger.warning(
+                            "SAM3 mask session %s not found; ignoring masks.",
+                            mask_id,
+                        )
 
             output = pipeline(**call_params)
 
@@ -801,7 +822,7 @@ class FrameProcessor:
 
         self.is_prepared = True
 
-    def prepare_chunk(self, chunk_size: int) -> list[torch.Tensor]:
+    def prepare_chunk(self, chunk_size: int) -> tuple[list[torch.Tensor], list[int]]:
         """
         Sample frames uniformly from the buffer, convert them to tensors, and remove processed frames.
 
@@ -829,7 +850,7 @@ class FrameProcessor:
         # Generate indices for uniform sampling
         indices = [round(i * step) for i in range(chunk_size)]
         # Extract VideoFrames at sampled indices
-        video_frames = [self.frame_buffer[i] for i in indices]
+        indexed_frames = [self.frame_buffer[i] for i in indices]
 
         # Drop all frames up to and including the last sampled frame
         last_idx = indices[-1]
@@ -838,7 +859,8 @@ class FrameProcessor:
 
         # Convert VideoFrames to tensors
         tensor_frames = []
-        for video_frame in video_frames:
+        frame_indices = []
+        for frame_index, video_frame in indexed_frames:
             # Convert VideoFrame into (1, H, W, C) tensor on cpu
             # The T=1 dimension is expected by preprocess_chunk which rearranges T H W C -> T C H W
             tensor = (
@@ -847,8 +869,9 @@ class FrameProcessor:
                 .unsqueeze(0)
             )
             tensor_frames.append(tensor)
+            frame_indices.append(frame_index)
 
-        return tensor_frames
+        return tensor_frames, frame_indices
 
     def __enter__(self):
         self.start()

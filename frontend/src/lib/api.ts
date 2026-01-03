@@ -30,6 +30,8 @@ export interface WebRTCOfferRequest {
     kv_cache_attention_bias?: number;
     vace_ref_images?: string[];
     vace_context_scale?: number;
+    sam3_mask_id?: string | null;
+    sam3_mask_mode?: "inside" | "outside";
   };
 }
 
@@ -52,6 +54,15 @@ export interface PipelineStatusResponse {
   load_params?: Record<string, unknown>;
   // Optional list of loaded LoRA adapters, provided by backend when available.
   loaded_lora_adapters?: { path: string; scale: number }[];
+  error?: string;
+}
+
+export interface Sam3MaskResponse {
+  success: boolean;
+  maskId: string;
+  frameCount: number;
+  height: number;
+  width: number;
   error?: string;
 }
 
@@ -206,6 +217,31 @@ export const downloadPipelineModels = async (
   }
 
   const result = await response.json();
+  return result;
+};
+
+export const generateSam3Mask = async (
+  videoBase64: string,
+  prompt: string
+): Promise<Sam3MaskResponse> => {
+  const response = await fetch(apiUrl("/api/v1/sam3/mask"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ videoBase64, prompt }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `SAM3 mask generation failed: ${response.status} ${response.statusText}: ${errorText}`
+    );
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || "SAM3 mask generation failed");
+  }
+
   return result;
 };
 

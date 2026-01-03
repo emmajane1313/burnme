@@ -11,6 +11,7 @@ from ..wan2_1.blocks import (
     AutoPreprocessVideoBlock,
     CleanKVCacheBlock,
     DecodeBlock,
+    MaskCompositeBlock,
     DenoiseBlock,
     EmbeddingBlendingBlock,
     PrepareNextBlock,
@@ -46,6 +47,7 @@ ALL_BLOCKS = InsertableDict(
         ("denoise", DenoiseBlock),
         ("clean_kv_cache", CleanKVCacheBlock),
         ("decode", DecodeBlock),
+        ("mask_composite", MaskCompositeBlock),
         ("prepare_recache_frames", PrepareRecacheFramesBlock),
         ("prepare_next", PrepareNextBlock),
     ]

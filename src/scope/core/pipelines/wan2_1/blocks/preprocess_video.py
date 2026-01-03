@@ -44,6 +44,12 @@ class PreprocessVideoBlock(ModularPipelineBlocks):
                 description="Input frames for VACE conditioning",
             ),
             InputParam(
+                "mask_frames",
+                default=None,
+                type_hint=list[torch.Tensor] | torch.Tensor | None,
+                description="Optional mask frames aligned with the input video",
+            ),
+            InputParam(
                 "height",
                 required=True,
                 type_hint=int,
@@ -71,6 +77,16 @@ class PreprocessVideoBlock(ModularPipelineBlocks):
                 type_hint=torch.Tensor,
                 description="Input video to convert into noisy latents",
             ),
+            OutputParam(
+                "video_raw",
+                type_hint=torch.Tensor | None,
+                description="Preprocessed input video for masking composite",
+            ),
+            OutputParam(
+                "mask_frames",
+                type_hint=torch.Tensor | None,
+                description="Preprocessed mask frames aligned to the input video",
+            ),
         ]
 
     @torch.no_grad()
@@ -94,12 +110,25 @@ class PreprocessVideoBlock(ModularPipelineBlocks):
                 width=block_state.width,
                 target_num_frames=target_num_frames,
             )
+            block_state.video_raw = block_state.video.clone()
 
         if block_state.vace_input_frames is not None and isinstance(
             block_state.vace_input_frames, list
         ):
             block_state.vace_input_frames = preprocess_video(
                 block_state.vace_input_frames,
+                device=components.config.device,
+                dtype=components.config.dtype,
+                height=block_state.height,
+                width=block_state.width,
+                target_num_frames=target_num_frames,
+            )
+
+        if block_state.mask_frames is not None and isinstance(
+            block_state.mask_frames, list
+        ):
+            block_state.mask_frames = preprocess_video(
+                block_state.mask_frames,
                 device=components.config.device,
                 dtype=components.config.dtype,
                 height=block_state.height,

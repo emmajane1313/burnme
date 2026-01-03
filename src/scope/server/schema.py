@@ -113,6 +113,14 @@ class Parameters(BaseModel):
         ge=0.0,
         le=2.0,
     )
+    sam3_mask_id: str | None = Field(
+        default=None,
+        description="SAM3 mask session ID to apply on incoming frames.",
+    )
+    sam3_mask_mode: Literal["inside", "outside"] | None = Field(
+        default="inside",
+        description="Apply synth inside or outside the SAM3 mask.",
+    )
 
 
 class SpoutConfig(BaseModel):
