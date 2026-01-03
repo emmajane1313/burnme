@@ -86,7 +86,7 @@ export function VideoOutput({
     return () => clearTimeout(timeout);
   }, [remoteStream, fallbackStream, burnedVideoUrl]);
 
-  // Listen for video playing event to notify parent
+  // Listen for video readiness to notify parent
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !remoteStream) return;
@@ -95,6 +95,10 @@ export function VideoOutput({
       onVideoPlaying?.();
       setAutoplayBlocked(false);
       setNeedsUserPlay(false);
+    };
+
+    const handleLoadedData = () => {
+      onVideoPlaying?.();
     };
 
     const handlePause = () => {
@@ -109,9 +113,11 @@ export function VideoOutput({
     }
 
     video.addEventListener("playing", handlePlaying);
+    video.addEventListener("loadeddata", handleLoadedData);
     video.addEventListener("pause", handlePause);
     return () => {
       video.removeEventListener("playing", handlePlaying);
+      video.removeEventListener("loadeddata", handleLoadedData);
       video.removeEventListener("pause", handlePause);
     };
   }, [onVideoPlaying, remoteStream]);
