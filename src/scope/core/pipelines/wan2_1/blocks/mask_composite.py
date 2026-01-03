@@ -82,6 +82,16 @@ class MaskCompositeBlock(ModularPipelineBlocks):
         mask = mask[:, :min_frames]
         video_raw = video_raw[:, :min_frames]
 
+        # Normalize mask channels to single channel for compositing
+        if mask.shape[2] != 1:
+            mask = mask.mean(dim=2, keepdim=True)
+
+        # Align channel count between output and original video
+        if output_video.shape[2] != video_raw.shape[2]:
+            min_channels = min(output_video.shape[2], video_raw.shape[2])
+            output_video = output_video[:, :, :min_channels]
+            video_raw = video_raw[:, :, :min_channels]
+
         # Normalize mask to [0, 1]
         if mask.max() > 1.0:
             mask = mask / 255.0

@@ -156,6 +156,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [sam3Status, setSam3Status] = useState<string | null>(null);
   const [isSam3Generating, setIsSam3Generating] = useState(false);
   const [isSam3Downloading, setIsSam3Downloading] = useState(false);
+  const [sam3Box, setSam3Box] = useState<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null>(null);
   const startStreamInFlightRef = useRef(false);
   const isDebugEnabled =
     typeof window !== "undefined" &&
@@ -309,8 +315,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       setSam3Status("Upload a video before generating masks.");
       return;
     }
-    if (!sam3Prompt.trim()) {
-      setSam3Status("Enter a mask prompt first.");
+    if (!sam3Prompt.trim() && !sam3Box) {
+      setSam3Status("Enter a prompt or draw a box first.");
+      return;
+    }
+    if (sam3Box && !videoResolution) {
+      setSam3Status("Video not ready yet. Try again in a moment.");
       return;
     }
 
@@ -330,7 +340,19 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
 
       const base64 = await fileToBase64(uploadedVideoFile);
-      const result = await generateSam3Mask(base64, sam3Prompt.trim());
+      const boxPayload = sam3Box && videoResolution
+        ? ([
+            Math.round(sam3Box.x1 * videoResolution.width),
+            Math.round(sam3Box.y1 * videoResolution.height),
+            Math.round(sam3Box.x2 * videoResolution.width),
+            Math.round(sam3Box.y2 * videoResolution.height),
+          ] as [number, number, number, number])
+        : null;
+      const result = await generateSam3Mask(
+        base64,
+        sam3Prompt.trim(),
+        boxPayload
+      );
       debugLog("SAM3: mask generated", result);
       setSam3MaskId(result.maskId);
       setSam3Status("Mask ready.");
@@ -1145,6 +1167,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onSam3MaskModeChange={handleSam3MaskModeChange}
                   onSam3Generate={handleGenerateSam3Mask}
                   onSam3Clear={handleClearSam3Mask}
+                  sam3Box={sam3Box}
+                  onSam3BoxChange={setSam3Box}
+                  onSam3BoxClear={() => setSam3Box(null)}
                   sam3Status={
                     sam3Status ||
                     (isSam3Downloading ? "Downloading SAM3 models..." : null)
