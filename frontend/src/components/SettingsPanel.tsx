@@ -147,9 +147,9 @@ export function SettingsPanel({
   const isControlsLocked = isLoading || (isStreaming && !isVideoPaused);
 
   return (
-    <Card className={`h-full flex flex-col y2k-panel ${className}`}>
-      <CardHeader className="flex-shrink-0 y2k-panel-header">
-        <CardTitle className="text-base font-medium">Settings</CardTitle>
+    <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="text-base font-medium text-white">Settings</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div className="space-y-2">

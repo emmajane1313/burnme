@@ -1107,6 +1107,7 @@ class AddSynthedVideoRequest(BaseModel):
 
 class LoadMP4PRequest(BaseModel):
     mp4pData: MP4PData
+    burnIndex: int | None = None
 
 
 @app.post("/api/v1/mp4p/encrypt")
@@ -1175,24 +1176,37 @@ async def add_synthed_video_endpoint(request: AddSynthedVideoRequest):
 @app.post("/api/v1/mp4p/load")
 async def load_mp4p_endpoint(request: LoadMP4PRequest):
     try:
+        now = int(datetime.now().timestamp() * 1000)
+        is_expired = now >= request.mp4pData.metadata.expiresAt
         show_synthed = should_show_synthed(request.mp4pData)
 
-        if show_synthed:
-            synthed_video = await decrypt_synthed_video(request.mp4pData)
-            return {
-                "success": True,
-                "showSynthed": True,
-                "videoBase64": base64.b64encode(synthed_video).decode() if synthed_video else None,
-                "metadata": request.mp4pData.metadata.model_dump()
-            }
-        else:
-            original_video = await decrypt_video(request.mp4pData)
+        if is_expired:
+            if show_synthed:
+                synthed_video = await decrypt_synthed_video(
+                    request.mp4pData, request.burnIndex
+                )
+                return {
+                    "success": True,
+                    "showSynthed": True,
+                    "videoBase64": base64.b64encode(synthed_video).decode() if synthed_video else None,
+                    "metadata": request.mp4pData.metadata.model_dump(),
+                    "selectedBurnIndex": request.burnIndex
+                }
             return {
                 "success": True,
                 "showSynthed": False,
-                "videoBase64": base64.b64encode(original_video).decode(),
-                "metadata": request.mp4pData.metadata.model_dump()
+                "videoBase64": None,
+                "metadata": request.mp4pData.metadata.model_dump(),
+                "selectedBurnIndex": None
             }
+        original_video = await decrypt_video(request.mp4pData)
+        return {
+            "success": True,
+            "showSynthed": False,
+            "videoBase64": base64.b64encode(original_video).decode(),
+            "metadata": request.mp4pData.metadata.model_dump(),
+            "selectedBurnIndex": None
+        }
     except Exception as e:
         logger.error(f"Error loading MP4P: {e}")
         return {"success": False, "error": str(e)}

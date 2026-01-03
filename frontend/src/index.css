@@ -629,4 +629,320 @@
       0 0 12px rgba(255, 102, 102, 0.4),
       0 1px 2px rgba(0, 0, 0, 0.8);
   }
+
+  .mac-translucent-bondi {
+    background: linear-gradient(135deg,
+      rgba(0, 169, 204, 0.65) 0%,
+      rgba(0, 120, 180, 0.75) 50%,
+      rgba(0, 80, 150, 0.8) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.6),
+      inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+      0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  .mac-translucent-ruby {
+    background:
+      radial-gradient(ellipse at top left, rgba(255, 120, 150, 0.45) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(200, 40, 80, 0.35) 0%, transparent 50%),
+      linear-gradient(135deg,
+        rgba(240, 80, 120, 0.75) 0%,
+        rgba(200, 50, 90, 0.85) 50%,
+        rgba(160, 30, 70, 0.9) 100%);
+    backdrop-filter: blur(24px) saturate(1.8);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8);
+    border: 2px solid rgba(255, 180, 200, 0.6);
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.7),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.3),
+      inset 4px 4px 12px rgba(255, 150, 180, 0.25),
+      inset -4px -4px 12px rgba(120, 20, 50, 0.25),
+      0 8px 24px rgba(0, 0, 0, 0.4),
+      0 0 40px rgba(255, 80, 120, 0.15);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mac-translucent-ruby::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at center,
+      rgba(255, 200, 220, 0.4) 0%,
+      transparent 60%
+    );
+    transform: rotate(30deg);
+    pointer-events: none;
+  }
+
+  .mac-translucent-lime {
+    background: linear-gradient(135deg,
+      rgba(150, 220, 100, 0.65) 0%,
+      rgba(120, 200, 80, 0.75) 50%,
+      rgba(90, 170, 60, 0.8) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.6),
+      inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+      0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  .mac-translucent-grape {
+    background: linear-gradient(135deg,
+      rgba(180, 100, 220, 0.65) 0%,
+      rgba(140, 80, 180, 0.75) 50%,
+      rgba(100, 60, 140, 0.8) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(230, 200, 255, 0.4);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.5),
+      inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+      0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  .mac-translucent-tangerine {
+    background: linear-gradient(135deg,
+      rgba(255, 140, 60, 0.65) 0%,
+      rgba(230, 110, 40, 0.75) 50%,
+      rgba(200, 80, 30, 0.8) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 220, 180, 0.4);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.6),
+      inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+      0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  .mac-frosted-button {
+    background:
+      radial-gradient(ellipse at top, rgba(255, 200, 220, 0.3) 0%, transparent 50%),
+      linear-gradient(180deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 180, 200, 0.35) 50%,
+        rgba(255, 140, 170, 0.4) 100%);
+    backdrop-filter: blur(16px) saturate(1.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    border: 2px solid rgba(255, 200, 220, 0.7);
+    border-top-color: rgba(255, 255, 255, 0.8);
+    border-bottom-color: rgba(200, 80, 120, 0.5);
+    box-shadow:
+      inset 0 2px 6px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(200, 60, 100, 0.3),
+      inset 2px 2px 8px rgba(255, 180, 200, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(255, 120, 160, 0.2);
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mac-frosted-button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at center,
+      rgba(255, 240, 250, 0.5) 0%,
+      transparent 50%
+    );
+    transform: rotate(20deg);
+    pointer-events: none;
+  }
+
+  .mac-frosted-button:hover:not(:disabled) {
+    background:
+      radial-gradient(ellipse at top, rgba(255, 220, 235, 0.4) 0%, transparent 50%),
+      linear-gradient(180deg,
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(255, 200, 220, 0.45) 50%,
+        rgba(255, 160, 190, 0.5) 100%);
+    border-color: rgba(255, 220, 235, 0.85);
+    border-top-color: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      inset 0 2px 8px rgba(255, 255, 255, 0.9),
+      inset 0 -2px 5px rgba(200, 60, 100, 0.4),
+      inset 3px 3px 10px rgba(255, 200, 220, 0.5),
+      0 6px 16px rgba(0, 0, 0, 0.35),
+      0 0 30px rgba(255, 140, 180, 0.3);
+  }
+
+  .mac-frosted-button:active:not(:disabled) {
+    background:
+      radial-gradient(ellipse at bottom, rgba(255, 160, 190, 0.4) 0%, transparent 50%),
+      linear-gradient(180deg,
+        rgba(255, 140, 170, 0.4) 0%,
+        rgba(255, 180, 200, 0.45) 50%,
+        rgba(255, 255, 255, 0.5) 100%);
+    box-shadow:
+      inset 0 3px 8px rgba(200, 60, 100, 0.4),
+      inset 0 -1px 3px rgba(255, 255, 255, 0.6),
+      0 2px 8px rgba(0, 0, 0, 0.25),
+      0 0 15px rgba(255, 120, 160, 0.15);
+  }
+
+  .mac-frosted-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .mac-frosted-input {
+    background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.25) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.15),
+      0 1px 0 rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+  }
+
+  .mac-frosted-input:focus {
+    outline: none;
+    border-color: rgba(0, 169, 204, 0.6);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.15),
+      0 0 0 3px rgba(0, 169, 204, 0.2);
+  }
+
+  .mac-translucent-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background:
+      radial-gradient(ellipse at left, rgba(200, 60, 100, 0.3) 0%, transparent 40%),
+      linear-gradient(90deg,
+        rgba(255, 140, 170, 0.5) 0%,
+        rgba(255, 180, 200, 0.4) 50%,
+        rgba(255, 200, 220, 0.3) 100%);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    border: 2px solid rgba(255, 180, 200, 0.6);
+    border-radius: 10px;
+    outline: none;
+    box-shadow:
+      inset 0 2px 4px rgba(200, 60, 100, 0.4),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      0 0 15px rgba(255, 120, 160, 0.15);
+    position: relative;
+  }
+
+  .mac-translucent-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background:
+      radial-gradient(circle at top left, rgba(255, 240, 250, 0.9) 0%, transparent 60%),
+      linear-gradient(135deg,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 200, 220, 0.7) 50%,
+        rgba(255, 160, 190, 0.8) 100%);
+    backdrop-filter: blur(16px) saturate(1.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    border: 2px solid rgba(255, 220, 235, 0.9);
+    border-top-color: rgba(255, 255, 255, 1);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.9),
+      inset 0 -2px 3px rgba(200, 60, 100, 0.4),
+      inset 2px 2px 6px rgba(255, 220, 235, 0.6),
+      0 4px 12px rgba(0, 0, 0, 0.35),
+      0 0 20px rgba(255, 140, 180, 0.3);
+    transition: all 0.15s ease;
+  }
+
+  .mac-translucent-slider::-webkit-slider-thumb:hover {
+    background:
+      radial-gradient(circle at top left, rgba(255, 250, 255, 1) 0%, transparent 60%),
+      linear-gradient(135deg,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 220, 235, 0.8) 50%,
+        rgba(255, 180, 210, 0.9) 100%);
+    box-shadow:
+      inset 0 2px 5px rgba(255, 255, 255, 1),
+      inset 0 -2px 4px rgba(200, 60, 100, 0.5),
+      inset 3px 3px 8px rgba(255, 230, 240, 0.7),
+      0 6px 16px rgba(0, 0, 0, 0.4),
+      0 0 30px rgba(255, 160, 200, 0.4);
+  }
+
+  .mac-translucent-slider::-webkit-slider-thumb:active {
+    background:
+      radial-gradient(circle at bottom, rgba(255, 180, 210, 0.8) 0%, transparent 60%),
+      linear-gradient(135deg,
+        rgba(255, 160, 190, 0.7) 0%,
+        rgba(255, 200, 220, 0.8) 50%,
+        rgba(255, 255, 255, 0.9) 100%);
+    box-shadow:
+      inset 0 3px 6px rgba(200, 60, 100, 0.5),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.7),
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 0 15px rgba(255, 140, 180, 0.2);
+  }
+
+  .mac-translucent-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background:
+      radial-gradient(circle at top left, rgba(255, 240, 250, 0.9) 0%, transparent 60%),
+      linear-gradient(135deg,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 200, 220, 0.7) 50%,
+        rgba(255, 160, 190, 0.8) 100%);
+    backdrop-filter: blur(16px) saturate(1.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    border: 2px solid rgba(255, 220, 235, 0.9);
+    border-top-color: rgba(255, 255, 255, 1);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.9),
+      inset 0 -2px 3px rgba(200, 60, 100, 0.4),
+      inset 2px 2px 6px rgba(255, 220, 235, 0.6),
+      0 4px 12px rgba(0, 0, 0, 0.35),
+      0 0 20px rgba(255, 140, 180, 0.3);
+    transition: all 0.15s ease;
+  }
+
+  .mac-translucent-slider::-moz-range-track {
+    background:
+      radial-gradient(ellipse at left, rgba(200, 60, 100, 0.3) 0%, transparent 40%),
+      linear-gradient(90deg,
+        rgba(255, 140, 170, 0.5) 0%,
+        rgba(255, 180, 200, 0.4) 50%,
+        rgba(255, 200, 220, 0.3) 100%);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    border: 2px solid rgba(255, 180, 200, 0.6);
+    border-radius: 10px;
+    box-shadow:
+      inset 0 2px 4px rgba(200, 60, 100, 0.4),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+  }
 }

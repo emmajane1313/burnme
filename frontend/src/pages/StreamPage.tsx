@@ -3,7 +3,7 @@ import { Header } from "../components/Header";
 import { InputAndControlsPanel } from "../components/InputAndControlsPanel";
 import { VideoOutput } from "../components/VideoOutput";
 import { SettingsPanel } from "../components/SettingsPanel";
-import { StatusBar } from "../components/StatusBar";
+import { PlayPanel } from "../components/PlayPanel";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useVideoSource } from "../hooks/useVideoSource";
 import { useWebRTCStats } from "../hooks/useWebRTCStats";
@@ -83,9 +83,10 @@ function getVaceParams(
 
 interface StreamPageProps {
   videoControls?: React.ReactNode;
+  onStatsChange?: (stats: { fps: number; bitrate: number }) => void;
 }
 
-export function StreamPage({ videoControls }: StreamPageProps = {}) {
+export function StreamPage({ videoControls, onStatsChange }: StreamPageProps = {}) {
   // Fetch available pipelines dynamically
   const { pipelines } = usePipelines();
 
@@ -138,6 +139,7 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
   } | null>(null);
   const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
   const [burnedVideoUrl, setBurnedVideoUrl] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"upload" | "play">("upload");
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -176,14 +178,18 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
   } = useVideoRecorder();
   const remoteStreamRef = useRef<MediaStream | null>(null);
 
-  // Computed loading state - true when downloading models, loading pipeline, or connecting WebRTC
   const isLoading = isDownloading || isPipelineLoading || isConnecting;
 
-  // Get WebRTC stats for FPS
   const webrtcStats = useWebRTCStats({
     peerConnectionRef,
     isStreaming,
   });
+
+  useEffect(() => {
+    if (onStatsChange) {
+      onStatsChange(webrtcStats);
+    }
+  }, [webrtcStats, onStatsChange]);
 
   // Video source for preview (camera or video)
   // Enable based on input mode, not pipeline category
@@ -275,7 +281,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
     const modeToUse: InputMode = "video";
     const currentMode = settings.inputMode || "video";
 
-    // Trigger video reinitialization if switching to video mode
     if (modeToUse === "video" && currentMode !== "video") {
       setShouldReinitializeVideo(true);
       setTimeout(
@@ -284,7 +289,6 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
       );
     }
 
-    // Get all defaults for the new pipeline + mode from backend schema
     const defaults = getDefaults(pipelineId, modeToUse);
 
     // Update prompts to mode-specific defaults (unified per mode, not per pipeline)
@@ -857,131 +861,132 @@ export function StreamPage({ videoControls }: StreamPageProps = {}) {
   };
 
   return (
-    <div className="h-screen flex justify-between flex-col bg-transparent">
-      <Header />
+    <div className="h-full flex flex-col bg-transparent">
+      <Header mode={viewMode} onModeChange={setViewMode} />
 
-      <div className="flex relative px-2 md:px-4 pb-4 h-4/5 overflow-y-scroll justify-center items-start">
-        <div className="flex relative gap-2 md:gap-4 w-full h-full max-w-[900px] flex-col md:flex-row">
-          <div className="w-full md:w-64 h-full">
-          <InputAndControlsPanel
-            className="h-full"
-            pipelines={pipelines}
-            localStream={localStream}
-            isInitializing={isInitializing}
-            error={videoSourceError}
-            isStreaming={isStreaming}
-            isConnecting={isConnecting}
-            onVideoFileUpload={handleVideoFileUpload}
-            pipelineId={settings.pipelineId}
-            prompts={promptItems}
-            onPromptsChange={setPromptItems}
-            onPromptsSubmit={handlePromptsSubmit}
-            onTransitionSubmit={handleTransitionSubmit}
-            interpolationMethod={interpolationMethod}
-            onInterpolationMethodChange={setInterpolationMethod}
-            temporalInterpolationMethod={temporalInterpolationMethod}
-            onTemporalInterpolationMethodChange={setTemporalInterpolationMethod}
-            onLivePromptSubmit={handleLivePromptSubmit}
-            isVideoPaused={settings.paused}
-            transitionSteps={transitionSteps}
-            onTransitionStepsChange={setTransitionSteps}
-            recordedSynthedBlob={recordedSynthedBlob}
-            confirmedSynthedBlob={confirmedSynthedBlob}
-            isRecordingSynthed={isRecordingSynthed}
-            isSynthCapturing={isSynthCapturing}
-            synthLockedPrompt={synthLockedPrompt}
-            onStartSynth={handleStartSynth}
-            onCancelSynth={handleCancelSynth}
-            onDeleteBurn={handleDeleteBurn}
-            onPromptSend={handleSendPrompt}
-            onTogglePause={handleTogglePause}
-          />
+      {viewMode === "upload" ? (
+        <>
+          <div className="flex-1 flex relative px-2 md:px-4 py-4 overflow-y-auto justify-center items-start">
+            <div className="flex relative gap-2 md:gap-4 w-full h-full max-w-[900px] flex-col md:flex-row">
+              <div className="w-full md:w-64 h-full">
+                <InputAndControlsPanel
+                  className="h-full"
+                  pipelines={pipelines}
+                  localStream={localStream}
+                  isInitializing={isInitializing}
+                  error={videoSourceError}
+                  isStreaming={isStreaming}
+                  isConnecting={isConnecting}
+                  isLoading={isLoading}
+                  onVideoFileUpload={handleVideoFileUpload}
+                  pipelineId={settings.pipelineId}
+                  prompts={promptItems}
+                  onPromptsChange={setPromptItems}
+                  onPromptsSubmit={handlePromptsSubmit}
+                  onTransitionSubmit={handleTransitionSubmit}
+                  interpolationMethod={interpolationMethod}
+                  onInterpolationMethodChange={setInterpolationMethod}
+                  temporalInterpolationMethod={temporalInterpolationMethod}
+                  onTemporalInterpolationMethodChange={setTemporalInterpolationMethod}
+                  onLivePromptSubmit={handleLivePromptSubmit}
+                  isVideoPaused={settings.paused}
+                  transitionSteps={transitionSteps}
+                  onTransitionStepsChange={setTransitionSteps}
+                  recordedSynthedBlob={recordedSynthedBlob}
+                  confirmedSynthedBlob={confirmedSynthedBlob}
+                  isRecordingSynthed={isRecordingSynthed}
+                  isSynthCapturing={isSynthCapturing}
+                  synthLockedPrompt={synthLockedPrompt}
+                  onStartSynth={handleStartSynth}
+                  onCancelSynth={handleCancelSynth}
+                  onDeleteBurn={handleDeleteBurn}
+                  onPromptSend={handleSendPrompt}
+                  onTogglePause={handleTogglePause}
+                />
+              </div>
+
+              <div className="w-full md:w-[560px] h-full flex relative flex-col min-h-0">
+                <div className="flex-1 relative min-h-0">
+                  <VideoOutput
+                    className="h-full"
+                    remoteStream={remoteStream}
+                    fallbackStream={localStream}
+                    burnedVideoUrl={burnedVideoUrl}
+                    isPipelineLoading={isPipelineLoading}
+                    isConnecting={isConnecting}
+                    pipelineError={pipelineError}
+                    isPlaying={!settings.paused}
+                    isDownloading={isDownloading}
+                    downloadProgress={downloadProgress}
+                    pipelineNeedsModels={pipelineNeedsModels}
+                    isWaitingForFrames={isWaitingForFrames}
+                    onVideoPlaying={() => {
+                      setIsWaitingForFrames(false);
+                      if (onVideoPlayingCallbackRef.current) {
+                        onVideoPlayingCallbackRef.current();
+                        onVideoPlayingCallbackRef.current = null;
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="w-full md:w-64 h-full">
+                <SettingsPanel
+                  className="h-full"
+                  pipelines={pipelines}
+                  pipelineId={settings.pipelineId}
+                  onPipelineIdChange={handlePipelineIdChange}
+                  isStreaming={isStreaming}
+                  isLoading={isLoading}
+                  seed={settings.seed ?? 42}
+                  onSeedChange={handleSeedChange}
+                  denoisingSteps={
+                    settings.denoisingSteps ||
+                    getDefaults(settings.pipelineId, settings.inputMode)
+                      .denoisingSteps || [750, 250]
+                  }
+                  onDenoisingStepsChange={handleDenoisingStepsChange}
+                  defaultDenoisingSteps={
+                    getDefaults(settings.pipelineId, settings.inputMode)
+                      .denoisingSteps || [750, 250]
+                  }
+                  noiseScale={settings.noiseScale ?? 0.7}
+                  onNoiseScaleChange={handleNoiseScaleChange}
+                  noiseController={settings.noiseController ?? true}
+                  onNoiseControllerChange={handleNoiseControllerChange}
+                  manageCache={settings.manageCache ?? true}
+                  onManageCacheChange={handleManageCacheChange}
+                  quantization={
+                    settings.quantization !== undefined
+                      ? settings.quantization
+                      : "fp8_e4m3fn"
+                  }
+                  onQuantizationChange={handleQuantizationChange}
+                  kvCacheAttentionBias={settings.kvCacheAttentionBias ?? 0.3}
+                  onKvCacheAttentionBiasChange={handleKvCacheAttentionBiasChange}
+                  onResetCache={handleResetCache}
+                  loras={settings.loras || []}
+                  onLorasChange={handleLorasChange}
+                  loraMergeStrategy={settings.loraMergeStrategy ?? "permanent_merge"}
+                  inputMode={settings.inputMode}
+                  supportsNoiseControls={supportsNoiseControls(settings.pipelineId)}
+                  spoutSender={settings.spoutSender}
+                  onSpoutSenderChange={handleSpoutSenderChange}
+                  spoutAvailable={spoutAvailable}
+                  isVideoPaused={settings.paused}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex px-4 pb-4 min-h-0 overflow-hidden justify-center items-start">
+          <div className="w-full max-w-[720px] h-full">
+            <PlayPanel className="h-full" />
+          </div>
         </div>
-
-          <div className="w-full md:w-[560px] h-full flex relative flex-col min-h-0">
-          <div className="flex-1 relative min-h-0">
-            <VideoOutput
-              className="h-full"
-              remoteStream={remoteStream}
-              fallbackStream={localStream}
-              burnedVideoUrl={burnedVideoUrl}
-              isPipelineLoading={isPipelineLoading}
-              isConnecting={isConnecting}
-              pipelineError={pipelineError}
-              isPlaying={!settings.paused}
-              isDownloading={isDownloading}
-              downloadProgress={downloadProgress}
-              pipelineNeedsModels={pipelineNeedsModels}
-              isWaitingForFrames={isWaitingForFrames}
-              onVideoPlaying={() => {
-                setIsWaitingForFrames(false);
-                // Execute callback when video starts playing
-                if (onVideoPlayingCallbackRef.current) {
-                  onVideoPlayingCallbackRef.current();
-                  onVideoPlayingCallbackRef.current = null;
-                }
-              }}
-            />
-          </div>
-        
-          </div>
-
-          <div className="w-full md:w-64 h-full">
-          <SettingsPanel
-            className="h-full"
-            pipelines={pipelines}
-            pipelineId={settings.pipelineId}
-            onPipelineIdChange={handlePipelineIdChange}
-            isStreaming={isStreaming}
-            isLoading={isLoading}
-            seed={settings.seed ?? 42}
-            onSeedChange={handleSeedChange}
-            denoisingSteps={
-              settings.denoisingSteps ||
-              getDefaults(settings.pipelineId, settings.inputMode)
-                .denoisingSteps || [750, 250]
-            }
-            onDenoisingStepsChange={handleDenoisingStepsChange}
-            defaultDenoisingSteps={
-              getDefaults(settings.pipelineId, settings.inputMode)
-                .denoisingSteps || [750, 250]
-            }
-            noiseScale={settings.noiseScale ?? 0.7}
-            onNoiseScaleChange={handleNoiseScaleChange}
-            noiseController={settings.noiseController ?? true}
-            onNoiseControllerChange={handleNoiseControllerChange}
-            manageCache={settings.manageCache ?? true}
-            onManageCacheChange={handleManageCacheChange}
-            quantization={
-              settings.quantization !== undefined
-                ? settings.quantization
-                : "fp8_e4m3fn"
-            }
-            onQuantizationChange={handleQuantizationChange}
-            kvCacheAttentionBias={settings.kvCacheAttentionBias ?? 0.3}
-            onKvCacheAttentionBiasChange={handleKvCacheAttentionBiasChange}
-            onResetCache={handleResetCache}
-            loras={settings.loras || []}
-            onLorasChange={handleLorasChange}
-            loraMergeStrategy={settings.loraMergeStrategy ?? "permanent_merge"}
-            inputMode={settings.inputMode}
-            supportsNoiseControls={supportsNoiseControls(settings.pipelineId)}
-            spoutSender={settings.spoutSender}
-            onSpoutSenderChange={handleSpoutSenderChange}
-            spoutAvailable={spoutAvailable}
-            isVideoPaused={settings.paused}
-          />
-          </div>
-        </div>
-      </div>
-
-
-      <StatusBar
-        fps={webrtcStats.fps}
-        bitrate={webrtcStats.bitrate}
-        videoControls={videoControls}
-      />
-
+      )}
     </div>
   );
 }

@@ -4,16 +4,8 @@ import { Badge } from "./ui/badge";
 import type { PromptItem, PromptTransition } from "../lib/api";
 import type { PipelineInfo } from "../types";
 import { PromptInput } from "./PromptInput";
-import { TimelinePromptEditor } from "./TimelinePromptEditor";
-import type { TimelinePrompt } from "./PromptTimeline";
 import { Button } from "./ui/button";
-import {
-  loadMP4P,
-  type MP4PMetadata,
-  encryptVideo,
-  downloadMP4P,
-  addSynthedVideo,
-} from "../lib/mp4p-api";
+import { encryptVideo, downloadMP4P, addSynthedVideo } from "../lib/mp4p-api";
 
 interface InputAndControlsPanelProps {
   className?: string;
@@ -23,6 +15,7 @@ interface InputAndControlsPanelProps {
   error: string | null;
   isStreaming: boolean;
   isConnecting: boolean;
+  isLoading?: boolean;
   onVideoFileUpload?: (file: File) => Promise<boolean>;
   pipelineId: string;
   prompts: PromptItem[];
@@ -35,15 +28,9 @@ interface InputAndControlsPanelProps {
   onTemporalInterpolationMethodChange: (method: "linear" | "slerp") => void;
   isLive?: boolean;
   onLivePromptSubmit?: (prompts: PromptItem[]) => void;
-  selectedTimelinePrompt?: TimelinePrompt | null;
-  onTimelinePromptUpdate?: (prompt: TimelinePrompt) => void;
   isVideoPaused?: boolean;
-  isTimelinePlaying?: boolean;
-  currentTime?: number;
-  timelinePrompts?: TimelinePrompt[];
   transitionSteps: number;
   onTransitionStepsChange: (steps: number) => void;
-  recordedSynthedBlob: Blob | null;
   confirmedSynthedBlob: Blob | null;
   isRecordingSynthed: boolean;
   isSynthCapturing: boolean;
@@ -63,6 +50,7 @@ export function InputAndControlsPanel({
   error,
   isStreaming,
   isConnecting,
+  isLoading = false,
   onVideoFileUpload,
   pipelineId,
   prompts,
@@ -73,15 +61,9 @@ export function InputAndControlsPanel({
   onTemporalInterpolationMethodChange,
   isLive = false,
   onLivePromptSubmit,
-  selectedTimelinePrompt = null,
-  onTimelinePromptUpdate,
   isVideoPaused = false,
-  isTimelinePlaying: _isTimelinePlaying = false,
-  currentTime: _currentTime = 0,
-  timelinePrompts: _timelinePrompts = [],
   transitionSteps,
   onTransitionStepsChange,
-  recordedSynthedBlob,
   confirmedSynthedBlob,
   isRecordingSynthed,
   isSynthCapturing,
@@ -113,11 +95,8 @@ export function InputAndControlsPanel({
   const timeButtonRef = useRef<HTMLButtonElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
   const timePickerRef = useRef<HTMLDivElement>(null);
-  const [mp4pMetadata, setMp4pMetadata] = useState<MP4PMetadata | null>(null);
-  const [isMP4PMode, setIsMP4PMode] = useState(false);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -140,50 +119,13 @@ export function InputAndControlsPanel({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const isMP4P = file.name.endsWith(".mp4p");
+    setUploadedVideoFile(file);
 
-    if (isMP4P) {
+    if (onVideoFileUpload) {
       try {
-        const result = await loadMP4P(file);
-        setMp4pMetadata(result.metadata);
-        setIsMP4PMode(true);
-
-        if (result.metadata.expiresAt) {
-          setBurnDateTimestamp(result.metadata.expiresAt);
-          const date = new Date(result.metadata.expiresAt);
-          setBurnDate(date.toISOString().split("T")[0]);
-          setBurnTime(date.toTimeString().slice(0, 5));
-        }
-
-        const videoBlob = new Blob(
-          [Uint8Array.from(atob(result.videoBase64), c => c.charCodeAt(0))],
-          { type: "video/mp4" }
-        );
-        const videoFile = new File([videoBlob], "video.mp4", {
-          type: "video/mp4",
-        });
-
-        if (onVideoFileUpload) {
-          await onVideoFileUpload(videoFile);
-        }
-
-        console.log(
-          `Loaded MP4P file. Showing ${result.showSynthed ? "synthed" : "original"} video`
-        );
+        await onVideoFileUpload(file);
       } catch (error) {
-        console.error("MP4P file loading failed:", error);
-      }
-    } else {
-      setIsMP4PMode(false);
-      setMp4pMetadata(null);
-      setUploadedVideoFile(file);
-
-      if (onVideoFileUpload) {
-        try {
-          await onVideoFileUpload(file);
-        } catch (error) {
-          console.error("Video upload failed:", error);
-        }
+        console.error("Video upload failed:", error);
       }
     }
 
@@ -253,8 +195,7 @@ export function InputAndControlsPanel({
     });
   };
 
-  const formatTimeDisplay = (value: string) =>
-    value ? value : "Select time";
+  const formatTimeDisplay = (value: string) => (value ? value : "Select time");
 
   const selectedDateIsToday = burnDate === todayDate;
 
@@ -380,12 +321,14 @@ export function InputAndControlsPanel({
     !isSynthCapturing &&
     !!uploadedVideoFile &&
     !!burnDateTimestamp &&
-    !!prompts[0]?.text?.trim();
+    !!prompts[0]?.text?.trim() &&
+    isStreaming &&
+    !isLoading;
 
   return (
-    <Card className={`h-full flex flex-col y2k-panel ${className}`}>
-      <CardHeader className="flex-shrink-0 py-3 px-4 y2k-panel-header">
-        <CardTitle className="text-sm font-medium">Input & Controls</CardTitle>
+    <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
+      <CardHeader className="flex-shrink-0 py-3 px-4">
+        <CardTitle className="text-sm font-medium text-white">Input & Controls</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 overflow-y-auto flex-1 px-4 py-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div>
@@ -413,7 +356,7 @@ export function InputAndControlsPanel({
                 <>
                   <input
                     type="file"
-                    accept="video/mp4,.mp4p"
+                    accept="video/mp4"
                     onChange={handleFileUpload}
                     className="hidden"
                     id="video-upload"
@@ -421,7 +364,7 @@ export function InputAndControlsPanel({
                   />
                   <label
                     htmlFor="video-upload"
-                    className={`text-center text-muted-foreground text-sm p-4 ${
+                    className={`mac-frosted-button px-4 py-3 text-sm text-center ${
                       isStreaming || isConnecting
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
@@ -435,50 +378,11 @@ export function InputAndControlsPanel({
           </div>
         </div>
 
-        {mp4pMetadata && isMP4PMode && (
-          <div>
-            <h3 className="text-sm font-medium mb-2">MP4P File Info</h3>
-            <div className="flex flex-col relative gap-2 p-3 bg-muted/30 rounded-md text-sm">
-              <div className="flex flex-col relative">
-                <span className="text-xs text-muted-foreground">ID</span>
-                <span className="font-mono text-xs truncate">
-                  {mp4pMetadata.id}
-                </span>
-              </div>
-              <div className="flex flex-col relative">
-                <span className="text-xs text-muted-foreground">Created</span>
-                <span>{new Date(mp4pMetadata.createdAt).toLocaleString()}</span>
-              </div>
-              <div className="flex flex-col relative">
-                <span className="text-xs text-muted-foreground">Burns On</span>
-                <span>{new Date(mp4pMetadata.expiresAt).toLocaleString()}</span>
-              </div>
-              {mp4pMetadata.promptsUsed &&
-                mp4pMetadata.promptsUsed.length > 0 && (
-                  <div className="flex flex-col relative">
-                    <span className="text-xs text-muted-foreground">
-                      Prompt Used
-                    </span>
-                    <span className="text-xs">
-                      {mp4pMetadata.promptsUsed.join(", ")}
-                    </span>
-                  </div>
-                )}
-              {mp4pMetadata.burned && (
-                <Badge variant="destructive" className="w-fit">
-                  Burned
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-
-        {!isMP4PMode && (
-          <div>
-            <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-              Burn Date
-            </h3>
-            <div className="flex flex-col relative gap-3">
+        <div>
+          <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+            Burn Date
+          </h3>
+          <div className="flex flex-col relative gap-3">
               <div className="flex flex-col relative gap-2">
                 <div className="relative">
                   <button
@@ -546,10 +450,7 @@ export function InputAndControlsPanel({
                         {calendarDays.map((day, index) => {
                           if (!day.date) {
                             return (
-                              <div
-                                key={`empty-${index}`}
-                                className="h-7"
-                              />
+                              <div key={`empty-${index}`} className="h-7" />
                             );
                           }
                           const isoDate = toIsoDate(day.date);
@@ -561,9 +462,7 @@ export function InputAndControlsPanel({
                               key={isoDate}
                               type="button"
                               className={`win98-button h-7 text-xs ${
-                                isSelected
-                                  ? "bg-[#0b246a] text-white"
-                                  : ""
+                                isSelected ? "bg-[#0b246a] text-white" : ""
                               }`}
                               disabled={isDisabled}
                               onClick={() => {
@@ -629,16 +528,13 @@ export function InputAndControlsPanel({
                             {Array.from({ length: 24 }, (_, hour) => {
                               const isHourDisabled =
                                 selectedDateIsToday && hour < nowHour;
-                              const isSelected =
-                                timeSelection.hour === hour;
+                              const isSelected = timeSelection.hour === hour;
                               return (
                                 <button
                                   key={`hour-${hour}`}
                                   type="button"
                                   className={`win98-button text-xs h-7 tabular-nums ${
-                                    isSelected
-                                      ? "bg-[#0b246a] text-white"
-                                      : ""
+                                    isSelected ? "bg-[#0b246a] text-white" : ""
                                   }`}
                                   disabled={isHourDisabled}
                                   onClick={() => {
@@ -687,9 +583,7 @@ export function InputAndControlsPanel({
                                   key={`minute-${minute}`}
                                   type="button"
                                   className={`win98-button text-xs h-7 tabular-nums ${
-                                    isSelected
-                                      ? "bg-[#0b246a] text-white"
-                                      : ""
+                                    isSelected ? "bg-[#0b246a] text-white" : ""
                                   }`}
                                   disabled={minuteDisabled}
                                   onClick={() => {
@@ -736,9 +630,7 @@ export function InputAndControlsPanel({
                                   key={`second-${second}`}
                                   type="button"
                                   className={`win98-button text-xs h-7 tabular-nums ${
-                                    isSelected
-                                      ? "bg-[#0b246a] text-white"
-                                      : ""
+                                    isSelected ? "bg-[#0b246a] text-white" : ""
                                   }`}
                                   disabled={secondDisabled}
                                   onClick={() => {
@@ -774,157 +666,106 @@ export function InputAndControlsPanel({
               )}
             </div>
           </div>
-        )}
 
         <div>
-          {(() => {
-            // The Input can have two states: Append (default) and Edit (when a prompt is selected and the video is paused)
-            const isEditMode = selectedTimelinePrompt && isVideoPaused;
-
-            // Hide prompts section if pipeline doesn't support prompts
-            if (pipeline?.supportsPrompts === false) {
-              return null;
-            }
-
-            return (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium">Prompt</h3>
-                  {isEditMode && (
-                    <Badge variant="secondary" className="text-xs">
-                      Editing
-                    </Badge>
-                  )}
-                  {isSynthCapturing && (
-                    <Badge variant="secondary" className="text-xs">
-                      Locked
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <Button
-                    onClick={onTogglePause}
-                    disabled={isSynthCapturing}
-                    size="xs"
-                    variant="secondary"
-                  >
-                    {isVideoPaused ? "Play" : "Pause"}
-                  </Button>
-                  <Button
-                    onClick={onPromptSend}
-                    disabled={isSynthCapturing || !isStreaming}
-                    size="xs"
-                    variant="secondary"
-                  >
-                    Send ➤
-                  </Button>
-                </div>
-
-                {selectedTimelinePrompt ? (
-                  <TimelinePromptEditor
-                    prompt={selectedTimelinePrompt}
-                    onPromptUpdate={onTimelinePromptUpdate}
-                    disabled={isSynthCapturing}
-                    interpolationMethod={interpolationMethod}
-                    onInterpolationMethodChange={onInterpolationMethodChange}
-                    promptIndex={_timelinePrompts.findIndex(
-                      p => p.id === selectedTimelinePrompt.id
-                    )}
-                  />
-                ) : (
-                  <PromptInput
-                    prompts={prompts}
-                    onPromptsChange={onPromptsChange}
-                    onPromptSend={onPromptSend}
-                    disabled={isSynthCapturing}
-                    interpolationMethod={interpolationMethod}
-                    onInterpolationMethodChange={onInterpolationMethodChange}
-                    temporalInterpolationMethod={temporalInterpolationMethod}
-                    onTemporalInterpolationMethodChange={
-                      onTemporalInterpolationMethodChange
-                    }
-                    isLive={isLive}
-                    onLivePromptSubmit={onLivePromptSubmit}
-                    isStreaming={isStreaming}
-                    transitionSteps={transitionSteps}
-                    onTransitionStepsChange={onTransitionStepsChange}
-                    timelinePrompts={_timelinePrompts}
-                  />
+          {pipeline?.supportsPrompts !== false && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium">Prompt</h3>
+                {isSynthCapturing && (
+                  <Badge variant="secondary" className="text-xs">
+                    Locked
+                  </Badge>
                 )}
               </div>
-            );
-          })()}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Button
+                  onClick={onTogglePause}
+                  disabled={isSynthCapturing}
+                  size="xs"
+                  variant="secondary"
+                >
+                  {isVideoPaused ? "Play" : "Pause"}
+                </Button>
+                <Button
+                  onClick={onPromptSend}
+                  disabled={isSynthCapturing || !isStreaming || isLoading}
+                  size="xs"
+                  variant="secondary"
+                >
+                  Send ➤
+                </Button>
+              </div>
+              <PromptInput
+                prompts={prompts}
+                onPromptsChange={onPromptsChange}
+                onPromptSend={onPromptSend}
+                disabled={isSynthCapturing}
+                interpolationMethod={interpolationMethod}
+                onInterpolationMethodChange={onInterpolationMethodChange}
+                temporalInterpolationMethod={temporalInterpolationMethod}
+                onTemporalInterpolationMethodChange={
+                  onTemporalInterpolationMethodChange
+                }
+                isLive={isLive}
+                onLivePromptSubmit={onLivePromptSubmit}
+                isStreaming={isStreaming}
+                transitionSteps={transitionSteps}
+                onTransitionStepsChange={onTransitionStepsChange}
+              />
+            </div>
+          )}
         </div>
 
-        {!isMP4PMode && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Burn</h3>
-            <div className="flex flex-wrap items-center text-xs gap-2">
-              <Button
-                onClick={onStartSynth}
-                disabled={!canStartSynth || isConnecting}
-                size="xs"
-              >
-                Start Burn
-              </Button>
-              <Button
-                onClick={onCancelSynth}
-                disabled={!isSynthCapturing}
-                size="xs"
-                variant="destructive"
-              >
-                Cancel Burn
-              </Button>
-              {confirmedSynthedBlob && !isSynthCapturing && (
-                <Button
-                  onClick={onDeleteBurn}
-                  size="xs"
-                  variant="destructive"
-                >
-                  Delete Burn
-                </Button>
-              )}
-            </div>
-            {isSynthCapturing && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                {isRecordingSynthed ? "Recording" : "Preparing"} from start
-                with: {synthLockedPrompt || "Prompt"}
-              </div>
-            )}
-            {recordedSynthedBlob && !isSynthCapturing && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Burn complete.
-              </div>
-            )}
-            {confirmedSynthedBlob && !isSynthCapturing && (
-              <div className="mt-2">
-                <Badge variant="secondary" className="text-xs">
-                  Burn ready for export
-                </Badge>
-              </div>
-            )}
-          </div>
-        )}
-
-        {!isMP4PMode && (
-          <div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Burn</h3>
+          <div className="flex flex-wrap items-center text-xs gap-2">
             <Button
-              onClick={handleExportMP4P}
-              disabled={
-                !uploadedVideoFile ||
-                !burnDateTimestamp ||
-                !confirmedSynthedBlob ||
-                isConnecting ||
-                isSynthCapturing ||
-                isExporting
-              }
-              className="w-full"
-              size="sm"
+              onClick={onStartSynth}
+              disabled={!canStartSynth || isConnecting || isLoading}
+              size="xs"
             >
-              {isExporting ? "Exporting..." : "Export MP4P"}
+              Start Burn
             </Button>
+            <Button
+              onClick={onCancelSynth}
+              disabled={!isSynthCapturing || isLoading}
+              size="xs"
+              variant="destructive"
+            >
+              Cancel Burn
+            </Button>
+            {confirmedSynthedBlob && !isSynthCapturing && (
+              <Button onClick={onDeleteBurn} size="xs" variant="destructive">
+                Delete Burn
+              </Button>
+            )}
           </div>
-        )}
+          {isSynthCapturing && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {isRecordingSynthed ? "Recording" : "Preparing"} from start with:{" "}
+              {synthLockedPrompt || "Prompt"}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <Button
+            onClick={handleExportMP4P}
+            disabled={
+              !uploadedVideoFile ||
+              !burnDateTimestamp ||
+              !confirmedSynthedBlob ||
+              isConnecting ||
+              isSynthCapturing ||
+              isExporting
+            }
+            className="w-full"
+            size="sm"
+          >
+            {isExporting ? "Exporting..." : "Export MP4P"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

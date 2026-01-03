@@ -12,12 +12,20 @@ export interface MP4PMetadata {
   synthedIv?: string;
   synthedAuthTag?: string;
   promptsUsed?: string[];
+  synthedVersions?: Array<{
+    createdAt: number;
+    promptsUsed?: string[];
+    synthedSalt: string;
+    synthedIv: string;
+    synthedAuthTag: string;
+  }>;
 }
 
 export interface MP4PData {
   metadata: MP4PMetadata;
   encryptedVideo: string;
   encryptedSynthedVideo?: string;
+  encryptedSynthedVideos?: string[];
   signature: string;
 }
 
@@ -26,6 +34,7 @@ export interface LoadMP4PResponse {
   showSynthed: boolean;
   videoBase64: string;
   metadata: MP4PMetadata;
+  selectedBurnIndex?: number | null;
 }
 
 const API_BASE_URL =
@@ -83,7 +92,10 @@ export async function encryptVideo(
   return result.data;
 }
 
-export async function loadMP4P(mp4pFile: File): Promise<LoadMP4PResponse> {
+export async function loadMP4P(
+  mp4pFile: File,
+  burnIndex?: number | null
+): Promise<LoadMP4PResponse> {
   const fileContent = await mp4pFile.text();
   const mp4pData: MP4PData = JSON.parse(fileContent);
 
@@ -94,6 +106,7 @@ export async function loadMP4P(mp4pFile: File): Promise<LoadMP4PResponse> {
     },
     body: JSON.stringify({
       mp4pData,
+      burnIndex,
     }),
   });
 

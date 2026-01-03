@@ -75,9 +75,9 @@ export function VideoOutput({
   // No manual play/pause handling in auto-loop mode.
 
   return (
-    <Card className={`h-full flex flex-col y2k-panel ${className}`}>
-      <CardHeader className="flex-shrink-0 y2k-panel-header">
-        <CardTitle className="text-base font-medium">Video Output</CardTitle>
+    <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="text-base font-medium text-white">Video Output</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex items-center justify-center min-h-0 p-4">
         {burnedVideoUrl || remoteStream || fallbackStream ? (

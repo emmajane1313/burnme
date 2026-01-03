@@ -28,11 +28,13 @@ class MP4PMetadata(BaseModel):
     synthedIv: Optional[str] = None
     synthedAuthTag: Optional[str] = None
     promptsUsed: Optional[list] = None
+    synthedVersions: Optional[list] = None
 
 class MP4PData(BaseModel):
     metadata: MP4PMetadata
     encryptedVideo: str
     encryptedSynthedVideo: Optional[str] = None
+    encryptedSynthedVideos: Optional[list[str]] = None
     signature: str
 
 def derive_key(salt: str) -> bytes:
@@ -129,29 +131,69 @@ async def add_synthed_video(
     encrypted_synthed = encryptor.update(synthed_video_data) + encryptor.finalize()
     auth_tag = encryptor.tag
 
+    created_at = int(datetime.now().timestamp() * 1000)
+    version_entry = {
+        "createdAt": created_at,
+        "promptsUsed": prompts_used,
+        "synthedSalt": salt,
+        "synthedIv": iv.hex(),
+        "synthedAuthTag": auth_tag.hex(),
+    }
+
+    versions = mp4p_data.metadata.synthedVersions or []
+    versions.append(version_entry)
+    mp4p_data.metadata.synthedVersions = versions
+
+    encrypted_versions = mp4p_data.encryptedSynthedVideos or []
+    encrypted_versions.append(base64.b64encode(encrypted_synthed).decode())
+    mp4p_data.encryptedSynthedVideos = encrypted_versions
+
+    # Back-compat: keep latest entry in legacy fields
     mp4p_data.metadata.synthedSalt = salt
     mp4p_data.metadata.synthedIv = iv.hex()
     mp4p_data.metadata.synthedAuthTag = auth_tag.hex()
     mp4p_data.metadata.promptsUsed = prompts_used
-    mp4p_data.encryptedSynthedVideo = base64.b64encode(encrypted_synthed).decode()
+    mp4p_data.encryptedSynthedVideo = encrypted_versions[-1]
 
     metadata_dict = mp4p_data.metadata.model_dump()
     mp4p_data.signature = create_signature(metadata_dict)
 
     return mp4p_data
 
-async def decrypt_synthed_video(mp4p_data: MP4PData) -> Optional[bytes]:
-    if not mp4p_data.encryptedSynthedVideo:
-        return None
+async def decrypt_synthed_video(
+    mp4p_data: MP4PData, index: Optional[int] = None
+) -> Optional[bytes]:
+    encrypted_versions = mp4p_data.encryptedSynthedVideos or []
+    versions_meta = mp4p_data.metadata.synthedVersions or []
+
+    if encrypted_versions and versions_meta:
+        if index is None:
+            index = len(encrypted_versions) - 1
+        if index < 0 or index >= len(encrypted_versions):
+            return None
+        encrypted_buffer = base64.b64decode(encrypted_versions[index])
+        version_meta = versions_meta[index]
+        salt = version_meta.get("synthedSalt")
+        iv = version_meta.get("synthedIv")
+        auth_tag = version_meta.get("synthedAuthTag")
+    else:
+        if not mp4p_data.encryptedSynthedVideo:
+            return None
+        encrypted_buffer = base64.b64decode(mp4p_data.encryptedSynthedVideo)
+        salt = mp4p_data.metadata.synthedSalt
+        iv = mp4p_data.metadata.synthedIv
+        auth_tag = mp4p_data.metadata.synthedAuthTag
 
     metadata_dict = mp4p_data.metadata.model_dump()
     if not verify_signature(metadata_dict, mp4p_data.signature):
         raise ValueError("Invalid signature - file may be corrupted or tampered")
 
-    key = derive_key(mp4p_data.metadata.synthedSalt)
-    iv = bytes.fromhex(mp4p_data.metadata.synthedIv)
-    auth_tag = bytes.fromhex(mp4p_data.metadata.synthedAuthTag)
-    encrypted_buffer = base64.b64decode(mp4p_data.encryptedSynthedVideo)
+    if not (salt and iv and auth_tag):
+        return None
+
+    key = derive_key(salt)
+    iv = bytes.fromhex(iv)
+    auth_tag = bytes.fromhex(auth_tag)
 
     cipher = Cipher(
         algorithms.AES(key),
@@ -165,7 +207,12 @@ async def decrypt_synthed_video(mp4p_data: MP4PData) -> Optional[bytes]:
 
 def should_show_synthed(mp4p_data: MP4PData) -> bool:
     now = int(datetime.now().timestamp() * 1000)
-    return now >= mp4p_data.metadata.expiresAt and mp4p_data.encryptedSynthedVideo is not None
+    has_synthed = False
+    if mp4p_data.encryptedSynthedVideos:
+        has_synthed = len(mp4p_data.encryptedSynthedVideos) > 0
+    elif mp4p_data.encryptedSynthedVideo:
+        has_synthed = True
+    return now >= mp4p_data.metadata.expiresAt and has_synthed
 
 async def burn_video(
     mp4p_data: MP4PData,

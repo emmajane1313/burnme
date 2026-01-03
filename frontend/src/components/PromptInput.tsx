@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import type { PromptItem } from "../lib/api";
-import type { TimelinePrompt } from "./PromptTimeline";
 import { usePromptManager } from "../hooks/usePromptManager";
 import { PromptField } from "./shared/PromptField";
 import { TemporalTransitionControls } from "./shared/TemporalTransitionControls";
@@ -20,7 +19,6 @@ interface PromptInputProps {
   isStreaming?: boolean;
   transitionSteps?: number;
   onTransitionStepsChange?: (steps: number) => void;
-  timelinePrompts?: TimelinePrompt[];
 }
 
 export function PromptInput({
