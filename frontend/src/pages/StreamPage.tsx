@@ -547,7 +547,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
               await handleStartStream(
                 pending.pipelineId,
                 [{ text: pending.prompt, weight: 100 }],
-                pending.stream
+                pending.stream,
+                false
               );
             }
 
@@ -715,10 +716,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     if (pipelineNeedsModels) {
       return;
     }
-    if (!sam3MaskId && uploadedVideoFile) {
-      return;
-    }
-    void handleStartStream();
+    const shouldPauseForSam3 =
+      Boolean(uploadedVideoFile) && !sam3MaskId;
+    void handleStartStream(undefined, undefined, undefined, shouldPauseForSam3);
   }, [
     localStream,
     sourceVideoBlocked,
@@ -768,6 +768,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sam3AutoFailed,
   ]);
 
+  useEffect(() => {
+    if (!sam3MaskId || !isStreaming) {
+      return;
+    }
+    if (settings.paused) {
+      updateSettings({ paused: false });
+      sendParameterUpdate({ paused: false });
+    }
+  }, [sam3MaskId, isStreaming, settings.paused, sendParameterUpdate, updateSettings]);
+
   const sam3Ready = Boolean(sam3MaskId);
   const sam3AutoPending =
     Boolean(uploadedVideoFile) &&
@@ -816,7 +826,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       const synthStarted = await handleStartStream(
         settings.pipelineId,
         [{ text: promptText, weight: 100 }],
-        restartedStream
+        restartedStream,
+        false
       );
 
       if (!synthStarted && restartedStream) {
@@ -835,7 +846,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       const synthStarted = await handleStartStream(
         settings.pipelineId,
         [{ text: promptText, weight: 100 }],
-        restartedStream
+        restartedStream,
+        false
       );
 
       if (!synthStarted && restartedStream) {
@@ -905,7 +917,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const handleStartStream = async (
     overridePipelineId?: PipelineId,
     overridePrompts?: PromptItem[],
-    overrideStream?: MediaStream | null
+    overrideStream?: MediaStream | null,
+    forcePaused?: boolean
   ): Promise<boolean> => {
     if (isStreaming) {
       stopStream();
@@ -1055,6 +1068,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         noise_controller?: boolean;
         manage_cache?: boolean;
         kv_cache_attention_bias?: number;
+        paused?: boolean;
         spout_sender?: { enabled: boolean; name: string };
         spout_receiver?: { enabled: boolean; name: string };
         vace_ref_images?: string[];
@@ -1116,8 +1130,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.sam3_mask_mode = sam3MaskMode;
       }
 
-      // Reset paused state when starting a fresh stream
-      updateSettings({ paused: false });
+      // Control paused state when starting a fresh stream
+      if (forcePaused !== undefined) {
+        updateSettings({ paused: forcePaused });
+        initialParameters.paused = forcePaused;
+      } else {
+        updateSettings({ paused: false });
+      }
 
       // Pipeline is loaded, now start WebRTC stream
       startStream(initialParameters, streamToSend);
