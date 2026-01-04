@@ -255,6 +255,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     fpsOverride: videoInputFps,
     onFrameMeta: meta => {
       if (isStreaming) {
+        debugLog("FrameMeta send", meta);
         sendFrameMeta(meta);
       }
     },

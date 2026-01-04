@@ -115,6 +115,7 @@ class FrameProcessor:
         # Input mode is signaled by the frontend at stream start.
         # This determines whether we wait for video frames or generate immediately.
         self._video_mode = (initial_parameters or {}).get("input_mode") == "video"
+        self._last_frame_meta_log = 0.0
 
     def start(self):
         if self.running:
@@ -220,9 +221,12 @@ class FrameProcessor:
             )
             if (FRAME_DEBUG or DEBUG_ALL) and self._frame_index % 30 == 0:
                 logger.info(
-                    "FrameProcessor input: index=%s buffer=%s",
+                    "FrameProcessor input: index=%s buffer=%s pts=%s time_base=%s client_time=%s",
                     self._frame_index,
                     len(self.frame_buffer),
+                    pts,
+                    time_base,
+                    client_time,
                 )
             self._frame_index += 1
             return True
@@ -237,6 +241,14 @@ class FrameProcessor:
             return
         with self.frame_meta_lock:
             self.frame_meta_queue.append(time_value)
+        now = time.time()
+        if (FRAME_DEBUG or DEBUG_ALL) and now - self._last_frame_meta_log > 1.0:
+            self._last_frame_meta_log = now
+            logger.info(
+                "FrameMeta recv: time=%s queue=%s",
+                time_value,
+                len(self.frame_meta_queue),
+            )
 
     def get(self) -> torch.Tensor | None:
         if not self.running:
@@ -795,13 +807,15 @@ class FrameProcessor:
                             )
                         if SAM3_DEBUG:
                             logger.info(
-                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s map=%s",
+                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s map=%s times=%s..%s",
                                 mask_id,
                                 len(frame_indices),
                                 frame_indices[0] if frame_indices else None,
                                 frame_indices[-1] if frame_indices else None,
                                 self.parameters.get("sam3_mask_mode"),
                                 "time" if use_time_mapping else "index",
+                                frame_times[0] if frame_times else None,
+                                frame_times[-1] if frame_times else None,
                             )
                         call_params["mask_frames"] = mask_frames
                         mask_mode = self.parameters.get("sam3_mask_mode")
