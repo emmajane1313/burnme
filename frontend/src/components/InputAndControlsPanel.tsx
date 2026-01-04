@@ -67,6 +67,8 @@ interface InputAndControlsPanelProps {
     y2: number;
   } | null) => void;
   onSam3BoxClear?: () => void;
+  sam3MaskOffsetFrames?: number;
+  onSam3MaskOffsetChange?: (value: number) => void;
 }
 
 export function InputAndControlsPanel({
@@ -117,6 +119,8 @@ export function InputAndControlsPanel({
   sam3Box = null,
   onSam3BoxChange,
   onSam3BoxClear,
+  sam3MaskOffsetFrames = 0,
+  onSam3MaskOffsetChange,
 }: InputAndControlsPanelProps) {
   const [burnDate, setBurnDate] = useState<string>("");
   const [burnTime, setBurnTime] = useState<string>("");
@@ -981,6 +985,23 @@ export function InputAndControlsPanel({
                 Clear Box
               </Button>
             )}
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[11px] text-muted-foreground">Mask offset</span>
+            <input
+              type="range"
+              min={-30}
+              max={30}
+              step={1}
+              value={sam3MaskOffsetFrames}
+              onChange={(event) =>
+                onSam3MaskOffsetChange?.(Number(event.target.value))
+              }
+              className="mac-translucent-slider w-full"
+            />
+            <span className="text-[11px] text-muted-foreground w-8 text-right">
+              {sam3MaskOffsetFrames}
+            </span>
           </div>
           {isDrawingSam3Box ? (
             <div className="text-[11px] text-muted-foreground">

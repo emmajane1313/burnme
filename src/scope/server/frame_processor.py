@@ -204,8 +204,11 @@ class FrameProcessor:
         # Track input frame timestamp for FPS measurement
         self.track_input_frame()
 
+        pts = getattr(frame, "pts", None)
+        time_base = getattr(frame, "time_base", None)
+
         with self.frame_buffer_lock:
-            self.frame_buffer.append((self._frame_index, frame))
+            self.frame_buffer.append((self._frame_index, frame, pts, time_base))
             if (FRAME_DEBUG or DEBUG_ALL) and self._frame_index % 30 == 0:
                 logger.info(
                     "FrameProcessor input: index=%s buffer=%s",
@@ -603,7 +606,7 @@ class FrameProcessor:
                     spout_frame = _SpoutFrame(rgb_frame)
 
                     with self.frame_buffer_lock:
-                        self.frame_buffer.append((self._frame_index, spout_frame))
+                        self.frame_buffer.append((self._frame_index, spout_frame, None, None))
                         self._frame_index += 1
 
                     frame_count += 1
@@ -710,6 +713,7 @@ class FrameProcessor:
 
         video_input = None
         frame_indices = None
+        frame_times = None
         if requirements is not None:
             current_chunk_size = requirements.input_size
             with self.frame_buffer_lock:
@@ -723,7 +727,9 @@ class FrameProcessor:
                         current_chunk_size,
                         len(self.frame_buffer),
                     )
-                video_input, frame_indices = self.prepare_chunk(current_chunk_size)
+                video_input, frame_indices, frame_times = self.prepare_chunk(
+                    current_chunk_size
+                )
         try:
             # Pass parameters (excluding prepare-only parameters)
             call_params = dict(self.parameters.items())
@@ -751,17 +757,31 @@ class FrameProcessor:
                 mask_id = self.parameters.get("sam3_mask_id")
                 if mask_id and frame_indices is not None:
                     try:
-                        mask_frames = sam3_mask_manager.get_masks_for_frames(
-                            mask_id, frame_indices
+                        mask_offset = int(
+                            self.parameters.get("sam3_mask_offset_frames") or 0
                         )
+                        adjusted_indices = [
+                            max(0, idx + mask_offset) for idx in frame_indices
+                        ]
+                        if frame_times is not None and any(
+                            t is not None for t in frame_times
+                        ):
+                            mask_frames = sam3_mask_manager.get_masks_for_times(
+                                mask_id, frame_times, adjusted_indices
+                            )
+                        else:
+                            mask_frames = sam3_mask_manager.get_masks_for_frames(
+                                mask_id, adjusted_indices
+                            )
                         if SAM3_DEBUG:
                             logger.info(
-                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s",
+                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s offset=%s",
                                 mask_id,
                                 len(frame_indices),
-                                frame_indices[0] if frame_indices else None,
-                                frame_indices[-1] if frame_indices else None,
+                                adjusted_indices[0] if adjusted_indices else None,
+                                adjusted_indices[-1] if adjusted_indices else None,
                                 self.parameters.get("sam3_mask_mode"),
+                                mask_offset,
                             )
                         call_params["mask_frames"] = mask_frames
                         mask_mode = self.parameters.get("sam3_mask_mode")
@@ -847,7 +867,9 @@ class FrameProcessor:
 
         self.is_prepared = True
 
-    def prepare_chunk(self, chunk_size: int) -> tuple[list[torch.Tensor], list[int]]:
+    def prepare_chunk(
+        self, chunk_size: int
+    ) -> tuple[list[torch.Tensor], list[int], list[float | None]]:
         """
         Sample frames uniformly from the buffer, convert them to tensors, and remove processed frames.
 
@@ -885,7 +907,8 @@ class FrameProcessor:
         # Convert VideoFrames to tensors
         tensor_frames = []
         frame_indices = []
-        for frame_index, video_frame in indexed_frames:
+        frame_times = []
+        for frame_index, video_frame, pts, time_base in indexed_frames:
             # Convert VideoFrame into (1, H, W, C) tensor on cpu
             # The T=1 dimension is expected by preprocess_chunk which rearranges T H W C -> T C H W
             tensor = (
@@ -895,8 +918,15 @@ class FrameProcessor:
             )
             tensor_frames.append(tensor)
             frame_indices.append(frame_index)
+            if pts is not None and time_base is not None:
+                try:
+                    frame_times.append(float(pts * time_base))
+                except Exception:
+                    frame_times.append(None)
+            else:
+                frame_times.append(None)
 
-        return tensor_frames, frame_indices
+        return tensor_frames, frame_indices, frame_times
 
     def __enter__(self):
         self.start()

@@ -342,6 +342,7 @@ export function useWebRTC(options?: UseWebRTCOptions) {
       vace_context_scale?: number;
       sam3_mask_id?: string | null;
       sam3_mask_mode?: "inside" | "outside";
+      sam3_mask_offset_frames?: number;
     }) => {
       if (
         dataChannelRef.current &&

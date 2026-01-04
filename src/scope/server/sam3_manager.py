@@ -246,5 +246,66 @@ class Sam3MaskManager:
             )
         return frames
 
+    def get_masks_for_times(
+        self,
+        session_id: str,
+        frame_times: Iterable[float | None],
+        fallback_indices: Iterable[int],
+    ) -> list[torch.Tensor]:
+        session = self._sessions.get(session_id)
+        if not session:
+            raise KeyError(f"Mask session {session_id} not found")
+
+        input_fps = session.input_fps or 15.0
+        sam3_fps = session.sam3_fps or input_fps
+        if sam3_fps <= 0:
+            sam3_fps = input_fps if input_fps > 0 else 15.0
+
+        frames = []
+        hits = 0
+        misses = 0
+        frame_times_list = list(frame_times)
+        fallback_indices_list = list(fallback_indices)
+
+        for idx, time_sec in enumerate(frame_times_list):
+            fallback_idx = (
+                fallback_indices_list[idx]
+                if idx < len(fallback_indices_list)
+                else idx
+            )
+            if time_sec is None:
+                if session.frame_count > 0:
+                    mask_frame_idx = fallback_idx % session.frame_count
+                else:
+                    mask_frame_idx = fallback_idx
+            else:
+                mask_frame_idx = int(round(time_sec * sam3_fps))
+                if session.frame_count > 0:
+                    mask_frame_idx = mask_frame_idx % session.frame_count
+
+            mask_path = self._mask_path(session.mask_dir, mask_frame_idx)
+            if not mask_path.exists():
+                blank = np.zeros((session.height, session.width), dtype=np.uint8)
+                mask_array = blank
+                misses += 1
+            else:
+                mask_array = np.array(Image.open(mask_path).convert("L"), dtype=np.uint8)
+                hits += 1
+
+            tensor = torch.from_numpy(mask_array).float().unsqueeze(0).unsqueeze(-1)
+            frames.append(tensor)
+
+        if SAM3_DEBUG:
+            logger.info(
+                "SAM3 mask fetch (time): session=%s frames=%d hits=%d misses=%d sam3_fps=%s",
+                session_id,
+                len(frames),
+                hits,
+                misses,
+                sam3_fps,
+            )
+
+        return frames
+
 
 sam3_mask_manager = Sam3MaskManager()

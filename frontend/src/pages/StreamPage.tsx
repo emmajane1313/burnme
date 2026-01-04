@@ -156,6 +156,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [sam3Status, setSam3Status] = useState<string | null>(null);
   const [isSam3Generating, setIsSam3Generating] = useState(false);
   const [isSam3Downloading, setIsSam3Downloading] = useState(false);
+  const [sam3MaskOffsetFrames, setSam3MaskOffsetFrames] = useState(0);
   const [sam3Box, setSam3Box] = useState<{
     x1: number;
     y1: number;
@@ -366,6 +367,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         sendParameterUpdate({
           sam3_mask_id: result.maskId,
           sam3_mask_mode: sam3MaskMode,
+          sam3_mask_offset_frames: sam3MaskOffsetFrames,
         });
       }
     } catch (error) {
@@ -397,6 +399,18 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       sendParameterUpdate({
         sam3_mask_id: sam3MaskId,
         sam3_mask_mode: mode,
+        sam3_mask_offset_frames: sam3MaskOffsetFrames,
+      });
+    }
+  };
+
+  const handleSam3MaskOffsetChange = (value: number) => {
+    setSam3MaskOffsetFrames(value);
+    if (isStreaming && sam3MaskId) {
+      sendParameterUpdate({
+        sam3_mask_id: sam3MaskId,
+        sam3_mask_mode: sam3MaskMode,
+        sam3_mask_offset_frames: value,
       });
     }
   };
@@ -749,8 +763,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendParameterUpdate({
       sam3_mask_id: sam3MaskId,
       sam3_mask_mode: sam3MaskMode,
+      sam3_mask_offset_frames: sam3MaskOffsetFrames,
     });
-  }, [isStreaming, sam3MaskId, sam3MaskMode, sendParameterUpdate]);
+  }, [isStreaming, sam3MaskId, sam3MaskMode, sam3MaskOffsetFrames, sendParameterUpdate]);
 
   const handleStartSynth = async () => {
     const promptText = promptItems[0]?.text?.trim();
@@ -1165,6 +1180,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   sam3MaskId={sam3MaskId}
                   sam3MaskMode={sam3MaskMode}
                   onSam3MaskModeChange={handleSam3MaskModeChange}
+                  sam3MaskOffsetFrames={sam3MaskOffsetFrames}
+                  onSam3MaskOffsetChange={handleSam3MaskOffsetChange}
                   onSam3Generate={handleGenerateSam3Mask}
                   onSam3Clear={handleClearSam3Mask}
                   sam3Box={sam3Box}
