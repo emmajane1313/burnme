@@ -52,6 +52,7 @@ interface InputAndControlsPanelProps {
   sam3MaskId?: string | null;
   onSam3Generate?: () => void;
   onSam3Clear?: () => void;
+  sam3Ready?: boolean;
   sam3Status?: string | null;
   isSam3Generating?: boolean;
   sourceVideoBlocked?: boolean;
@@ -95,6 +96,7 @@ export function InputAndControlsPanel({
   sam3MaskId = null,
   onSam3Generate,
   onSam3Clear,
+  sam3Ready = false,
   sam3Status = null,
   isSam3Generating = false,
   sourceVideoBlocked = false,
@@ -377,7 +379,8 @@ export function InputAndControlsPanel({
     !!burnDateTimestamp &&
     !!prompts[0]?.text?.trim() &&
     isStreaming &&
-    !isLoading;
+    !isLoading &&
+    sam3Ready;
 
   const isBurnDateLocked = fixedBurnDateTimestamp !== null;
 

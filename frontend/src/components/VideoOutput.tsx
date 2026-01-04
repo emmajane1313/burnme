@@ -18,6 +18,9 @@ interface VideoOutputProps {
   isWaitingForFrames?: boolean;
   sourceVideoBlocked?: boolean;
   onResumeSourceVideo?: () => void;
+  isSam3Generating?: boolean;
+  sam3AutoPending?: boolean;
+  sam3Status?: string | null;
   onVideoPlaying?: () => void;
 }
 
@@ -36,6 +39,9 @@ export function VideoOutput({
   isWaitingForFrames = false,
   sourceVideoBlocked = false,
   onResumeSourceVideo,
+  isSam3Generating = false,
+  sam3AutoPending = false,
+  sam3Status = null,
   onVideoPlaying,
 }: VideoOutputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -197,6 +203,18 @@ export function VideoOutput({
                 <div className="text-center text-muted-foreground text-lg">
                   <Spinner size={24} className="mx-auto mb-3" />
                   <p>Warming up pipeline...</p>
+                </div>
+              </div>
+            ) : isSam3Generating || sam3AutoPending ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="text-center text-muted-foreground text-lg">
+                  <Spinner size={24} className="mx-auto mb-3" />
+                  <p>Generating SAM3 mask...</p>
+                  {sam3Status ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {sam3Status}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}
