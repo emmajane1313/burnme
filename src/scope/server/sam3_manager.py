@@ -35,6 +35,8 @@ class Sam3MaskSession:
     width: int
     frame_count: int
     prompt: str
+    input_fps: float | None
+    sam3_fps: float | None
 
 
 class Sam3MaskManager:
@@ -73,6 +75,7 @@ class Sam3MaskManager:
         video_base64: str,
         prompt: str,
         box: list[int] | None = None,
+        input_fps: float | None = None,
     ) -> Sam3MaskSession:
         predictor = self._get_predictor()
         session_id = str(uuid.uuid4())
@@ -88,12 +91,16 @@ class Sam3MaskManager:
         sam3_session_id = response["session_id"]
 
         frame_count_guess = None
+        sam3_fps = None
         if cv2 is not None:
             cap = cv2.VideoCapture(str(video_path))
             if cap.isOpened():
                 count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                fps = float(cap.get(cv2.CAP_PROP_FPS))
                 if count > 0:
                     frame_count_guess = count
+                if fps > 0:
+                    sam3_fps = fps
             cap.release()
 
         def send_prompt(frame_index: int) -> None:
@@ -186,6 +193,8 @@ class Sam3MaskManager:
             width=width,
             frame_count=frame_count,
             prompt=prompt,
+            input_fps=input_fps,
+            sam3_fps=sam3_fps,
         )
         self._sessions[session_id] = session
         return session
@@ -203,7 +212,12 @@ class Sam3MaskManager:
         frame_indices_list = list(frame_indices)
         for frame_idx in frame_indices_list:
             if session.frame_count > 0:
-                mask_frame_idx = frame_idx % session.frame_count
+                input_fps = session.input_fps or 15.0
+                sam3_fps = session.sam3_fps or input_fps
+                if input_fps <= 0:
+                    input_fps = sam3_fps or 15.0
+                time_sec = frame_idx / input_fps
+                mask_frame_idx = int(round(time_sec * sam3_fps)) % session.frame_count
             else:
                 mask_frame_idx = frame_idx
 

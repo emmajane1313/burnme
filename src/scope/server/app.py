@@ -1125,6 +1125,7 @@ class Sam3MaskRequest(BaseModel):
     videoBase64: str
     prompt: str
     box: list[int] | None = None
+    input_fps: float | None = None
 
 
 @app.post("/api/v1/mp4p/encrypt")
@@ -1237,6 +1238,7 @@ async def generate_sam3_mask(request: Sam3MaskRequest):
             request.videoBase64,
             request.prompt,
             request.box,
+            request.input_fps,
         )
         return {
             "success": True,

@@ -223,12 +223,13 @@ export const downloadPipelineModels = async (
 export const generateSam3Mask = async (
   videoBase64: string,
   prompt: string,
-  box?: [number, number, number, number] | null
+  box?: [number, number, number, number] | null,
+  inputFps?: number | null
 ): Promise<Sam3MaskResponse> => {
   const response = await fetch(apiUrl("/api/v1/sam3/mask"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ videoBase64, prompt, box }),
+    body: JSON.stringify({ videoBase64, prompt, box, input_fps: inputFps }),
   });
 
   if (!response.ok) {

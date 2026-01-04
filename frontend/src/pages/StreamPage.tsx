@@ -5,7 +5,7 @@ import { VideoOutput } from "../components/VideoOutput";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { PlayPanel } from "../components/PlayPanel";
 import { useWebRTC } from "../hooks/useWebRTC";
-import { useVideoSource } from "../hooks/useVideoSource";
+import { useVideoSource, FPS as INPUT_FPS } from "../hooks/useVideoSource";
 import { useWebRTCStats } from "../hooks/useWebRTCStats";
 import { usePipeline } from "../hooks/usePipeline";
 import { useStreamState } from "../hooks/useStreamState";
@@ -351,7 +351,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       const result = await generateSam3Mask(
         base64,
         sam3Prompt.trim(),
-        boxPayload
+        boxPayload,
+        INPUT_FPS
       );
       debugLog("SAM3: mask generated", result);
       setSam3MaskId(result.maskId);
