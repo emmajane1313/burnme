@@ -98,6 +98,8 @@ class MaskCompositeBlock(ModularPipelineBlocks):
         if mask.min() < 0:
             mask = (mask + 1.0) / 2.0
         mask = mask.clamp(0, 1)
+        # Hard threshold to prevent synth bleed outside the mask.
+        mask = (mask >= 0.5).float()
 
         # Expand mask to match channels (BTCHW -> channel dim is 2)
         if mask.shape[2] == 1 and output_video.shape[2] != 1:

@@ -1246,6 +1246,8 @@ async def generate_sam3_mask(request: Sam3MaskRequest):
             "frameCount": session.frame_count,
             "height": session.height,
             "width": session.width,
+            "inputFps": session.input_fps,
+            "sam3Fps": session.sam3_fps,
         }
     except Exception as e:
         logger.error(f"Error generating SAM3 masks: {e}")

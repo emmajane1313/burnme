@@ -15,12 +15,13 @@ from .models_config import get_assets_dir
 
 logger = logging.getLogger(__name__)
 SAM3_DEBUG = os.getenv("BURN_DEBUG_SAM3") == "1"
-SAM3_MASK_DILATE = int(os.getenv("BURN_SAM3_MASK_DILATE", "7"))
-SAM3_MASK_DILATE_ITERS = int(os.getenv("BURN_SAM3_MASK_DILATE_ITERS", "2"))
-SAM3_MASK_BLUR = int(os.getenv("BURN_SAM3_MASK_BLUR", "5"))
-SAM3_MASK_INTENSITY = float(os.getenv("BURN_SAM3_MASK_INTENSITY", "1.0"))
+SAM3_MASK_DILATE = 0
+SAM3_MASK_DILATE_ITERS = 0
+SAM3_MASK_BLUR = 0
+SAM3_MASK_INTENSITY = 1.0
 SAM3_PROMPT_STRIDE = 1
 SAM3_PERSON_PROMPT = "person"
+SAM3_MAX_FPS = 15.0
 
 try:
     import cv2  # type: ignore
@@ -71,6 +72,58 @@ class Sam3MaskManager:
     def _mask_path(self, session_dir: Path, frame_index: int) -> Path:
         return session_dir / f"{frame_index:06d}.png"
 
+    def _resample_video(
+        self, input_path: Path, output_path: Path, target_fps: float | None
+    ) -> tuple[Path, float | None]:
+        if cv2 is None:
+            return input_path, None
+        if not target_fps or target_fps <= 0:
+            return input_path, None
+
+        cap = cv2.VideoCapture(str(input_path))
+        if not cap.isOpened():
+            cap.release()
+            return input_path, None
+
+        src_fps = float(cap.get(cv2.CAP_PROP_FPS) or 0)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+        if width <= 0 or height <= 0:
+            cap.release()
+            return input_path, None
+
+        if src_fps > 0 and abs(src_fps - target_fps) < 0.01:
+            cap.release()
+            return input_path, src_fps
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(str(output_path), fourcc, target_fps, (width, height))
+        if not writer.isOpened():
+            cap.release()
+            writer.release()
+            return input_path, None
+
+        frame_index = 0
+        next_time = 0.0
+        src_fps = src_fps if src_fps > 0 else target_fps
+        src_frame_time = 1.0 / src_fps if src_fps > 0 else 0.0
+        target_frame_time = 1.0 / target_fps
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            current_time = frame_index * src_frame_time
+            if current_time + 1e-6 >= next_time:
+                writer.write(frame)
+                next_time += target_frame_time
+            frame_index += 1
+
+        cap.release()
+        writer.release()
+        return output_path, target_fps
+
     def generate_masks(
         self,
         video_base64: str,
@@ -88,18 +141,36 @@ class Sam3MaskManager:
         video_path = session_dir / "source.mp4"
         video_path.write_bytes(base64.b64decode(video_base64))
 
+        resampled_path = session_dir / "source_resampled.mp4"
+        source_fps = None
+        if cv2 is not None:
+            cap = cv2.VideoCapture(str(video_path))
+            if cap.isOpened():
+                source_fps = float(cap.get(cv2.CAP_PROP_FPS))
+            cap.release()
+
+        effective_fps = None
+        if source_fps and source_fps > 0:
+            effective_fps = min(source_fps, SAM3_MAX_FPS)
+        elif input_fps and input_fps > 0:
+            effective_fps = input_fps
+
+        video_path, forced_fps = self._resample_video(
+            video_path, resampled_path, effective_fps
+        )
+
         response = predictor.handle_request(
             {"type": "start_session", "resource_path": str(video_path)}
         )
         sam3_session_id = response["session_id"]
 
         frame_count_guess = None
-        sam3_fps = None
+        sam3_fps = forced_fps
         if cv2 is not None:
             cap = cv2.VideoCapture(str(video_path))
             if cap.isOpened():
                 count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                fps = float(cap.get(cv2.CAP_PROP_FPS))
+                fps = float(cap.get(cv2.CAP_PROP_FPS)) if sam3_fps is None else sam3_fps
                 if count > 0:
                     frame_count_guess = count
                 if fps > 0:
@@ -171,6 +242,7 @@ class Sam3MaskManager:
         if frame_count == 0:
             raise RuntimeError("SAM3 returned no masks for the provided prompt.")
 
+        effective_input_fps = effective_fps or sam3_fps
         session = Sam3MaskSession(
             session_id=session_id,
             mask_dir=session_dir,
@@ -178,7 +250,7 @@ class Sam3MaskManager:
             width=width,
             frame_count=frame_count,
             prompt=prompt,
-            input_fps=input_fps,
+            input_fps=effective_input_fps,
             sam3_fps=sam3_fps,
         )
         self._sessions[session_id] = session
@@ -199,10 +271,17 @@ class Sam3MaskManager:
             if session.frame_count > 0:
                 input_fps = session.input_fps or 15.0
                 sam3_fps = session.sam3_fps or input_fps
-                if input_fps <= 0:
-                    input_fps = sam3_fps or 15.0
-                time_sec = frame_idx / input_fps
-                mask_frame_idx = int(round(time_sec * sam3_fps)) % session.frame_count
+                if (
+                    input_fps > 0
+                    and sam3_fps > 0
+                    and abs(input_fps - sam3_fps) < 0.01
+                ):
+                    mask_frame_idx = frame_idx % session.frame_count
+                else:
+                    if input_fps <= 0:
+                        input_fps = sam3_fps or 15.0
+                    time_sec = frame_idx / input_fps
+                    mask_frame_idx = int(round(time_sec * sam3_fps)) % session.frame_count
             else:
                 mask_frame_idx = frame_idx
 

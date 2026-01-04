@@ -7,6 +7,7 @@ interface UseVideoSourceProps {
   onStopStream?: () => void;
   shouldReinitialize?: boolean;
   enabled?: boolean;
+  fpsOverride?: number | null;
   // Called when a custom video is uploaded with its detected resolution
   onCustomVideoResolution?: (resolution: {
     width: number;
@@ -33,6 +34,10 @@ export function useVideoSource(props?: UseVideoSourceProps) {
   const [sourceVideoBlocked, setSourceVideoBlocked] = useState(false);
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const activeFps =
+    props?.fpsOverride && props.fpsOverride > 0
+      ? props.fpsOverride
+      : FPS;
 
   const createVideoFromSource = useCallback(
     (videoSource: string | File, loop: boolean) => {
@@ -180,7 +185,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
       try {
         setIsInitializing(true);
         const { stream: newStream, resolution } =
-          await createVideoFileStreamFromFile(file, FPS, { loop: true });
+          await createVideoFileStreamFromFile(file, activeFps, { loop: true });
 
         // Try to update WebRTC track if streaming, otherwise just switch locally
         let trackReplaced = false;
@@ -216,7 +221,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
         return false;
       }
     },
-    [localStream, createVideoFileStreamFromFile, props]
+    [localStream, createVideoFileStreamFromFile, props, activeFps]
   );
 
   const stopVideo = useCallback(() => {
@@ -285,7 +290,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
       }
       setIsInitializing(true);
       try {
-        const stream = await createVideoFileStream(FPS, { loop: true });
+        const stream = await createVideoFileStream(activeFps, { loop: true });
         setLocalStream(stream);
       } catch (error) {
         console.error("Failed to create initial video file stream:", error);
@@ -306,7 +311,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
         videoElementRef.current.pause();
       }
     };
-  }, [props?.enabled, createVideoFileStream]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [props?.enabled, createVideoFileStream, activeFps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restartVideoStream = useCallback(
     async (
@@ -321,7 +326,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
 
       try {
         const { stream: newStream, resolution } =
-          await createVideoFileStreamFromFile(selectedVideoFile, FPS, options);
+          await createVideoFileStreamFromFile(selectedVideoFile, activeFps, options);
 
         let trackReplaced = false;
         if (props?.onStreamUpdate) {
@@ -348,7 +353,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
         setIsInitializing(false);
       }
     },
-    [selectedVideoFile, createVideoFileStreamFromFile, localStream, props]
+    [selectedVideoFile, createVideoFileStreamFromFile, localStream, props, activeFps]
   );
 
   // Handle reinitialization when shouldReinitialize changes

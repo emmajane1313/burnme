@@ -63,6 +63,8 @@ export interface Sam3MaskResponse {
   frameCount: number;
   height: number;
   width: number;
+  inputFps?: number | null;
+  sam3Fps?: number | null;
   error?: string;
 }
 
