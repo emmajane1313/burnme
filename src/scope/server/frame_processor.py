@@ -58,6 +58,8 @@ class FrameProcessor:
 
         self.frame_buffer = deque(maxlen=max_buffer_size)
         self.frame_buffer_lock = threading.Lock()
+        self.frame_meta_queue = deque(maxlen=max_buffer_size)
+        self.frame_meta_lock = threading.Lock()
         self.output_queue = queue.Queue(maxsize=max_output_queue_size)
         self._frame_index = 0
 
@@ -207,8 +209,15 @@ class FrameProcessor:
         pts = getattr(frame, "pts", None)
         time_base = getattr(frame, "time_base", None)
 
+        client_time = None
+        with self.frame_meta_lock:
+            if self.frame_meta_queue:
+                client_time = self.frame_meta_queue.popleft()
+
         with self.frame_buffer_lock:
-            self.frame_buffer.append((self._frame_index, frame, pts, time_base))
+            self.frame_buffer.append(
+                (self._frame_index, frame, pts, time_base, client_time)
+            )
             if (FRAME_DEBUG or DEBUG_ALL) and self._frame_index % 30 == 0:
                 logger.info(
                     "FrameProcessor input: index=%s buffer=%s",
@@ -217,6 +226,17 @@ class FrameProcessor:
                 )
             self._frame_index += 1
             return True
+
+    def update_frame_meta(self, payload: dict[str, Any]) -> None:
+        time_value = payload.get("time")
+        if time_value is None:
+            return
+        try:
+            time_value = float(time_value)
+        except (TypeError, ValueError):
+            return
+        with self.frame_meta_lock:
+            self.frame_meta_queue.append(time_value)
 
     def get(self) -> torch.Tensor | None:
         if not self.running:
@@ -606,7 +626,9 @@ class FrameProcessor:
                     spout_frame = _SpoutFrame(rgb_frame)
 
                     with self.frame_buffer_lock:
-                        self.frame_buffer.append((self._frame_index, spout_frame, None, None))
+                        self.frame_buffer.append(
+                            (self._frame_index, spout_frame, None, None, None)
+                        )
                         self._frame_index += 1
 
                     frame_count += 1
@@ -757,17 +779,29 @@ class FrameProcessor:
                 mask_id = self.parameters.get("sam3_mask_id")
                 if mask_id and frame_indices is not None:
                     try:
-                        mask_frames = sam3_mask_manager.get_masks_for_frames(
-                            mask_id, frame_indices
+                        use_time_mapping = (
+                            frame_times is not None
+                            and any(time_val is not None for time_val in frame_times)
                         )
+                        if use_time_mapping:
+                            mask_frames = sam3_mask_manager.get_masks_for_times(
+                                mask_id,
+                                frame_times,
+                                frame_indices,
+                            )
+                        else:
+                            mask_frames = sam3_mask_manager.get_masks_for_frames(
+                                mask_id, frame_indices
+                            )
                         if SAM3_DEBUG:
                             logger.info(
-                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s",
+                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s map=%s",
                                 mask_id,
                                 len(frame_indices),
                                 frame_indices[0] if frame_indices else None,
                                 frame_indices[-1] if frame_indices else None,
                                 self.parameters.get("sam3_mask_mode"),
+                                "time" if use_time_mapping else "index",
                             )
                         call_params["mask_frames"] = mask_frames
                         mask_mode = self.parameters.get("sam3_mask_mode")
@@ -894,7 +928,7 @@ class FrameProcessor:
         tensor_frames = []
         frame_indices = []
         frame_times = []
-        for frame_index, video_frame, pts, time_base in indexed_frames:
+        for frame_index, video_frame, pts, time_base, client_time in indexed_frames:
             # Convert VideoFrame into (1, H, W, C) tensor on cpu
             # The T=1 dimension is expected by preprocess_chunk which rearranges T H W C -> T C H W
             tensor = (
@@ -904,7 +938,9 @@ class FrameProcessor:
             )
             tensor_frames.append(tensor)
             frame_indices.append(frame_index)
-            if pts is not None and time_base is not None:
+            if client_time is not None:
+                frame_times.append(client_time)
+            elif pts is not None and time_base is not None:
                 try:
                     frame_times.append(float(pts * time_base))
                 except Exception:

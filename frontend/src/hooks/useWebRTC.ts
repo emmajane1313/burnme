@@ -369,6 +369,21 @@ export function useWebRTC(options?: UseWebRTCOptions) {
     []
   );
 
+  const sendFrameMeta = useCallback((meta: { time: number }) => {
+    if (
+      dataChannelRef.current &&
+      dataChannelRef.current.readyState === "open"
+    ) {
+      try {
+        dataChannelRef.current.send(
+          JSON.stringify({ type: "frame_meta", time: meta.time })
+        );
+      } catch (error) {
+        console.error("Failed to send frame meta:", error);
+      }
+    }
+  }, []);
+
   const stopStream = useCallback(() => {
     isConnectingRef.current = false;
     // Close peer connection
@@ -413,5 +428,6 @@ export function useWebRTC(options?: UseWebRTCOptions) {
     stopStream,
     updateVideoTrack,
     sendParameterUpdate,
+    sendFrameMeta,
   };
 }

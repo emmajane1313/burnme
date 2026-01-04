@@ -8,6 +8,7 @@ interface UseVideoSourceProps {
   shouldReinitialize?: boolean;
   enabled?: boolean;
   fpsOverride?: number | null;
+  onFrameMeta?: (meta: { time: number }) => void;
   // Called when a custom video is uploaded with its detected resolution
   onCustomVideoResolution?: (resolution: {
     width: number;
@@ -101,6 +102,9 @@ export function useVideoSource(props?: UseVideoSourceProps) {
                   detectedResolution.width,
                   detectedResolution.height
                 );
+                if (props?.onFrameMeta && !video.ended) {
+                  props.onFrameMeta({ time: video.currentTime });
+                }
               }
             };
 
@@ -236,6 +240,13 @@ export function useVideoSource(props?: UseVideoSourceProps) {
       };
       if (video.__burnDrawInterval) {
         window.clearInterval(video.__burnDrawInterval);
+      }
+      if ("cancelVideoFrameCallback" in video && (video as any).__burnVfcId) {
+        try {
+          (video as any).cancelVideoFrameCallback((video as any).__burnVfcId);
+        } catch (error) {
+          // Ignore callback cancel errors.
+        }
       }
       video.pause();
       videoElementRef.current = null;

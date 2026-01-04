@@ -101,6 +101,18 @@ class MaskCompositeBlock(ModularPipelineBlocks):
         # Hard threshold to prevent synth bleed outside the mask.
         mask = (mask >= 0.5).float()
 
+        # Match video_raw range to output_video to avoid grayscale bleed.
+        output_min = output_video.amin().item()
+        output_max = output_video.amax().item()
+        raw_min = video_raw.amin().item()
+        raw_max = video_raw.amax().item()
+        output_is_01 = output_min >= -0.01 and output_max <= 1.01
+        raw_is_neg = raw_min < -0.01
+        if output_is_01 and raw_is_neg:
+            video_raw = (video_raw + 1.0) / 2.0
+        elif not output_is_01 and raw_min >= -0.01 and raw_max <= 1.01:
+            video_raw = video_raw * 2.0 - 1.0
+
         # Expand mask to match channels (BTCHW -> channel dim is 2)
         if mask.shape[2] == 1 and output_video.shape[2] != 1:
             mask = mask.expand(-1, -1, output_video.shape[2], -1, -1)
