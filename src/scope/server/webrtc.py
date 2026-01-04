@@ -225,21 +225,21 @@ class WebRTCManager:
                     notification_sender.flush_pending_notifications()
 
                 @data_channel.on("message")
-                    def on_data_channel_message(message):
-                        try:
-                            # Parse the JSON message
-                            data = json.loads(message)
+                def on_data_channel_message(message):
+                    try:
+                        # Parse the JSON message
+                        data = json.loads(message)
 
-                            if data.get("type") == "frame_meta":
-                                if session.video_track and hasattr(
-                                    session.video_track, "frame_processor"
-                                ):
-                                    session.video_track.frame_processor.update_frame_meta(
-                                        data
-                                    )
-                                return
+                        if data.get("type") == "frame_meta":
+                            if session.video_track and hasattr(
+                                session.video_track, "frame_processor"
+                            ):
+                                session.video_track.frame_processor.update_frame_meta(
+                                    data
+                                )
+                            return
 
-                            logger.info(f"Received parameter update: {data}")
+                        logger.info(f"Received parameter update: {data}")
 
                         # Check for paused parameter and call pause() method on video track
                         if "paused" in data and session.video_track:
