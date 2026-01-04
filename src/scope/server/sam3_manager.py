@@ -20,7 +20,7 @@ SAM3_MASK_DILATE_ITERS = int(os.getenv("BURN_SAM3_MASK_DILATE_ITERS", "2"))
 SAM3_MASK_BLUR = int(os.getenv("BURN_SAM3_MASK_BLUR", "5"))
 SAM3_MASK_INTENSITY = float(os.getenv("BURN_SAM3_MASK_INTENSITY", "1.0"))
 SAM3_PROMPT_STRIDE = 1
-SAM3_PERSON_PROMPT = "person, human, face, body, hands, arms, legs"
+SAM3_PERSON_PROMPT = "person"
 
 try:
     import cv2  # type: ignore

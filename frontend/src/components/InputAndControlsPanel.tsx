@@ -125,6 +125,7 @@ export function InputAndControlsPanel({
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pipeline = pipelines?.[pipelineId];
 
@@ -174,6 +175,11 @@ export function InputAndControlsPanel({
 
     // Reset the input value so the same file can be selected again
     event.target.value = "";
+  };
+
+  const handleTriggerFilePicker = () => {
+    if (fixedBurnDateTimestamp) return;
+    fileInputRef.current?.click();
   };
 
   const handleExportMP4P = async () => {
@@ -392,7 +398,26 @@ export function InputAndControlsPanel({
       <CardContent className="space-y-3 overflow-y-auto flex-1 px-4 py-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div>
           <h3 className="text-xs font-medium mb-1.5">Video Input</h3>
-          <div className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px]">
+          <div
+            className={`rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px] ${
+              fixedBurnDateTimestamp ? "" : "cursor-pointer"
+            }`}
+            onClick={() => {
+              if (localStream && !hideLocalPreview) {
+                handleTriggerFilePicker();
+              }
+            }}
+          >
+            {onVideoFileUpload && !isBurnDateLocked && (
+              <input
+                type="file"
+                accept="video/mp4"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="video-upload"
+                ref={fileInputRef}
+              />
+            )}
             {isInitializing ? (
               <div className="text-center text-muted-foreground text-sm">
                 Initializing video...
@@ -414,22 +439,21 @@ export function InputAndControlsPanel({
                 {sourceVideoBlocked ? (
                   <div className="absolute inset-0 bg-black/20" />
                 ) : null}
+                {!fixedBurnDateTimestamp ? (
+                  <div className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none">
+                    <span className="mac-frosted-button px-3 py-1 text-[11px] text-white opacity-80">
+                      Click to change video
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ) : (
               onVideoFileUpload && (
                 <>
-                  <input
-                    type="file"
-                    accept="video/mp4"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="video-upload"
-                    disabled={isStreaming || isConnecting || isBurnDateLocked}
-                  />
                   <label
                     htmlFor="video-upload"
                     className={`mac-frosted-button px-4 py-3 text-sm text-center ${
-                      isStreaming || isConnecting || isBurnDateLocked
+                      isBurnDateLocked
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
                     }`}
