@@ -59,7 +59,6 @@ interface InputAndControlsPanelProps {
   sam3Status?: string | null;
   isSam3Generating?: boolean;
   sourceVideoBlocked?: boolean;
-  onResumeSourceVideo?: () => void;
   sam3Box?: { x1: number; y1: number; x2: number; y2: number } | null;
   onSam3BoxChange?: (box: {
     x1: number;
@@ -115,7 +114,6 @@ export function InputAndControlsPanel({
   sam3Status = null,
   isSam3Generating = false,
   sourceVideoBlocked = false,
-  onResumeSourceVideo,
   sam3Box = null,
   onSam3BoxChange,
   onSam3BoxClear,
@@ -143,7 +141,6 @@ export function InputAndControlsPanel({
   const timePickerRef = useRef<HTMLDivElement>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [localPreviewBlocked, setLocalPreviewBlocked] = useState(false);
   const [isDrawingSam3Box, setIsDrawingSam3Box] = useState(false);
   const [boxDraft, setBoxDraft] = useState<{
     x1: number;
@@ -165,43 +162,9 @@ export function InputAndControlsPanel({
   useEffect(() => {
     if (videoRef.current && localStream) {
       videoRef.current.srcObject = localStream;
-      const playPromise = videoRef.current.play();
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise
-          .then(() => setLocalPreviewBlocked(false))
-          .catch(() => setLocalPreviewBlocked(true));
-      }
     }
   }, [localStream]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlaying = () => setLocalPreviewBlocked(false);
-    const handlePause = () => {
-      if (localStream) {
-        setLocalPreviewBlocked(true);
-      }
-    };
-
-    video.addEventListener("playing", handlePlaying);
-    video.addEventListener("pause", handlePause);
-    return () => {
-      video.removeEventListener("playing", handlePlaying);
-      video.removeEventListener("pause", handlePause);
-    };
-  }, [localStream]);
-
-  const handleResumeLocalPreview = () => {
-    onResumeSourceVideo?.();
-    const video = videoRef.current;
-    if (!video) return;
-    const playPromise = video.play();
-    if (playPromise && typeof playPromise.catch === "function") {
-      playPromise.catch(() => setLocalPreviewBlocked(true));
-    }
-  };
 
   const toNormalizedBox = (
     startX: number,
@@ -537,19 +500,8 @@ export function InputAndControlsPanel({
                   muted
                   playsInline
                 />
-                {localPreviewBlocked || sourceVideoBlocked ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40">
-                    <button
-                      type="button"
-                      onClick={handleResumeLocalPreview}
-                      className="mac-frosted-button px-3 py-2 text-xs text-white"
-                    >
-                      Start Video
-                    </button>
-                    <p className="text-[11px] text-muted-foreground">
-                      Click to start the source video.
-                    </p>
-                  </div>
+                {sourceVideoBlocked ? (
+                  <div className="absolute inset-0 bg-black/20" />
                 ) : null}
                 {sam3Box ? (
                   <div

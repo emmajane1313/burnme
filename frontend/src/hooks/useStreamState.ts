@@ -127,13 +127,13 @@ export function useStreamState() {
   );
 
   // Default pipeline ID to use before schemas load
-  const defaultPipelineId = "longlive";
+  const defaultPipelineId = "memflow";
 
   // Get initial defaults (use fallback since schemas haven't loaded yet)
   const initialDefaults = getFallbackDefaults("video");
 
   const [settings, setSettings] = useState<SettingsState>({
-    pipelineId: "longlive",
+    pipelineId: "memflow",
     resolution: {
       height: initialDefaults.height,
       width: initialDefaults.width,

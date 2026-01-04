@@ -1137,7 +1137,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   fixedBurnDateTimestamp={mp4pBurnData?.metadata.expiresAt ?? null}
                   hideLocalPreview={hideBurnSourcePreview}
                   sourceVideoBlocked={sourceVideoBlocked}
-                  onResumeSourceVideo={resumeSourceVideo}
                   pipelineId={settings.pipelineId}
                   prompts={promptItems}
                   onPromptsChange={setPromptItems}
@@ -1193,6 +1192,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                     downloadProgress={downloadProgress}
                     pipelineNeedsModels={pipelineNeedsModels}
                     isWaitingForFrames={isWaitingForFrames}
+                    sourceVideoBlocked={sourceVideoBlocked}
+                    onResumeSourceVideo={resumeSourceVideo}
                     onVideoPlaying={() => {
                       setIsWaitingForFrames(false);
                       if (onVideoPlayingCallbackRef.current) {

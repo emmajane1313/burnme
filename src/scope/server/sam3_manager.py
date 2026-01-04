@@ -19,6 +19,7 @@ SAM3_MASK_DILATE = int(os.getenv("BURN_SAM3_MASK_DILATE", "7"))
 SAM3_MASK_DILATE_ITERS = int(os.getenv("BURN_SAM3_MASK_DILATE_ITERS", "2"))
 SAM3_MASK_BLUR = int(os.getenv("BURN_SAM3_MASK_BLUR", "5"))
 SAM3_MASK_INTENSITY = float(os.getenv("BURN_SAM3_MASK_INTENSITY", "1.0"))
+SAM3_PROMPT_STRIDE = 1
 
 try:
     import cv2  # type: ignore
@@ -86,31 +87,47 @@ class Sam3MaskManager:
         )
         sam3_session_id = response["session_id"]
 
-        prompt_payload = {
-            "type": "add_prompt",
-            "session_id": sam3_session_id,
-            "frame_index": 0,
-        }
-        if prompt:
-            prompt_payload["text"] = prompt
-        if box:
-            prompt_payload["box"] = box
-            prompt_payload["box_format"] = "xyxy"
-        try:
-            predictor.handle_request(prompt_payload)
-        except Exception as exc:
+        frame_count_guess = None
+        if cv2 is not None:
+            cap = cv2.VideoCapture(str(video_path))
+            if cap.isOpened():
+                count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                if count > 0:
+                    frame_count_guess = count
+            cap.release()
+
+        def send_prompt(frame_index: int) -> None:
+            prompt_payload = {
+                "type": "add_prompt",
+                "session_id": sam3_session_id,
+                "frame_index": frame_index,
+            }
+            if prompt:
+                prompt_payload["text"] = prompt
             if box:
-                logger.warning(
-                    "SAM3 box prompt failed, retrying with text only: %s",
-                    exc,
-                )
-                if not prompt:
-                    raise
-                prompt_payload.pop("box", None)
-                prompt_payload.pop("box_format", None)
+                prompt_payload["box"] = box
+                prompt_payload["box_format"] = "xyxy"
+            try:
                 predictor.handle_request(prompt_payload)
-            else:
-                raise
+            except Exception as exc:
+                if box:
+                    logger.warning(
+                        "SAM3 box prompt failed, retrying with text only: %s",
+                        exc,
+                    )
+                    if not prompt:
+                        raise
+                    prompt_payload.pop("box", None)
+                    prompt_payload.pop("box_format", None)
+                    predictor.handle_request(prompt_payload)
+                else:
+                    raise
+
+        if frame_count_guess:
+            for frame_index in range(0, frame_count_guess, SAM3_PROMPT_STRIDE):
+                send_prompt(frame_index)
+        else:
+            send_prompt(0)
 
         frame_count = 0
         height = 0

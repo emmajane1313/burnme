@@ -16,6 +16,8 @@ interface VideoOutputProps {
   downloadProgress?: DownloadProgress | null;
   pipelineNeedsModels?: string | null;
   isWaitingForFrames?: boolean;
+  sourceVideoBlocked?: boolean;
+  onResumeSourceVideo?: () => void;
   onVideoPlaying?: () => void;
 }
 
@@ -32,6 +34,8 @@ export function VideoOutput({
   downloadProgress = null,
   pipelineNeedsModels = null,
   isWaitingForFrames = false,
+  sourceVideoBlocked = false,
+  onResumeSourceVideo,
   onVideoPlaying,
 }: VideoOutputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -50,6 +54,11 @@ export function VideoOutput({
           setAutoplayBlocked(true);
         });
     }
+  };
+
+  const handleStartSourceVideo = () => {
+    onResumeSourceVideo?.();
+    attemptPlay();
   };
 
   useEffect(() => {
@@ -139,7 +148,20 @@ export function VideoOutput({
               muted
               playsInline
             />
-            {autoplayBlocked || needsUserPlay ? (
+            {sourceVideoBlocked ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
+                <button
+                  type="button"
+                  onClick={handleStartSourceVideo}
+                  className="mac-frosted-button px-4 py-2 text-sm text-white"
+                >
+                  Start Video
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  Click to start the source video.
+                </p>
+              </div>
+            ) : autoplayBlocked || needsUserPlay ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
                 <button
                   type="button"
