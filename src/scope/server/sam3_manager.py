@@ -20,6 +20,7 @@ SAM3_MASK_DILATE_ITERS = int(os.getenv("BURN_SAM3_MASK_DILATE_ITERS", "2"))
 SAM3_MASK_BLUR = int(os.getenv("BURN_SAM3_MASK_BLUR", "5"))
 SAM3_MASK_INTENSITY = float(os.getenv("BURN_SAM3_MASK_INTENSITY", "1.0"))
 SAM3_PROMPT_STRIDE = 1
+SAM3_PERSON_PROMPT = "person, human, face, body, hands, arms, legs"
 
 try:
     import cv2  # type: ignore
@@ -77,6 +78,8 @@ class Sam3MaskManager:
         box: list[int] | None = None,
         input_fps: float | None = None,
     ) -> Sam3MaskSession:
+        prompt = SAM3_PERSON_PROMPT
+
         predictor = self._get_predictor()
         session_id = str(uuid.uuid4())
         session_dir = self._masks_dir / session_id
@@ -109,26 +112,8 @@ class Sam3MaskManager:
                 "session_id": sam3_session_id,
                 "frame_index": frame_index,
             }
-            if prompt:
-                prompt_payload["text"] = prompt
-            if box:
-                prompt_payload["box"] = box
-                prompt_payload["box_format"] = "xyxy"
-            try:
-                predictor.handle_request(prompt_payload)
-            except Exception as exc:
-                if box:
-                    logger.warning(
-                        "SAM3 box prompt failed, retrying with text only: %s",
-                        exc,
-                    )
-                    if not prompt:
-                        raise
-                    prompt_payload.pop("box", None)
-                    prompt_payload.pop("box_format", None)
-                    predictor.handle_request(prompt_payload)
-                else:
-                    raise
+            prompt_payload["text"] = prompt
+            predictor.handle_request(prompt_payload)
 
         if frame_count_guess:
             for frame_index in range(0, frame_count_guess, SAM3_PROMPT_STRIDE):
@@ -267,6 +252,12 @@ class Sam3MaskManager:
         frame_times_list = list(frame_times)
         fallback_indices_list = list(fallback_indices)
 
+        time_origin = None
+        for time_sec in frame_times_list:
+            if time_sec is not None:
+                time_origin = time_sec
+                break
+
         for idx, time_sec in enumerate(frame_times_list):
             fallback_idx = (
                 fallback_indices_list[idx]
@@ -279,7 +270,10 @@ class Sam3MaskManager:
                 else:
                     mask_frame_idx = fallback_idx
             else:
-                mask_frame_idx = int(round(time_sec * sam3_fps))
+                normalized_time = time_sec - (time_origin or 0.0)
+                if normalized_time < 0:
+                    normalized_time = 0.0
+                mask_frame_idx = int(round(normalized_time * sam3_fps))
                 if session.frame_count > 0:
                     mask_frame_idx = mask_frame_idx % session.frame_count
 

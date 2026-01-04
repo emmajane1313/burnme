@@ -757,31 +757,17 @@ class FrameProcessor:
                 mask_id = self.parameters.get("sam3_mask_id")
                 if mask_id and frame_indices is not None:
                     try:
-                        mask_offset = int(
-                            self.parameters.get("sam3_mask_offset_frames") or 0
+                        mask_frames = sam3_mask_manager.get_masks_for_frames(
+                            mask_id, frame_indices
                         )
-                        adjusted_indices = [
-                            max(0, idx + mask_offset) for idx in frame_indices
-                        ]
-                        if frame_times is not None and any(
-                            t is not None for t in frame_times
-                        ):
-                            mask_frames = sam3_mask_manager.get_masks_for_times(
-                                mask_id, frame_times, adjusted_indices
-                            )
-                        else:
-                            mask_frames = sam3_mask_manager.get_masks_for_frames(
-                                mask_id, adjusted_indices
-                            )
                         if SAM3_DEBUG:
                             logger.info(
-                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s offset=%s",
+                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s",
                                 mask_id,
                                 len(frame_indices),
-                                adjusted_indices[0] if adjusted_indices else None,
-                                adjusted_indices[-1] if adjusted_indices else None,
+                                frame_indices[0] if frame_indices else None,
+                                frame_indices[-1] if frame_indices else None,
                                 self.parameters.get("sam3_mask_mode"),
-                                mask_offset,
                             )
                         call_params["mask_frames"] = mask_frames
                         mask_mode = self.parameters.get("sam3_mask_mode")

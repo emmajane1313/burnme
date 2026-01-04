@@ -49,26 +49,12 @@ interface InputAndControlsPanelProps {
   onDeleteBurn?: () => void;
   onPromptSend?: () => void;
   onTogglePause?: () => void;
-  sam3Prompt?: string;
-  onSam3PromptChange?: (value: string) => void;
   sam3MaskId?: string | null;
-  sam3MaskMode?: "inside" | "outside";
-  onSam3MaskModeChange?: (mode: "inside" | "outside") => void;
   onSam3Generate?: () => void;
   onSam3Clear?: () => void;
   sam3Status?: string | null;
   isSam3Generating?: boolean;
   sourceVideoBlocked?: boolean;
-  sam3Box?: { x1: number; y1: number; x2: number; y2: number } | null;
-  onSam3BoxChange?: (box: {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-  } | null) => void;
-  onSam3BoxClear?: () => void;
-  sam3MaskOffsetFrames?: number;
-  onSam3MaskOffsetChange?: (value: number) => void;
 }
 
 export function InputAndControlsPanel({
@@ -106,21 +92,12 @@ export function InputAndControlsPanel({
   onDeleteBurn,
   onPromptSend,
   onTogglePause,
-  sam3Prompt = "",
-  onSam3PromptChange,
   sam3MaskId = null,
-  sam3MaskMode = "inside",
-  onSam3MaskModeChange,
   onSam3Generate,
   onSam3Clear,
   sam3Status = null,
   isSam3Generating = false,
   sourceVideoBlocked = false,
-  sam3Box = null,
-  onSam3BoxChange,
-  onSam3BoxClear,
-  sam3MaskOffsetFrames = 0,
-  onSam3MaskOffsetChange,
 }: InputAndControlsPanelProps) {
   const [burnDate, setBurnDate] = useState<string>("");
   const [burnTime, setBurnTime] = useState<string>("");
@@ -145,16 +122,7 @@ export function InputAndControlsPanel({
   const timePickerRef = useRef<HTMLDivElement>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [isDrawingSam3Box, setIsDrawingSam3Box] = useState(false);
-  const [boxDraft, setBoxDraft] = useState<{
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-  } | null>(null);
-
   const videoRef = useRef<HTMLVideoElement>(null);
-  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const pipeline = pipelines?.[pipelineId];
 
@@ -170,22 +138,6 @@ export function InputAndControlsPanel({
   }, [localStream]);
 
 
-  const toNormalizedBox = (
-    startX: number,
-    startY: number,
-    endX: number,
-    endY: number
-  ) => {
-    const rect = previewContainerRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0 || rect.height === 0) return null;
-    const clamp = (val: number, max: number) => Math.min(Math.max(val, 0), max);
-    const x1 = clamp(Math.min(startX, endX), rect.width) / rect.width;
-    const x2 = clamp(Math.max(startX, endX), rect.width) / rect.width;
-    const y1 = clamp(Math.min(startY, endY), rect.height) / rect.height;
-    const y2 = clamp(Math.max(startY, endY), rect.height) / rect.height;
-    if (x2 - x1 < 0.02 || y2 - y1 < 0.02) return null;
-    return { x1, y1, x2, y2 };
-  };
 
   useEffect(() => {
     if (prefillVideoFile) {
@@ -437,55 +389,7 @@ export function InputAndControlsPanel({
       <CardContent className="space-y-3 overflow-y-auto flex-1 px-4 py-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div>
           <h3 className="text-xs font-medium mb-1.5">Video Input</h3>
-          <div
-            ref={previewContainerRef}
-            className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px] select-none"
-            onMouseDown={(event) => {
-              if (!isDrawingSam3Box) return;
-              const rect = previewContainerRef.current?.getBoundingClientRect();
-              if (!rect) return;
-              const startX = event.clientX - rect.left;
-              const startY = event.clientY - rect.top;
-              setBoxDraft({ x1: startX, y1: startY, x2: startX, y2: startY });
-            }}
-            onMouseMove={(event) => {
-              if (!isDrawingSam3Box || !boxDraft) return;
-              const rect = previewContainerRef.current?.getBoundingClientRect();
-              if (!rect) return;
-              const currentX = event.clientX - rect.left;
-              const currentY = event.clientY - rect.top;
-              setBoxDraft({
-                x1: boxDraft.x1,
-                y1: boxDraft.y1,
-                x2: currentX,
-                y2: currentY,
-              });
-            }}
-            onMouseUp={() => {
-              if (!isDrawingSam3Box || !boxDraft) return;
-              const normalized = toNormalizedBox(
-                boxDraft.x1,
-                boxDraft.y1,
-                boxDraft.x2,
-                boxDraft.y2
-              );
-              onSam3BoxChange?.(normalized);
-              setBoxDraft(null);
-              setIsDrawingSam3Box(false);
-            }}
-            onMouseLeave={() => {
-              if (!isDrawingSam3Box || !boxDraft) return;
-              const normalized = toNormalizedBox(
-                boxDraft.x1,
-                boxDraft.y1,
-                boxDraft.x2,
-                boxDraft.y2
-              );
-              onSam3BoxChange?.(normalized);
-              setBoxDraft(null);
-              setIsDrawingSam3Box(false);
-            }}
-          >
+          <div className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px]">
             {isInitializing ? (
               <div className="text-center text-muted-foreground text-sm">
                 Initializing video...
@@ -506,28 +410,6 @@ export function InputAndControlsPanel({
                 />
                 {sourceVideoBlocked ? (
                   <div className="absolute inset-0 bg-black/20" />
-                ) : null}
-                {sam3Box ? (
-                  <div
-                    className="absolute border-2 border-pink-200 bg-pink-200/10 pointer-events-none"
-                    style={{
-                      left: `${sam3Box.x1 * 100}%`,
-                      top: `${sam3Box.y1 * 100}%`,
-                      width: `${(sam3Box.x2 - sam3Box.x1) * 100}%`,
-                      height: `${(sam3Box.y2 - sam3Box.y1) * 100}%`,
-                    }}
-                  />
-                ) : null}
-                {boxDraft ? (
-                  <div
-                    className="absolute border-2 border-pink-200 bg-pink-200/10 pointer-events-none"
-                    style={{
-                      left: `${Math.min(boxDraft.x1, boxDraft.x2)}px`,
-                      top: `${Math.min(boxDraft.y1, boxDraft.y2)}px`,
-                      width: `${Math.abs(boxDraft.x2 - boxDraft.x1)}px`,
-                      height: `${Math.abs(boxDraft.y2 - boxDraft.y1)}px`,
-                    }}
-                  />
                 ) : null}
               </div>
             ) : (
@@ -913,53 +795,13 @@ export function InputAndControlsPanel({
               </a>
               . Request access before generating masks.
             </div>
-            <input
-              type="text"
-              value={sam3Prompt}
-              onChange={(event) => onSam3PromptChange?.(event.target.value)}
-              placeholder="mask prompt (text)"
-              className="win98-input text-xs w-full px-2 py-1"
-              disabled={isSam3Generating}
-            />
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Button
-                size="xs"
-                variant="secondary"
-                onClick={() => onSam3MaskModeChange?.("inside")}
-                className={
-                  sam3MaskMode === "inside" ? "ring-2 ring-white/40" : ""
-                }
-                disabled={isSam3Generating}
-              >
-                Inside Mask
-              </Button>
-              <Button
-                size="xs"
-                variant="secondary"
-                onClick={() => onSam3MaskModeChange?.("outside")}
-                className={
-                  sam3MaskMode === "outside" ? "ring-2 ring-white/40" : ""
-                }
-                disabled={isSam3Generating}
-              >
-                Outside Mask
-              </Button>
-            </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <Button
               size="xs"
               onClick={onSam3Generate}
               disabled={isSam3Generating || isConnecting || isLoading}
             >
-              {isSam3Generating ? "Generating..." : "Generate Masks"}
-            </Button>
-            <Button
-              size="xs"
-              variant="secondary"
-              onClick={() => setIsDrawingSam3Box(true)}
-              disabled={isSam3Generating || !localStream}
-            >
-              Draw Box
+              {isSam3Generating ? "Generating..." : "Regenerate Mask"}
             </Button>
             {sam3MaskId && (
               <Button
@@ -971,43 +813,7 @@ export function InputAndControlsPanel({
                 Clear Mask
               </Button>
             )}
-            {sam3Box && (
-              <Button
-                size="xs"
-                variant="destructive"
-                onClick={() => {
-                  onSam3BoxClear?.();
-                  setBoxDraft(null);
-                  setIsDrawingSam3Box(false);
-                }}
-                disabled={isSam3Generating}
-              >
-                Clear Box
-              </Button>
-            )}
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[11px] text-muted-foreground">Mask offset</span>
-            <input
-              type="range"
-              min={-30}
-              max={30}
-              step={1}
-              value={sam3MaskOffsetFrames}
-              onChange={(event) =>
-                onSam3MaskOffsetChange?.(Number(event.target.value))
-              }
-              className="mac-translucent-slider w-full"
-            />
-            <span className="text-[11px] text-muted-foreground w-8 text-right">
-              {sam3MaskOffsetFrames}
-            </span>
-          </div>
-          {isDrawingSam3Box ? (
-            <div className="text-[11px] text-muted-foreground">
-              Drag on the video preview to set the box.
-            </div>
-          ) : null}
             {sam3Status && (
               <div className="text-xs text-muted-foreground">{sam3Status}</div>
             )}

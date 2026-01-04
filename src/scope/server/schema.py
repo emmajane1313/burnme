@@ -121,10 +121,6 @@ class Parameters(BaseModel):
         default="inside",
         description="Apply synth inside or outside the SAM3 mask.",
     )
-    sam3_mask_offset_frames: int | None = Field(
-        default=0,
-        description="Frame offset to align SAM3 masks with the video stream.",
-    )
 
 
 class SpoutConfig(BaseModel):
