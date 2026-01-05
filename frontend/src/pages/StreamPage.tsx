@@ -36,6 +36,9 @@ const VIDEO_REINITIALIZE_DELAY_MS = 100;
 const MAX_VIDEO_WIDTH = 496;
 const MAX_VIDEO_HEIGHT = 384;
 const RESOLUTION_STEP = 16;
+const MAX_DENOISING_STEPS = [1000, 750, 500, 250];
+const HARD_NOISE_SCALE = 1.0;
+const HARD_NOISE_CONTROLLER = false;
 
 function fitResolutionToBounds(
   resolution: { width: number; height: number }
@@ -106,7 +109,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     settings,
     updateSettings,
     getDefaults,
-    supportsNoiseControls,
     spoutAvailable,
   } = useStreamState();
 
@@ -450,7 +452,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     updateSettings({
       pipelineId,
       inputMode: modeToUse,
-      denoisingSteps: defaults.denoisingSteps,
+      denoisingSteps: MAX_DENOISING_STEPS,
       resolution,
       noiseScale: defaults.noiseScale,
       noiseController: defaults.noiseController,
@@ -506,7 +508,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
             updateSettings({
               pipelineId,
               inputMode: currentMode,
-              denoisingSteps: defaults.denoisingSteps,
+              denoisingSteps: MAX_DENOISING_STEPS,
               resolution,
               noiseScale: defaults.noiseScale,
               noiseController: defaults.noiseController,
@@ -544,30 +546,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
   const handleSeedChange = (seed: number) => {
     updateSettings({ seed });
-  };
-
-  const handleDenoisingStepsChange = (denoisingSteps: number[]) => {
-    updateSettings({ denoisingSteps });
-    // Send denoising steps update to backend
-    sendParameterUpdate({
-      denoising_step_list: denoisingSteps,
-    });
-  };
-
-  const handleNoiseScaleChange = (noiseScale: number) => {
-    updateSettings({ noiseScale });
-    // Send noise scale update to backend
-    sendParameterUpdate({
-      noise_scale: noiseScale,
-    });
-  };
-
-  const handleNoiseControllerChange = (enabled: boolean) => {
-    updateSettings({ noiseController: enabled });
-    // Send noise controller update to backend
-    sendParameterUpdate({
-      noise_controller: enabled,
-    });
   };
 
   const handleUploadVideoFile = async (file: File) => {
@@ -654,7 +632,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendParameterUpdate({
       prompts,
       prompt_interpolation_method: interpolationMethod,
-      denoising_step_list: settings.denoisingSteps || [700, 500],
+      denoising_step_list: MAX_DENOISING_STEPS,
     });
   };
 
@@ -852,7 +830,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendParameterUpdate({
       prompts: [{ text: promptText, weight: 100 }],
       prompt_interpolation_method: interpolationMethod,
-      denoising_step_list: settings.denoisingSteps || [700, 500],
+      denoising_step_list: MAX_DENOISING_STEPS,
     });
   };
 
@@ -1071,9 +1049,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       if (pipelineInfo?.supportsPrompts !== false) {
         initialParameters.prompts = overridePrompts ?? promptItems;
         initialParameters.prompt_interpolation_method = interpolationMethod;
-        initialParameters.denoising_step_list = settings.denoisingSteps || [
-          700, 500,
-        ];
+        initialParameters.denoising_step_list = MAX_DENOISING_STEPS;
       }
 
       // Cache management for pipelines that support it
@@ -1097,10 +1073,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.vace_context_scale = vaceParams.vace_context_scale;
       }
 
-      // Video mode parameters - applies to all pipelines in video mode
+      // Video mode parameters - hardcoded for maximum denoise behavior
       if (currentMode === "video") {
-        initialParameters.noise_scale = settings.noiseScale ?? 0.7;
-        initialParameters.noise_controller = settings.noiseController ?? true;
+        initialParameters.noise_scale = HARD_NOISE_SCALE;
+        initialParameters.noise_controller = HARD_NOISE_CONTROLLER;
       }
 
       // Spout settings - send if enabled
@@ -1238,20 +1214,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   isLoading={isLoading}
                   seed={settings.seed ?? 42}
                   onSeedChange={handleSeedChange}
-                  denoisingSteps={
-                    settings.denoisingSteps ||
-                    getDefaults(settings.pipelineId, settings.inputMode)
-                      .denoisingSteps || [750, 250]
-                  }
-                  onDenoisingStepsChange={handleDenoisingStepsChange}
-                  defaultDenoisingSteps={
-                    getDefaults(settings.pipelineId, settings.inputMode)
-                      .denoisingSteps || [750, 250]
-                  }
-                  noiseScale={settings.noiseScale ?? 0.7}
-                  onNoiseScaleChange={handleNoiseScaleChange}
-                  noiseController={settings.noiseController ?? true}
-                  onNoiseControllerChange={handleNoiseControllerChange}
                   manageCache={settings.manageCache ?? true}
                   onManageCacheChange={handleManageCacheChange}
                   quantization={
@@ -1266,8 +1228,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   loras={settings.loras || []}
                   onLorasChange={handleLorasChange}
                   loraMergeStrategy={settings.loraMergeStrategy ?? "permanent_merge"}
-                  inputMode={settings.inputMode}
-                  supportsNoiseControls={supportsNoiseControls(settings.pipelineId)}
                   spoutSender={settings.spoutSender}
                   onSpoutSenderChange={handleSpoutSenderChange}
                   spoutAvailable={spoutAvailable}

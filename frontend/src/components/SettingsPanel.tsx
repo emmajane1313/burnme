@@ -20,7 +20,6 @@ import type {
   LoRAConfig,
   LoraMergeStrategy,
   SettingsState,
-  InputMode,
   PipelineInfo,
 } from "../types";
 import { LoRAManager } from "./LoRAManager";
@@ -35,14 +34,6 @@ interface SettingsPanelProps {
   isLoading?: boolean;
   seed?: number;
   onSeedChange?: (seed: number) => void;
-  denoisingSteps?: number[];
-  onDenoisingStepsChange?: (denoisingSteps: number[]) => void;
-  // Default denoising steps for reset functionality - derived from backend schema
-  defaultDenoisingSteps: number[];
-  noiseScale?: number;
-  onNoiseScaleChange?: (noiseScale: number) => void;
-  noiseController?: boolean;
-  onNoiseControllerChange?: (enabled: boolean) => void;
   manageCache?: boolean;
   onManageCacheChange?: (enabled: boolean) => void;
   quantization?: "fp8_e4m3fn" | null;
@@ -53,10 +44,6 @@ interface SettingsPanelProps {
   loras?: LoRAConfig[];
   onLorasChange: (loras: LoRAConfig[]) => void;
   loraMergeStrategy?: LoraMergeStrategy;
-  // Input mode for conditional rendering of noise controls
-  inputMode?: InputMode;
-  // Whether this pipeline supports noise controls in video mode (schema-derived)
-  supportsNoiseControls?: boolean;
   // Spout settings
   spoutSender?: SettingsState["spoutSender"];
   onSpoutSenderChange?: (spoutSender: SettingsState["spoutSender"]) => void;
@@ -74,13 +61,6 @@ export function SettingsPanel({
   isLoading = false,
   seed = 42,
   onSeedChange,
-  denoisingSteps = [700, 500],
-  onDenoisingStepsChange,
-  defaultDenoisingSteps,
-  noiseScale = 0.7,
-  onNoiseScaleChange,
-  noiseController = true,
-  onNoiseControllerChange,
   manageCache = true,
   onManageCacheChange,
   quantization = "fp8_e4m3fn",
@@ -91,15 +71,12 @@ export function SettingsPanel({
   loras = [],
   onLorasChange,
   loraMergeStrategy = "permanent_merge",
-  inputMode,
-  supportsNoiseControls = false,
   spoutSender,
   onSpoutSenderChange,
   spoutAvailable = false,
   isVideoPaused = false,
 }: SettingsPanelProps) {
   // Local slider state management hooks
-  const noiseScaleSlider = useLocalSliderValue(noiseScale, onNoiseScaleChange);
   const kvCacheAttentionBiasSlider = useLocalSliderValue(
     kvCacheAttentionBias,
     onKvCacheAttentionBiasChange
@@ -300,69 +277,7 @@ export function SettingsPanel({
           </div>
         )}
 
-        {pipelines?.[pipelineId]?.supportsQuantization && (
-          <SliderWithInput
-            label="Denoise"
-            tooltip={PARAMETER_METADATA.denoisingSteps.tooltip}
-            value={denoisingSteps[0] ?? defaultDenoisingSteps[0] ?? 700}
-            onValueChange={value =>
-              onDenoisingStepsChange?.([Math.round(value)])
-            }
-            onValueCommit={value =>
-              onDenoisingStepsChange?.([Math.round(value)])
-            }
-            min={0}
-            max={1000}
-            step={1}
-            incrementAmount={10}
-            disabled={isControlsLocked}
-            labelClassName="text-sm text-foreground w-16"
-          />
-        )}
-
    
-        {inputMode === "video" && supportsNoiseControls && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center justify-between gap-2">
-                  <LabelWithTooltip
-                    label={PARAMETER_METADATA.noiseController.label}
-                    tooltip={PARAMETER_METADATA.noiseController.tooltip}
-                    className="text-sm text-foreground"
-                  />
-                  <Toggle
-                    pressed={noiseController}
-                    onPressedChange={onNoiseControllerChange || (() => {})}
-                    disabled={isControlsLocked}
-                    variant="outline"
-                    size="sm"
-                    className="h-7"
-                  >
-                    {noiseController ? "ON" : "OFF"}
-                  </Toggle>
-                </div>
-              </div>
-
-              <SliderWithInput
-                label={PARAMETER_METADATA.noiseScale.label}
-                tooltip={PARAMETER_METADATA.noiseScale.tooltip}
-                value={noiseScaleSlider.localValue}
-                onValueChange={noiseScaleSlider.handleValueChange}
-                onValueCommit={noiseScaleSlider.handleValueCommit}
-                min={0.0}
-                max={1.0}
-                step={0.01}
-                incrementAmount={0.01}
-                disabled={noiseController}
-                labelClassName="text-sm text-foreground w-20"
-                valueFormatter={noiseScaleSlider.formatValue}
-                inputParser={v => parseFloat(v) || 0.0}
-              />
-            </div>
-          </div>
-        )}
-
      
         {pipelines?.[pipelineId]?.supportsQuantization && (
           <div className="space-y-4">

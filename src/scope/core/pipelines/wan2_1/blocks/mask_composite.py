@@ -56,13 +56,13 @@ class MaskCompositeBlock(ModularPipelineBlocks):
     def __call__(self, components, state: PipelineState) -> tuple[Any, PipelineState]:
         block_state = self.get_block_state(state)
 
-        if block_state.mask_frames is None or block_state.video_raw is None:
-            self.set_block_state(state, block_state)
-            return components, state
-
         output_video = block_state.output_video
         mask = block_state.mask_frames
         video_raw = block_state.video_raw
+
+        if video_raw is None:
+            self.set_block_state(state, block_state)
+            return components, state
 
         def to_btchw(tensor: torch.Tensor) -> torch.Tensor:
             if tensor.ndim != 5:
@@ -73,8 +73,26 @@ class MaskCompositeBlock(ModularPipelineBlocks):
             return tensor
 
         output_video = to_btchw(output_video)
-        mask = to_btchw(mask)
         video_raw = to_btchw(video_raw)
+
+        if mask is None:
+            # No mask available yet; fall back to the original video to avoid
+            # showing the raw synth output outside the mask.
+            output_channels = output_video.shape[2]
+            raw_channels = video_raw.shape[2]
+            if output_channels != raw_channels:
+                if raw_channels == 1 and output_channels > 1:
+                    video_raw = video_raw.expand(-1, -1, output_channels, -1, -1)
+                elif output_channels == 1 and raw_channels > 1:
+                    video_raw = video_raw[:, :, :1]
+                else:
+                    min_channels = min(output_channels, raw_channels)
+                    video_raw = video_raw[:, :, :min_channels]
+            block_state.output_video = video_raw
+            self.set_block_state(state, block_state)
+            return components, state
+
+        mask = to_btchw(mask)
 
         # Align frame count on T dimension
         min_frames = min(output_video.shape[1], mask.shape[1], video_raw.shape[1])

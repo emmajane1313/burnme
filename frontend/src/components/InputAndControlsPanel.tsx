@@ -96,8 +96,7 @@ const PROMPT_PRESETS = [
   },
 ];
 
-const FIXED_TEMPORAL_METHOD = "slerp";
-const FIXED_TRANSITION_STEPS = 4;
+const SNAP_TRANSITION_STEPS = 0;
 
 export function InputAndControlsPanel({
   className = "",
@@ -159,11 +158,11 @@ export function InputAndControlsPanel({
     if (!isStreaming || isLoading || isSynthCapturing) {
       return;
     }
-    if (FIXED_TRANSITION_STEPS > 0) {
+    if (SNAP_TRANSITION_STEPS > 0) {
       onTransitionSubmit({
         target_prompts: nextPrompts,
-        num_steps: FIXED_TRANSITION_STEPS,
-        temporal_interpolation_method: FIXED_TEMPORAL_METHOD,
+        num_steps: SNAP_TRANSITION_STEPS,
+        temporal_interpolation_method: "slerp",
       });
     } else {
       onLivePromptSubmit?.(nextPrompts);
