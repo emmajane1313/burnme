@@ -368,20 +368,19 @@ class Sam3MaskManager:
             tensor = torch.from_numpy(mask_array).float().unsqueeze(0).unsqueeze(-1)
             frames.append(tensor)
 
-        if SAM3_DEBUG:
-            first_time = frame_times_list[0] if frame_times_list else None
-            last_time = frame_times_list[-1] if frame_times_list else None
-            logger.info(
-                "SAM3 mask fetch (time): session=%s frames=%d hits=%d misses=%d sam3_fps=%s origin=%s first_time=%s last_time=%s",
-                session_id,
-                len(frames),
-                hits,
-                misses,
-                sam3_fps,
-                time_origin,
-                first_time,
-                last_time,
-            )
+        first_time = frame_times_list[0] if frame_times_list else None
+        last_time = frame_times_list[-1] if frame_times_list else None
+        logger.info(
+            "SAM3 mask fetch (time): session=%s frames=%d hits=%d misses=%d sam3_fps=%s origin=%s first_time=%s last_time=%s",
+            session_id,
+            len(frames),
+            hits,
+            misses,
+            sam3_fps,
+            time_origin,
+            first_time,
+            last_time,
+        )
 
         return frames
 

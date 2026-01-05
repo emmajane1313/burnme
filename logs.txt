@@ -1,0 +1,386 @@
+2026-01-04T23:49:54.052576088Z ==========
+2026-01-04T23:49:54.052577721Z == CUDA ==
+2026-01-04T23:49:54.052583972Z ==========
+2026-01-04T23:49:54.054792694Z CUDA Version 12.8.0
+2026-01-04T23:49:54.055725700Z Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+2026-01-04T23:49:54.055730669Z This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+2026-01-04T23:49:54.055731641Z By pulling and using the container, you accept the terms and conditions of this license:
+2026-01-04T23:49:54.055732372Z https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+2026-01-04T23:49:54.055733945Z A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+2026-01-04T23:49:54.059227130Z Cloning repository from https://github.com/emmajane1313/burnme.git...
+2026-01-04T23:49:54.059788079Z Cloning into '.'...
+2026-01-04T23:49:55.796970012Z Installing Python dependencies...
+2026-01-04T23:49:55.834553459Z Using CPython 3.10.12 interpreter at: /usr/bin/python3.10
+2026-01-04T23:49:55.834566083Z Creating virtual environment at: .venv
+2026-01-04T23:49:55.845132329Z    Building burnmewhileimhot @ file:///app
+2026-01-04T23:49:55.928606413Z Downloading pygments (1.2MiB)
+2026-01-04T23:49:55.938747083Z Downloading torch (848.0MiB)
+2026-01-04T23:49:55.947649276Z Downloading hf-xet (3.2MiB)
+2026-01-04T23:49:55.972913478Z Downloading tokenizers (3.1MiB)
+2026-01-04T23:49:55.972942472Z Downloading sympy (6.0MiB)
+2026-01-04T23:49:55.973035146Z Downloading setuptools (1.1MiB)
+2026-01-04T23:49:55.973058369Z Downloading transformers (11.4MiB)
+2026-01-04T23:49:55.973098865Z Downloading nvidia-cusparselt-cu12 (273.9MiB)
+2026-01-04T23:49:55.973176189Z Downloading pydantic-core (2.0MiB)
+2026-01-04T23:49:55.973218839Z Downloading pillow (6.7MiB)
+2026-01-04T23:49:55.973346298Z Downloading numpy (16.0MiB)
+2026-01-04T23:49:55.973501217Z Downloading nvidia-cudnn-cu12 (674.0MiB)
+2026-01-04T23:49:55.973552654Z Downloading nvidia-cufft-cu12 (184.2MiB)
+2026-01-04T23:49:55.973658452Z Downloading twilio (1.7MiB)
+2026-01-04T23:49:55.973713074Z Downloading ruff (12.7MiB)
+2026-01-04T23:49:55.973829632Z Downloading nvidia-cusparse-cu12 (274.9MiB)
+2026-01-04T23:49:55.973888121Z Downloading virtualenv (5.7MiB)
+2026-01-04T23:49:55.973949977Z Downloading diffusers (3.9MiB)
+2026-01-04T23:49:55.974012664Z Downloading nvidia-nccl-cu12 (307.4MiB)
+2026-01-04T23:49:55.974075251Z Downloading networkx (1.6MiB)
+2026-01-04T23:49:55.974137347Z Downloading torchao (6.6MiB)
+2026-01-04T23:49:55.974203992Z Downloading nvidia-curand-cu12 (60.7MiB)
+2026-01-04T23:49:55.974274684Z Downloading nvidia-cublas-cu12 (566.8MiB)
+2026-01-04T23:49:55.974408384Z Downloading cryptography (4.3MiB)
+2026-01-04T23:49:55.974480329Z Downloading triton (148.2MiB)
+2026-01-04T23:49:55.974557113Z Downloading pylibsrtp (2.3MiB)
+2026-01-04T23:49:55.974630810Z Downloading nvidia-cusolver-cu12 (255.1MiB)
+2026-01-04T23:49:55.974796721Z Downloading imageio-ffmpeg (28.1MiB)
+2026-01-04T23:49:55.974880728Z Downloading aiohttp (1.6MiB)
+2026-01-04T23:49:55.974962761Z Downloading nvidia-cufile-cu12 (1.1MiB)
+2026-01-04T23:49:55.975042651Z Downloading av (37.9MiB)
+2026-01-04T23:49:55.975124113Z Downloading nvidia-cuda-cupti-cu12 (9.8MiB)
+2026-01-04T23:49:55.975205435Z Downloading nvidia-nvjitlink-cu12 (37.4MiB)
+2026-01-04T23:49:55.975288140Z Downloading nvidia-cuda-nvrtc-cu12 (84.0MiB)
+2026-01-04T23:49:56.018568765Z Downloading torchvision (8.2MiB)
+2026-01-04T23:49:56.214473162Z Downloading sageattention (21.6MiB)
+2026-01-04T23:49:56.259923195Z Downloading flash-attn (244.2MiB)
+2026-01-04T23:49:56.372970441Z  Downloaded torchvision
+2026-01-04T23:49:56.402110323Z  Downloaded nvidia-cufile-cu12
+2026-01-04T23:49:56.672005483Z  Downloaded aiohttp
+2026-01-04T23:49:56.681816527Z  Downloaded pygments
+2026-01-04T23:49:56.717167958Z  Downloaded sageattention
+2026-01-04T23:49:56.802544622Z  Downloaded setuptools
+2026-01-04T23:49:56.830157757Z  Downloaded pydantic-core
+2026-01-04T23:49:56.863450247Z    Building antlr4-python3-runtime==4.9.3
+2026-01-04T23:49:56.865386109Z  Downloaded networkx
+2026-01-04T23:49:56.870333223Z       Built burnmewhileimhot @ file:///app
+2026-01-04T23:49:56.899361126Z  Downloaded pylibsrtp
+2026-01-04T23:49:57.024570724Z  Downloaded twilio
+2026-01-04T23:49:57.042385440Z  Downloaded tokenizers
+2026-01-04T23:49:57.043257171Z  Downloaded hf-xet
+2026-01-04T23:49:57.208232889Z       Built antlr4-python3-runtime==4.9.3
+2026-01-04T23:49:57.237541286Z  Downloaded diffusers
+2026-01-04T23:49:57.314133507Z  Downloaded cryptography
+2026-01-04T23:49:57.484882576Z  Downloaded virtualenv
+2026-01-04T23:49:57.605354842Z  Downloaded sympy
+2026-01-04T23:49:57.632433207Z  Downloaded pillow
+2026-01-04T23:49:57.707707232Z  Downloaded torchao
+2026-01-04T23:49:57.970356628Z  Downloaded nvidia-cuda-cupti-cu12
+2026-01-04T23:49:58.252652797Z  Downloaded ruff
+2026-01-04T23:49:58.284015076Z  Downloaded transformers
+2026-01-04T23:49:58.544928244Z  Downloaded numpy
+2026-01-04T23:49:59.541481578Z  Downloaded imageio-ffmpeg
+2026-01-04T23:50:00.218692300Z  Downloaded nvidia-nvjitlink-cu12
+2026-01-04T23:50:00.227718826Z  Downloaded av
+2026-01-04T23:50:00.250126714Z  Downloaded flash-attn
+2026-01-04T23:50:01.455206066Z  Downloaded nvidia-curand-cu12
+2026-01-04T23:50:02.690953989Z  Downloaded nvidia-cuda-nvrtc-cu12
+2026-01-04T23:50:05.689363618Z  Downloaded triton
+2026-01-04T23:50:07.178866168Z  Downloaded nvidia-cufft-cu12
+2026-01-04T23:50:09.772647473Z  Downloaded nvidia-cusolver-cu12
+2026-01-04T23:50:10.231061865Z  Downloaded nvidia-cusparselt-cu12
+2026-01-04T23:50:10.317143848Z  Downloaded nvidia-cusparse-cu12
+2026-01-04T23:50:10.740674373Z  Downloaded nvidia-nccl-cu12
+2026-01-04T23:50:14.208229540Z  Downloaded nvidia-cublas-cu12
+2026-01-04T23:50:14.652809873Z  Downloaded torch
+2026-01-04T23:50:15.548864134Z  Downloaded nvidia-cudnn-cu12
+2026-01-04T23:50:15.549019675Z Prepared 135 packages in 19.70s
+2026-01-04T23:50:15.553702486Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvtx-cu12` (v12.8.90) or `nvidia-curand-cu12` (v10.3.9.90).
+2026-01-04T23:50:15.553774851Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvtx-cu12` (v12.8.90) or `nvidia-cuda-nvrtc-cu12` (v12.8.93).
+2026-01-04T23:50:15.568839202Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cufft-cu12` (v11.3.3.83) or `nvidia-cuda-nvrtc-cu12` (v12.8.93).
+2026-01-04T23:50:15.597232056Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusolver-cu12` (v11.7.3.90) or `nvidia-cufft-cu12` (v11.3.3.83).
+2026-01-04T23:50:15.612768259Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusolver-cu12` (v11.7.3.90) or `nvidia-cuda-cupti-cu12` (v12.8.90).
+2026-01-04T23:50:15.614082879Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvjitlink-cu12` (v12.8.93) or `nvidia-cuda-cupti-cu12` (v12.8.90).
+2026-01-04T23:50:15.628067870Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvjitlink-cu12` (v12.8.93) or `nvidia-cusparse-cu12` (v12.5.8.93).
+2026-01-04T23:50:15.628127432Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusparse-cu12` (v12.5.8.93) or `nvidia-cublas-cu12` (v12.8.4.1).
+2026-01-04T23:50:15.643190119Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cuda-runtime-cu12` (v12.8.90) or `nvidia-cublas-cu12` (v12.8.4.1).
+2026-01-04T23:50:15.643366269Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cufile-cu12` (v1.13.1.3) or `nvidia-cuda-runtime-cu12` (v12.8.90).
+2026-01-04T23:50:15.756584585Z Installed 135 packages in 207ms
+2026-01-04T23:50:15.756716242Z  + accelerate==1.11.0
+2026-01-04T23:50:15.756719688Z  + aiohappyeyeballs==2.6.1
+2026-01-04T23:50:15.756720710Z  + aiohttp==3.13.2
+2026-01-04T23:50:15.756721582Z  + aiohttp-retry==2.9.1
+2026-01-04T23:50:15.756722433Z  + aioice==0.10.1
+2026-01-04T23:50:15.756727172Z  + aiortc==1.14.0
+2026-01-04T23:50:15.756729486Z  + aiosignal==1.4.0
+2026-01-04T23:50:15.756734877Z  + annotated-doc==0.0.3
+2026-01-04T23:50:15.756742851Z  + annotated-types==0.7.0
+2026-01-04T23:50:15.756753381Z  + antlr4-python3-runtime==4.9.3
+2026-01-04T23:50:15.756754934Z  + anyio==4.11.0
+2026-01-04T23:50:15.756759823Z  + async-timeout==5.0.1
+2026-01-04T23:50:15.756766075Z  + attrs==25.4.0
+2026-01-04T23:50:15.756774230Z  + av==16.0.1
+2026-01-04T23:50:15.756779169Z  + backports-tarfile==1.2.0
+2026-01-04T23:50:15.756797313Z  + burnmewhileimhot==0.1.0b2 (from file:///app)
+2026-01-04T23:50:15.756800339Z  + certifi==2025.10.5
+2026-01-04T23:50:15.756806340Z  + cffi==2.0.0
+2026-01-04T23:50:15.756812852Z  + cfgv==3.4.0
+2026-01-04T23:50:15.756835244Z  + charset-normalizer==3.4.4
+2026-01-04T23:50:15.756840634Z  + click==8.3.1
+2026-01-04T23:50:15.756841666Z  + cryptography==46.0.3
+2026-01-04T23:50:15.756844061Z  + diffusers==0.35.2
+2026-01-04T23:50:15.756846065Z  + distlib==0.4.0
+2026-01-04T23:50:15.756862666Z  + dnspython==2.8.0
+2026-01-04T23:50:15.756863718Z  + docutils==0.22.2
+2026-01-04T23:50:15.756884797Z  + easydict==1.13
+2026-01-04T23:50:15.756887542Z  + einops==0.8.1
+2026-01-04T23:50:15.756901618Z  + exceptiongroup==1.3.0
+2026-01-04T23:50:15.756909623Z  + fastapi==0.121.0
+2026-01-04T23:50:15.756910665Z  + filelock==3.20.0
+2026-01-04T23:50:15.756920884Z  + flash-attn==2.8.3+cu12torch2.8cxx11abifalse (from https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl)
+2026-01-04T23:50:15.756926154Z  + freezegun==1.5.5
+2026-01-04T23:50:15.756932316Z  + frozenlist==1.8.0
+2026-01-04T23:50:15.756939539Z  + fsspec==2025.10.0
+2026-01-04T23:50:15.756946372Z  + ftfy==6.3.1
+2026-01-04T23:50:15.756954608Z  + google-crc32c==1.7.1
+2026-01-04T23:50:15.756960979Z  + h11==0.16.0
+2026-01-04T23:50:15.756968614Z  + hf-xet==1.2.0
+2026-01-04T23:50:15.756972050Z  + httpcore==1.0.9
+2026-01-04T23:50:15.756974294Z  + httpx==0.28.1
+2026-01-04T23:50:15.756978793Z  + huggingface-hub==0.36.0
+2026-01-04T23:50:15.756983552Z  + id==1.5.0
+2026-01-04T23:50:15.756987870Z  + identify==2.6.15
+2026-01-04T23:50:15.756991346Z  + idna==3.11
+2026-01-04T23:50:15.756998399Z  + ifaddr==0.2.0
+2026-01-04T23:50:15.757000814Z  + imageio==2.37.2
+2026-01-04T23:50:15.757009610Z  + imageio-ffmpeg==0.6.0
+2026-01-04T23:50:15.757011284Z  + importlib-metadata==8.7.0
+2026-01-04T23:50:15.757014880Z  + iniconfig==2.3.0
+2026-01-04T23:50:15.757018968Z  + jaraco-classes==3.4.0
+2026-01-04T23:50:15.757023286Z  + jaraco-context==6.0.1
+2026-01-04T23:50:15.757028275Z  + jaraco-functools==4.3.0
+2026-01-04T23:50:15.757033164Z  + jeepney==0.9.0
+2026-01-04T23:50:15.757036721Z  + jinja2==3.1.6
+2026-01-04T23:50:15.757042332Z  + kernels==0.11.0
+2026-01-04T23:50:15.757046089Z  + keyring==25.6.0
+2026-01-04T23:50:15.757049275Z  + lmdb==1.7.5
+2026-01-04T23:50:15.757059614Z  + markdown-it-py==4.0.0
+2026-01-04T23:50:15.757060345Z  + markupsafe==3.0.3
+2026-01-04T23:50:15.757063631Z  + mdurl==0.1.2
+2026-01-04T23:50:15.757069252Z  + more-itertools==10.8.0
+2026-01-04T23:50:15.757072067Z  + mpmath==1.3.0
+2026-01-04T23:50:15.757076175Z  + multidict==6.7.0
+2026-01-04T23:50:15.757081906Z  + networkx==3.4.2
+2026-01-04T23:50:15.757085532Z  + nh3==0.3.2
+2026-01-04T23:50:15.757090171Z  + nodeenv==1.9.1
+2026-01-04T23:50:15.757093718Z  + numpy==2.2.6
+2026-01-04T23:50:15.757099148Z  + nvidia-cublas-cu12==12.8.4.1
+2026-01-04T23:50:15.757104057Z  + nvidia-cuda-cupti-cu12==12.8.90
+2026-01-04T23:50:15.757108766Z  + nvidia-cuda-nvrtc-cu12==12.8.93
+2026-01-04T23:50:15.757114066Z  + nvidia-cuda-runtime-cu12==12.8.90
+2026-01-04T23:50:15.757118534Z  + nvidia-cudnn-cu12==9.10.2.21
+2026-01-04T23:50:15.757123433Z  + nvidia-cufft-cu12==11.3.3.83
+2026-01-04T23:50:15.757127441Z  + nvidia-cufile-cu12==1.13.1.3
+2026-01-04T23:50:15.757132891Z  + nvidia-curand-cu12==10.3.9.90
+2026-01-04T23:50:15.757137770Z  + nvidia-cusolver-cu12==11.7.3.90
+2026-01-04T23:50:15.757143821Z  + nvidia-cusparse-cu12==12.5.8.93
+2026-01-04T23:50:15.757147508Z  + nvidia-cusparselt-cu12==0.7.1
+2026-01-04T23:50:15.757151506Z  + nvidia-nccl-cu12==2.27.3
+2026-01-04T23:50:15.757155974Z  + nvidia-nvjitlink-cu12==12.8.93
+2026-01-04T23:50:15.757159922Z  + nvidia-nvtx-cu12==12.8.90
+2026-01-04T23:50:15.757165402Z  + omegaconf==2.3.0
+2026-01-04T23:50:15.757168768Z  + packaging==25.0
+2026-01-04T23:50:15.757173407Z  + peft==0.17.1
+2026-01-04T23:50:15.757177504Z  + pillow==12.0.0
+2026-01-04T23:50:15.757182143Z  + platformdirs==4.5.0
+2026-01-04T23:50:15.757186792Z  + pluggy==1.6.0
+2026-01-04T23:50:15.757191080Z  + pre-commit==4.3.0
+2026-01-04T23:50:15.757194757Z  + propcache==0.4.1
+2026-01-04T23:50:15.757199456Z  + psutil==7.1.3
+2026-01-04T23:50:15.757203603Z  + pycparser==2.23
+2026-01-04T23:50:15.757207330Z  + pydantic==2.12.4
+2026-01-04T23:50:15.757211879Z  + pydantic-core==2.41.5
+2026-01-04T23:50:15.757215916Z  + pyee==13.0.0
+2026-01-04T23:50:15.757221236Z  + pygments==2.19.2
+2026-01-04T23:50:15.757225053Z  + pyjwt==2.10.1
+2026-01-04T23:50:15.757229822Z  + pylibsrtp==1.0.0
+2026-01-04T23:50:15.757233920Z  + pyopenssl==25.3.0
+2026-01-04T23:50:15.757237457Z  + pytest==8.4.2
+2026-01-04T23:50:15.757243097Z  + python-dateutil==2.9.0.post0
+2026-01-04T23:50:15.757247505Z  + pyyaml==6.0.3
+2026-01-04T23:50:15.757251503Z  + readme-renderer==44.0
+2026-01-04T23:50:15.757255881Z  + regex==2025.11.3
+2026-01-04T23:50:15.757259778Z  + requests==2.32.5
+2026-01-04T23:50:15.757265229Z  + requests-toolbelt==1.0.0
+2026-01-04T23:50:15.757269657Z  + rfc3986==2.0.0
+2026-01-04T23:50:15.757273915Z  + rich==14.2.0
+2026-01-04T23:50:15.757277562Z  + ruff==0.14.3
+2026-01-04T23:50:15.757281669Z  + safetensors==0.6.2
+2026-01-04T23:50:15.757287500Z  + sageattention==2.2.0 (from https://github.com/daydreamlive/SageAttention/releases/download/v2.2.0-linux/sageattention-2.2.0-cp310-cp310-linux_x86_64.whl)
+2026-01-04T23:50:15.757291347Z  + secretstorage==3.4.0
+2026-01-04T23:50:15.757295956Z  + setuptools==80.9.0
+2026-01-04T23:50:15.757302458Z  + six==1.17.0
+2026-01-04T23:50:15.757305404Z  + sniffio==1.3.1
+2026-01-04T23:50:15.757309541Z  + starlette==0.49.3
+2026-01-04T23:50:15.757314300Z  + sympy==1.14.0
+2026-01-04T23:50:15.757318729Z  + tokenizers==0.22.1
+2026-01-04T23:50:15.757322516Z  + tomli==2.3.0
+2026-01-04T23:50:15.757327966Z  + torch==2.8.0+cu128
+2026-01-04T23:50:15.757331843Z  + torchao==0.13.0
+2026-01-04T23:50:15.757337584Z  + torchvision==0.23.0+cu128
+2026-01-04T23:50:15.757341271Z  + tqdm==4.67.1
+2026-01-04T23:50:15.757348464Z  + transformers==4.57.1
+2026-01-04T23:50:15.757363042Z  + triton==3.4.0
+2026-01-04T23:50:15.757368902Z  + twilio==9.8.5
+2026-01-04T23:50:15.757375084Z  + twine==6.2.0
+2026-01-04T23:50:15.757382037Z  + typing-extensions==4.15.0
+2026-01-04T23:50:15.757387868Z  + typing-inspection==0.4.2
+2026-01-04T23:50:15.757396985Z  + urllib3==2.5.0
+2026-01-04T23:50:15.757399690Z  + uvicorn==0.38.0
+2026-01-04T23:50:15.757407334Z  + virtualenv==20.35.4
+2026-01-04T23:50:15.757416111Z  + wcwidth==0.2.14
+2026-01-04T23:50:15.757420910Z  + yarl==1.22.0
+2026-01-04T23:50:15.757428764Z  + zipp==3.23.0
+2026-01-04T23:50:15.771702666Z Building frontend...
+2026-01-04T23:50:17.668272925Z added 274 packages, and audited 275 packages in 2s
+2026-01-04T23:50:17.668276722Z 58 packages are looking for funding
+2026-01-04T23:50:17.668278225Z   run `npm fund` for details
+2026-01-04T23:50:17.671412939Z 2 moderate severity vulnerabilities
+2026-01-04T23:50:17.671416485Z To address all issues, run:
+2026-01-04T23:50:17.671417658Z   npm audit fix
+2026-01-04T23:50:17.671419872Z Run `npm audit` for details.
+2026-01-04T23:50:17.671955774Z npm notice
+2026-01-04T23:50:17.671960463Z npm notice New major version of npm available! 10.8.2 -> 11.7.0
+2026-01-04T23:50:17.671961645Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+2026-01-04T23:50:17.671971303Z npm notice To update run: npm install -g npm@11.7.0
+2026-01-04T23:50:17.671972646Z npm notice
+2026-01-04T23:50:17.726923983Z > burnmewhileimhot-frontend@0.1.0-beta.2 build
+2026-01-04T23:50:17.726926488Z > tsc -b && vite build
+2026-01-04T23:50:19.045114601Z vite v7.1.5 building for production...
+2026-01-04T23:50:19.164235269Z [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+2026-01-04T23:50:19.211172314Z transforming...
+2026-01-04T23:50:20.207009057Z ✓ 1790 modules transformed.
+2026-01-04T23:50:20.322803042Z rendering chunks...
+2026-01-04T23:50:20.326214093Z computing gzip size...
+2026-01-04T23:50:20.333739190Z dist/index.html                   0.47 kB │ gzip:   0.30 kB
+2026-01-04T23:50:20.333743518Z dist/assets/index-DWhn2Jmy.css   52.31 kB │ gzip:  10.04 kB
+2026-01-04T23:50:20.333747125Z dist/assets/index-Bes2cqa1.js   437.94 kB │ gzip: 137.49 kB
+2026-01-04T23:50:20.333854906Z ✓ built in 1.28s
+2026-01-04T23:50:20.374843213Z Starting burnmewhileimhot...
+2026-01-04T23:50:20.682659943Z Downloading flash-attn (121.7MiB)
+2026-01-04T23:50:20.724108380Z Downloading sageattention (11.4MiB)
+2026-01-04T23:50:20.854322892Z    Updating https://github.com/facebookresearch/sam3.git (HEAD)
+2026-01-04T23:50:20.934004722Z  Downloaded sageattention
+2026-01-04T23:50:22.318004808Z  Downloaded flash-attn
+2026-01-04T23:50:23.453482475Z     Updated https://github.com/facebookresearch/sam3.git (5eb25fb54b70ec0cb16f949289053be091e16705)
+2026-01-04T23:50:25.093630075Z    Building iopath==0.1.10
+2026-01-04T23:50:25.097597717Z    Building sam3 @ git+https://github.com/facebookresearch/sam3.git@5eb25fb54b70ec0cb16f949289053be091e16705
+2026-01-04T23:50:25.176611909Z       Built iopath==0.1.10
+2026-01-04T23:50:25.216297408Z Downloading opencv-python (60.1MiB)
+2026-01-04T23:50:25.216336531Z Downloading timm (2.4MiB)
+2026-01-04T23:50:25.216371176Z Downloading decord (13.0MiB)
+2026-01-04T23:50:25.216403827Z Downloading numpy (17.4MiB)
+2026-01-04T23:50:25.253619346Z       Built sam3 @ git+https://github.com/facebookresearch/sam3.git@5eb25fb54b70ec0cb16f949289053be091e16705
+2026-01-04T23:50:25.357697414Z  Downloaded timm
+2026-01-04T23:50:25.525928813Z  Downloaded decord
+2026-01-04T23:50:25.599795204Z  Downloaded numpy
+2026-01-04T23:50:26.112567984Z  Downloaded opencv-python
+2026-01-04T23:50:26.121116656Z Uninstalled 2 packages in 8ms
+2026-01-04T23:50:26.130983223Z Installed 9 packages in 9ms
+2026-01-04T23:50:29.228505672Z Modular Diffusers is currently an experimental feature under active development. The API is subject to breaking changes in future releases.
+2026-01-04T23:50:31.028281107Z 2026-01-04 23:50:31,028 - scope.core.pipelines.registry - INFO - GPU detected with 31.4 GB VRAM
+2026-01-04T23:50:31.038955756Z 2026-01-04 23:50:31,038 - scope.core.plugins.manager - INFO - Loaded 0 plugin(s)
+2026-01-04T23:50:31.040662839Z 2026-01-04 23:50:31,040 - scope.core.pipelines.registry - INFO - Registry initialized with 6 pipeline(s)
+2026-01-04T23:50:31.042373750Z 2026-01-04 23:50:31,042 - scope.server.app - INFO - Serving static assets from /app/frontend/dist/assets
+2026-01-04T23:50:31.047811943Z 2026-01-04 23:50:31,047 - uvicorn.error - INFO - Started server process [411]
+2026-01-04T23:50:31.049291691Z 2026-01-04 23:50:31,049 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-04T23:50:31.050642518Z 2026-01-04 23:50:31,050 - scope.server.app - INFO - Logs directory: /workspace/logs
+2026-01-04T23:50:31.052685630Z 2026-01-04 23:50:31,052 - scope.server.app - INFO - Models directory: /workspace/models
+2026-01-04T23:50:31.054708174Z 2026-01-04 23:50:31,054 - scope.server.app - INFO - Assets directory: /workspace/assets
+2026-01-04T23:50:31.055577380Z 2026-01-04 23:50:31,055 - scope.server.app - INFO - Pipeline manager initialized
+2026-01-04T23:50:32.033335092Z 2026-01-04 23:50:32,033 - scope.server.webrtc - INFO - RTCConfiguration created with cloudflare and 2 ICE servers
+2026-01-04T23:50:32.035960373Z 2026-01-04 23:50:32,035 - scope.server.app - INFO - WebRTC manager initialized
+2026-01-04T23:50:32.038118009Z 2026-01-04 23:50:32,038 - uvicorn.error - INFO - Application startup complete.
+2026-01-04T23:50:32.039687084Z 2026-01-04 23:50:32,039 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-01-04T23:51:26.527299386Z /app/.venv/lib/python3.10/site-packages/sam3/model_builder.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+2026-01-04T23:51:26.527324914Z   import pkg_resources
+2026-01-04T23:51:27.055706723Z [0m[32mINFO 2026-01-04 23:51:27,055 411 sam3_video_predictor.py: 299:[0m using the following GPU IDs: [0]
+2026-01-04T23:51:27.055731670Z [0m[32mINFO 2026-01-04 23:51:27,055 411 sam3_video_predictor.py: 315:[0m
+2026-01-04T23:51:27.055736289Z 	*** START loading model on all ranks ***
+2026-01-04T23:51:27.055741559Z [0m[32mINFO 2026-01-04 23:51:27,055 411 sam3_video_predictor.py: 317:[0m loading model on rank=0 with world_size=1 -- this could take a while ...
+2026-01-04T23:51:30.048753681Z [0m[32mINFO 2026-01-04 23:51:30,048 411 sam3_video_base.py: 124:[0m setting max_num_objects=10000 and num_obj_for_compile=16
+2026-01-04T23:51:35.433349818Z [0m[32mINFO 2026-01-04 23:51:35,433 411 sam3_video_predictor.py: 319:[0m loading model on rank=0 with world_size=1 -- DONE locally
+2026-01-04T23:51:35.433384212Z [0m[32mINFO 2026-01-04 23:51:35,433 411 sam3_video_predictor.py: 330:[0m
+2026-01-04T23:51:35.433391235Z 	*** DONE loading model on all ranks ***
+2026-01-04T23:51:36.042894367Z frame loading (OpenCV) [rank=0]:   0%|          | 0/45 [00:00<?, ?it/s]frame loading (OpenCV) [rank=0]: 100%|██████████| 45/45 [00:00<00:00, 551.04it/s]
+2026-01-04T23:51:48.167266507Z propagate_in_video:   0%|          | 0/45 [00:00<?, ?it/s]propagate_in_video:   2%|▏         | 1/45 [00:00<00:09,  4.88it/s]propagate_in_video:   7%|▋         | 3/45 [00:00<00:04, 10.26it/s]propagate_in_video:  11%|█         | 5/45 [00:00<00:03, 12.75it/s]propagate_in_video:  16%|█▌        | 7/45 [00:00<00:02, 14.00it/s]propagate_in_video:  20%|██        | 9/45 [00:00<00:02, 14.66it/s]propagate_in_video:  24%|██▍       | 11/45 [00:00<00:02, 15.07it/s]propagate_in_video:  29%|██▉       | 13/45 [00:00<00:02, 15.34it/s]propagate_in_video:  33%|███▎      | 15/45 [00:01<00:02, 14.19it/s]propagate_in_video:  38%|███▊      | 17/45 [00:01<00:02, 12.98it/s]propagate_in_video:  42%|████▏     | 19/45 [00:01<00:02, 11.97it/s]propagate_in_video:  47%|████▋     | 21/45 [00:01<00:02, 11.87it/s]propagate_in_video:  51%|█████     | 23/45 [00:01<00:01, 11.78it/s]propagate_in_video:  56%|█████▌    | 25/45 [00:02<00:01, 11.46it/s]propagate_in_video:  60%|██████    | 27/45 [00:02<00:01, 11.19it/s]propagate_in_video:  64%|██████▍   | 29/45 [00:02<00:01, 11.49it/s]propagate_in_video:  69%|██████▉   | 31/45 [00:02<00:01, 11.42it/s]propagate_in_video:  73%|███████▎  | 33/45 [00:02<00:01, 10.98it/s]propagate_in_video:  78%|███████▊  | 35/45 [00:02<00:00, 11.18it/s]propagate_in_video:  82%|████████▏ | 37/45 [00:03<00:00, 11.24it/s]propagate_in_video:  87%|████████▋ | 39/45 [00:03<00:00, 10.92it/s]propagate_in_video:  91%|█████████ | 41/45 [00:03<00:00, 11.21it/s]propagate_in_video:  96%|█████████▌| 43/45 [00:03<00:00, 11.50it/s]propagate_in_video: 100%|██████████| 45/45 [00:03<00:00,  8.89it/s]propagate_in_video: 100%|██████████| 45/45 [00:03<00:00, 11.36it/s]
+2026-01-04T23:51:48.347997780Z [0m[32mINFO 2026-01-04 23:51:48,347 411 sam3_video_predictor.py: 250:[0m removed session f98710e0-b73d-4967-a888-1b1da8eeeb73; live sessions: [], GPU memory: 5119 MiB used and 7000 MiB reserved (max over time: 6707 MiB used and 7000 MiB reserved)
+2026-01-04T23:52:51.880631959Z 2026-01-04 23:52:51,880 - scope.server.pipeline_manager - INFO - Loading pipeline: memflow
+2026-01-04T23:52:51.886670547Z 2026-01-04 23:52:51,886 - scope.server.pipeline_manager - INFO - VACE disabled by load_params, skipping VACE configuration
+2026-01-04T23:52:54.824912924Z Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:02,  2.40it/s]Fetching 6 files:  33%|███▎      | 2/6 [00:02<00:06,  1.53s/it]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.19it/s]
+2026-01-04T23:52:54.903891415Z SageAttention loaded successfully
+2026-01-04T23:52:54.903906093Z flash attn 2 available True
+2026-01-04T23:52:54.903909209Z flash attn 3 available False
+2026-01-04T23:52:54.903909800Z sage attn available True
+2026-01-04T23:53:10.177430053Z 2026-01-04 23:53:10,177 - scope.core.pipelines.wan2_1.vace.mixin - INFO - _init_vace: No vace_path provided, VACE disabled
+2026-01-04T23:53:23.410875436Z Loaded diffusion LoRA in 13.231s
+2026-01-04T23:53:23.411123430Z 2026-01-04 23:53:23,410 - scope.core.pipelines.wan2_1.lora.mixin - INFO - _init_loras: Found 0 LoRA configs to load
+2026-01-04T23:53:25.459224958Z Loaded text encoder in 1.061266s
+2026-01-04T23:53:40.837003452Z Loaded VAE in 0.787s
+2026-01-04T23:53:40.897301812Z 2026-01-04 23:53:40,897 - scope.server.pipeline_manager - INFO - MemFlow pipeline initialized
+2026-01-04T23:53:40.905279628Z 2026-01-04 23:53:40,905 - scope.server.pipeline_manager - INFO - Pipeline memflow loaded successfully
+2026-01-04T23:53:46.312955127Z 2026-01-04 23:53:46,312 - scope.server.webrtc - INFO - Received initial parameters: {'input_mode': 'video', 'prompts': [{'text': 'A luminous silhouette composed of swirling cosmic matter, filled with dense star fields, nebula clouds, flowing fire-like energy, and liquid rainbow colors that continuously move and circulate, emitting a soft yet intense glow; the colors shift smoothly from deep blues and violets to bright reds, greens, and golds, as if powered by an internal stellar engine, with particles drifting, igniting, and dissolving in slow motion; the edges shimmer and pulse with light, slightly translucent, energy crystals, high dynamic range, cinematic lighting, ethereal, otherworldly.', 'weight': 100.0}], 'prompt_interpolation_method': 'linear', 'noise_scale': 0.7, 'noise_controller': True, 'denoising_step_list': [1000, 750, 500, 250], 'manage_cache': True, 'vace_context_scale': 1.0, 'sam3_mask_id': '1bd5661d-7111-4509-a4b9-ebdf07693d53', 'sam3_mask_mode': 'inside'}
+2026-01-04T23:53:46.319030835Z 2026-01-04 23:53:46,318 - scope.server.webrtc - INFO - Created new session: Session(8d36fd64-c0b4-40a7-8702-9baa170a24e8, state=new)
+2026-01-04T23:53:46.320829330Z 2026-01-04 23:53:46,320 - scope.server.webrtc - INFO - Track received: video for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:46.322698537Z 2026-01-04 23:53:46,322 - scope.server.webrtc - INFO - ICE gathering state changed to: gathering for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:46.405798209Z 2026-01-04 23:53:46,405 - scope.server.webrtc - INFO - ICE gathering state changed to: complete for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:46.408666446Z 2026-01-04 23:53:46,408 - scope.server.webrtc - INFO - ICE connection state changed to: checking for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:46.410751928Z 2026-01-04 23:53:46,410 - scope.server.webrtc - INFO - Connection state changed to: connecting for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:49.767393422Z 2026-01-04 23:53:49,767 - scope.server.webrtc - INFO - ICE connection state changed to: completed for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:50.215728881Z 2026-01-04 23:53:50,215 - scope.server.webrtc - INFO - Connection state changed to: connected for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:50.217435484Z 2026-01-04 23:53:50,217 - scope.server.frame_processor - INFO - Worker thread started
+2026-01-04T23:53:50.217527356Z 2026-01-04 23:53:50,217 - scope.server.frame_processor - INFO - FrameProcessor started
+2026-01-04T23:53:50.587890146Z 2026-01-04 23:53:50,587 - scope.server.webrtc - INFO - Data channel received: parameters for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
+2026-01-04T23:53:50.589383930Z 2026-01-04 23:53:50,589 - scope.server.webrtc - INFO - No pending notifications to flush
+2026-01-04T23:54:07.482975745Z 2026-01-04 23:54:07,482 - scope.server.frame_processor - INFO - Increasing output queue size to 39, current size 8, num_frames 13
+2026-01-04T23:55:14.703764718Z 2026-01-04 23:55:14,703 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-04T23:55:14.708481753Z 2026-01-04 23:55:14,708 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:14.710823515Z 2026-01-04 23:55:14,710 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:15.663378493Z 2026-01-04 23:55:15,663 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:15.665362655Z 2026-01-04 23:55:15,665 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:15.666927734Z 2026-01-04 23:55:15,666 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:16.693897053Z 2026-01-04 23:55:16,693 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-04T23:55:16.695954372Z 2026-01-04 23:55:16,695 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:16.697480187Z 2026-01-04 23:55:16,697 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:17.633935643Z 2026-01-04 23:55:17,633 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:17.635981451Z 2026-01-04 23:55:17,635 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:17.636942649Z 2026-01-04 23:55:17,636 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:18.888539984Z 2026-01-04 23:55:18,888 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-04T23:55:18.892366053Z 2026-01-04 23:55:18,892 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:18.894551442Z 2026-01-04 23:55:18,894 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:19.663798877Z 2026-01-04 23:55:19,663 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:19.665476004Z 2026-01-04 23:55:19,665 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:19.666427405Z 2026-01-04 23:55:19,666 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:19.958600419Z 2026-01-04 23:55:19,958 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:19.960609558Z 2026-01-04 23:55:19,960 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:19.961820143Z 2026-01-04 23:55:19,961 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:20.213824501Z 2026-01-04 23:55:20,213 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-04T23:55:20.216276849Z 2026-01-04 23:55:20,216 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:20.217532038Z 2026-01-04 23:55:20,217 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:20.448426878Z 2026-01-04 23:55:20,448 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:20.450160923Z 2026-01-04 23:55:20,450 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:20.451643507Z 2026-01-04 23:55:20,451 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:21.223488952Z 2026-01-04 23:55:21,223 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:21.249410162Z 2026-01-04 23:55:21,249 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:21.250761801Z 2026-01-04 23:55:21,250 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:21.819584895Z 2026-01-04 23:55:21,819 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:21.821705593Z 2026-01-04 23:55:21,821 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:21.823162319Z 2026-01-04 23:55:21,823 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.020355152Z 2026-01-04 23:55:22,020 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:22.022081352Z 2026-01-04 23:55:22,022 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.023205886Z 2026-01-04 23:55:22,023 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.104822233Z 2026-01-04 23:55:22,104 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-04T23:55:22.107756022Z 2026-01-04 23:55:22,107 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.109416990Z 2026-01-04 23:55:22,109 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.224906313Z 2026-01-04 23:55:22,224 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:22.226736157Z 2026-01-04 23:55:22,226 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.228006895Z 2026-01-04 23:55:22,227 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.345393298Z 2026-01-04 23:55:22,345 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-04T23:55:22.347307109Z 2026-01-04 23:55:22,347 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-04T23:55:22.348162058Z 2026-01-04 23:55:22,348 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
