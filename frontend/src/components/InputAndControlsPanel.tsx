@@ -34,6 +34,7 @@ interface InputAndControlsPanelProps {
   onLivePromptSubmit?: (prompts: PromptItem[]) => void;
   isVideoPaused?: boolean;
   confirmedSynthedBlob: Blob | null;
+  confirmedSynthedFps?: number | null;
   isRecordingSynthed: boolean;
   isSynthCapturing: boolean;
   synthLockedPrompt: string;
@@ -120,6 +121,7 @@ export function InputAndControlsPanel({
   onLivePromptSubmit,
   isVideoPaused = false,
   confirmedSynthedBlob,
+  confirmedSynthedFps = null,
   isRecordingSynthed,
   isSynthCapturing,
   synthLockedPrompt,
@@ -251,7 +253,8 @@ export function InputAndControlsPanel({
             params,
             seed ?? 42,
             pipelineId,
-            "inside"
+            "inside",
+            confirmedSynthedFps
           );
           visualCipher = payload.visualCipher;
           encryptedMaskFrames = payload.encryptedMaskFrames;

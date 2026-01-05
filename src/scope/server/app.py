@@ -1096,6 +1096,7 @@ class VisualCipherRequest(BaseModel):
     synthedVideoBase64: str
     synthedMimeType: str | None = None
     originalVideoBase64: str | None = None
+    synthedFps: float | None = None
     maskId: str
     prompt: str
     params: dict
@@ -1294,6 +1295,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             else:
                 synth_fps = float(cap_synth.get(cv2.CAP_PROP_FPS) or 0.0)
                 frame_count = int(cap_synth.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            if synth_fps <= 0 and request.synthedFps:
+                synth_fps = float(request.synthedFps)
             if synth_fps <= 0:
                 synth_fps = session.input_fps or session.sam3_fps or orig_fps or 15.0
             if orig_fps <= 0:

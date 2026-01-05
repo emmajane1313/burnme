@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type RecorderState = {
   isRecording: boolean;
   recordedBlob: Blob | null;
+  recordedFps: number | null;
   error: string | null;
 };
 
@@ -26,6 +27,7 @@ export function useVideoRecorder() {
   const [state, setState] = useState<RecorderState>({
     isRecording: false,
     recordedBlob: null,
+    recordedFps: null,
     error: null,
   });
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -36,6 +38,11 @@ export function useVideoRecorder() {
       return;
     }
 
+    const trackSettings = stream.getVideoTracks()[0]?.getSettings();
+    const frameRate =
+      typeof trackSettings?.frameRate === "number"
+        ? trackSettings.frameRate
+        : null;
     const mimeType = pickSupportedMimeType();
     const recorder = new MediaRecorder(
       stream,
@@ -44,7 +51,13 @@ export function useVideoRecorder() {
 
     chunksRef.current = [];
     recorderRef.current = recorder;
-    setState((prev) => ({ ...prev, isRecording: true, recordedBlob: null, error: null }));
+    setState((prev) => ({
+      ...prev,
+      isRecording: true,
+      recordedBlob: null,
+      recordedFps: frameRate,
+      error: null,
+    }));
 
     recorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0) {
@@ -90,7 +103,7 @@ export function useVideoRecorder() {
     }
     recorderRef.current = null;
     chunksRef.current = [];
-    setState({ isRecording: false, recordedBlob: null, error: null });
+    setState({ isRecording: false, recordedBlob: null, recordedFps: null, error: null });
   }, []);
 
   useEffect(() => {
@@ -106,6 +119,7 @@ export function useVideoRecorder() {
   return {
     isRecording: state.isRecording,
     recordedBlob: state.recordedBlob,
+    recordedFps: state.recordedFps,
     error: state.error,
     startRecording,
     stopRecording,

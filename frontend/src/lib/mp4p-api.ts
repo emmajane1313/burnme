@@ -292,7 +292,8 @@ export async function generateVisualCipherPayload(
   params: Record<string, unknown>,
   seed: number,
   pipelineId: string,
-  maskMode = "inside"
+  maskMode = "inside",
+  synthedFps?: number | null
 ): Promise<{
   visualCipher: MP4PMetadata["visualCipher"];
   encryptedMaskFrames: string[];
@@ -316,6 +317,7 @@ export async function generateVisualCipherPayload(
       seed,
       pipelineId,
       maskMode,
+      synthedFps,
     }),
   });
 

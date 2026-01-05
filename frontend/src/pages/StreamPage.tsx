@@ -201,6 +201,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const {
     isRecording: isRecordingSynthed,
     recordedBlob: recordedSynthedBlob,
+    recordedFps: recordedSynthedFps,
     startRecording,
     stopRecording,
     resetRecording,
@@ -1129,6 +1130,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onLivePromptSubmit={handleLivePromptSubmit}
                   isVideoPaused={settings.paused}
                   confirmedSynthedBlob={confirmedSynthedBlob}
+                  confirmedSynthedFps={recordedSynthedFps}
                   isRecordingSynthed={isRecordingSynthed}
                   isSynthCapturing={isSynthCapturing}
                   synthLockedPrompt={synthLockedPrompt}
