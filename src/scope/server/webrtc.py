@@ -1,4 +1,5 @@
 import asyncio
+import time
 import json
 import logging
 import os
@@ -218,6 +219,7 @@ class WebRTCManager:
                 )
                 session.data_channel = data_channel
                 notification_sender.set_data_channel(data_channel)
+                last_frame_meta_log = 0.0
 
                 @data_channel.on("open")
                 def on_data_channel_open():
@@ -226,6 +228,7 @@ class WebRTCManager:
 
                 @data_channel.on("message")
                 def on_data_channel_message(message):
+                    nonlocal last_frame_meta_log
                     try:
                         # Parse the JSON message
                         data = json.loads(message)
@@ -237,6 +240,13 @@ class WebRTCManager:
                                 session.video_track.frame_processor.update_frame_meta(
                                     data
                                 )
+                                now = time.time()
+                                if now - last_frame_meta_log > 1.0:
+                                    last_frame_meta_log = now
+                                    logger.info(
+                                        "FrameMeta recv (webrtc): time=%s",
+                                        data.get("time"),
+                                    )
                             return
 
                         logger.info(f"Received parameter update: {data}")

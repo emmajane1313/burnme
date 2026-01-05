@@ -1,386 +1,538 @@
-2026-01-04T23:49:54.052576088Z ==========
-2026-01-04T23:49:54.052577721Z == CUDA ==
-2026-01-04T23:49:54.052583972Z ==========
-2026-01-04T23:49:54.054792694Z CUDA Version 12.8.0
-2026-01-04T23:49:54.055725700Z Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-2026-01-04T23:49:54.055730669Z This container image and its contents are governed by the NVIDIA Deep Learning Container License.
-2026-01-04T23:49:54.055731641Z By pulling and using the container, you accept the terms and conditions of this license:
-2026-01-04T23:49:54.055732372Z https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
-2026-01-04T23:49:54.055733945Z A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
-2026-01-04T23:49:54.059227130Z Cloning repository from https://github.com/emmajane1313/burnme.git...
-2026-01-04T23:49:54.059788079Z Cloning into '.'...
-2026-01-04T23:49:55.796970012Z Installing Python dependencies...
-2026-01-04T23:49:55.834553459Z Using CPython 3.10.12 interpreter at: /usr/bin/python3.10
-2026-01-04T23:49:55.834566083Z Creating virtual environment at: .venv
-2026-01-04T23:49:55.845132329Z    Building burnmewhileimhot @ file:///app
-2026-01-04T23:49:55.928606413Z Downloading pygments (1.2MiB)
-2026-01-04T23:49:55.938747083Z Downloading torch (848.0MiB)
-2026-01-04T23:49:55.947649276Z Downloading hf-xet (3.2MiB)
-2026-01-04T23:49:55.972913478Z Downloading tokenizers (3.1MiB)
-2026-01-04T23:49:55.972942472Z Downloading sympy (6.0MiB)
-2026-01-04T23:49:55.973035146Z Downloading setuptools (1.1MiB)
-2026-01-04T23:49:55.973058369Z Downloading transformers (11.4MiB)
-2026-01-04T23:49:55.973098865Z Downloading nvidia-cusparselt-cu12 (273.9MiB)
-2026-01-04T23:49:55.973176189Z Downloading pydantic-core (2.0MiB)
-2026-01-04T23:49:55.973218839Z Downloading pillow (6.7MiB)
-2026-01-04T23:49:55.973346298Z Downloading numpy (16.0MiB)
-2026-01-04T23:49:55.973501217Z Downloading nvidia-cudnn-cu12 (674.0MiB)
-2026-01-04T23:49:55.973552654Z Downloading nvidia-cufft-cu12 (184.2MiB)
-2026-01-04T23:49:55.973658452Z Downloading twilio (1.7MiB)
-2026-01-04T23:49:55.973713074Z Downloading ruff (12.7MiB)
-2026-01-04T23:49:55.973829632Z Downloading nvidia-cusparse-cu12 (274.9MiB)
-2026-01-04T23:49:55.973888121Z Downloading virtualenv (5.7MiB)
-2026-01-04T23:49:55.973949977Z Downloading diffusers (3.9MiB)
-2026-01-04T23:49:55.974012664Z Downloading nvidia-nccl-cu12 (307.4MiB)
-2026-01-04T23:49:55.974075251Z Downloading networkx (1.6MiB)
-2026-01-04T23:49:55.974137347Z Downloading torchao (6.6MiB)
-2026-01-04T23:49:55.974203992Z Downloading nvidia-curand-cu12 (60.7MiB)
-2026-01-04T23:49:55.974274684Z Downloading nvidia-cublas-cu12 (566.8MiB)
-2026-01-04T23:49:55.974408384Z Downloading cryptography (4.3MiB)
-2026-01-04T23:49:55.974480329Z Downloading triton (148.2MiB)
-2026-01-04T23:49:55.974557113Z Downloading pylibsrtp (2.3MiB)
-2026-01-04T23:49:55.974630810Z Downloading nvidia-cusolver-cu12 (255.1MiB)
-2026-01-04T23:49:55.974796721Z Downloading imageio-ffmpeg (28.1MiB)
-2026-01-04T23:49:55.974880728Z Downloading aiohttp (1.6MiB)
-2026-01-04T23:49:55.974962761Z Downloading nvidia-cufile-cu12 (1.1MiB)
-2026-01-04T23:49:55.975042651Z Downloading av (37.9MiB)
-2026-01-04T23:49:55.975124113Z Downloading nvidia-cuda-cupti-cu12 (9.8MiB)
-2026-01-04T23:49:55.975205435Z Downloading nvidia-nvjitlink-cu12 (37.4MiB)
-2026-01-04T23:49:55.975288140Z Downloading nvidia-cuda-nvrtc-cu12 (84.0MiB)
-2026-01-04T23:49:56.018568765Z Downloading torchvision (8.2MiB)
-2026-01-04T23:49:56.214473162Z Downloading sageattention (21.6MiB)
-2026-01-04T23:49:56.259923195Z Downloading flash-attn (244.2MiB)
-2026-01-04T23:49:56.372970441Z  Downloaded torchvision
-2026-01-04T23:49:56.402110323Z  Downloaded nvidia-cufile-cu12
-2026-01-04T23:49:56.672005483Z  Downloaded aiohttp
-2026-01-04T23:49:56.681816527Z  Downloaded pygments
-2026-01-04T23:49:56.717167958Z  Downloaded sageattention
-2026-01-04T23:49:56.802544622Z  Downloaded setuptools
-2026-01-04T23:49:56.830157757Z  Downloaded pydantic-core
-2026-01-04T23:49:56.863450247Z    Building antlr4-python3-runtime==4.9.3
-2026-01-04T23:49:56.865386109Z  Downloaded networkx
-2026-01-04T23:49:56.870333223Z       Built burnmewhileimhot @ file:///app
-2026-01-04T23:49:56.899361126Z  Downloaded pylibsrtp
-2026-01-04T23:49:57.024570724Z  Downloaded twilio
-2026-01-04T23:49:57.042385440Z  Downloaded tokenizers
-2026-01-04T23:49:57.043257171Z  Downloaded hf-xet
-2026-01-04T23:49:57.208232889Z       Built antlr4-python3-runtime==4.9.3
-2026-01-04T23:49:57.237541286Z  Downloaded diffusers
-2026-01-04T23:49:57.314133507Z  Downloaded cryptography
-2026-01-04T23:49:57.484882576Z  Downloaded virtualenv
-2026-01-04T23:49:57.605354842Z  Downloaded sympy
-2026-01-04T23:49:57.632433207Z  Downloaded pillow
-2026-01-04T23:49:57.707707232Z  Downloaded torchao
-2026-01-04T23:49:57.970356628Z  Downloaded nvidia-cuda-cupti-cu12
-2026-01-04T23:49:58.252652797Z  Downloaded ruff
-2026-01-04T23:49:58.284015076Z  Downloaded transformers
-2026-01-04T23:49:58.544928244Z  Downloaded numpy
-2026-01-04T23:49:59.541481578Z  Downloaded imageio-ffmpeg
-2026-01-04T23:50:00.218692300Z  Downloaded nvidia-nvjitlink-cu12
-2026-01-04T23:50:00.227718826Z  Downloaded av
-2026-01-04T23:50:00.250126714Z  Downloaded flash-attn
-2026-01-04T23:50:01.455206066Z  Downloaded nvidia-curand-cu12
-2026-01-04T23:50:02.690953989Z  Downloaded nvidia-cuda-nvrtc-cu12
-2026-01-04T23:50:05.689363618Z  Downloaded triton
-2026-01-04T23:50:07.178866168Z  Downloaded nvidia-cufft-cu12
-2026-01-04T23:50:09.772647473Z  Downloaded nvidia-cusolver-cu12
-2026-01-04T23:50:10.231061865Z  Downloaded nvidia-cusparselt-cu12
-2026-01-04T23:50:10.317143848Z  Downloaded nvidia-cusparse-cu12
-2026-01-04T23:50:10.740674373Z  Downloaded nvidia-nccl-cu12
-2026-01-04T23:50:14.208229540Z  Downloaded nvidia-cublas-cu12
-2026-01-04T23:50:14.652809873Z  Downloaded torch
-2026-01-04T23:50:15.548864134Z  Downloaded nvidia-cudnn-cu12
-2026-01-04T23:50:15.549019675Z Prepared 135 packages in 19.70s
-2026-01-04T23:50:15.553702486Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvtx-cu12` (v12.8.90) or `nvidia-curand-cu12` (v10.3.9.90).
-2026-01-04T23:50:15.553774851Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvtx-cu12` (v12.8.90) or `nvidia-cuda-nvrtc-cu12` (v12.8.93).
-2026-01-04T23:50:15.568839202Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cufft-cu12` (v11.3.3.83) or `nvidia-cuda-nvrtc-cu12` (v12.8.93).
-2026-01-04T23:50:15.597232056Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusolver-cu12` (v11.7.3.90) or `nvidia-cufft-cu12` (v11.3.3.83).
-2026-01-04T23:50:15.612768259Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusolver-cu12` (v11.7.3.90) or `nvidia-cuda-cupti-cu12` (v12.8.90).
-2026-01-04T23:50:15.614082879Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvjitlink-cu12` (v12.8.93) or `nvidia-cuda-cupti-cu12` (v12.8.90).
-2026-01-04T23:50:15.628067870Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvjitlink-cu12` (v12.8.93) or `nvidia-cusparse-cu12` (v12.5.8.93).
-2026-01-04T23:50:15.628127432Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusparse-cu12` (v12.5.8.93) or `nvidia-cublas-cu12` (v12.8.4.1).
-2026-01-04T23:50:15.643190119Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cuda-runtime-cu12` (v12.8.90) or `nvidia-cublas-cu12` (v12.8.4.1).
-2026-01-04T23:50:15.643366269Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cufile-cu12` (v1.13.1.3) or `nvidia-cuda-runtime-cu12` (v12.8.90).
-2026-01-04T23:50:15.756584585Z Installed 135 packages in 207ms
-2026-01-04T23:50:15.756716242Z  + accelerate==1.11.0
-2026-01-04T23:50:15.756719688Z  + aiohappyeyeballs==2.6.1
-2026-01-04T23:50:15.756720710Z  + aiohttp==3.13.2
-2026-01-04T23:50:15.756721582Z  + aiohttp-retry==2.9.1
-2026-01-04T23:50:15.756722433Z  + aioice==0.10.1
-2026-01-04T23:50:15.756727172Z  + aiortc==1.14.0
-2026-01-04T23:50:15.756729486Z  + aiosignal==1.4.0
-2026-01-04T23:50:15.756734877Z  + annotated-doc==0.0.3
-2026-01-04T23:50:15.756742851Z  + annotated-types==0.7.0
-2026-01-04T23:50:15.756753381Z  + antlr4-python3-runtime==4.9.3
-2026-01-04T23:50:15.756754934Z  + anyio==4.11.0
-2026-01-04T23:50:15.756759823Z  + async-timeout==5.0.1
-2026-01-04T23:50:15.756766075Z  + attrs==25.4.0
-2026-01-04T23:50:15.756774230Z  + av==16.0.1
-2026-01-04T23:50:15.756779169Z  + backports-tarfile==1.2.0
-2026-01-04T23:50:15.756797313Z  + burnmewhileimhot==0.1.0b2 (from file:///app)
-2026-01-04T23:50:15.756800339Z  + certifi==2025.10.5
-2026-01-04T23:50:15.756806340Z  + cffi==2.0.0
-2026-01-04T23:50:15.756812852Z  + cfgv==3.4.0
-2026-01-04T23:50:15.756835244Z  + charset-normalizer==3.4.4
-2026-01-04T23:50:15.756840634Z  + click==8.3.1
-2026-01-04T23:50:15.756841666Z  + cryptography==46.0.3
-2026-01-04T23:50:15.756844061Z  + diffusers==0.35.2
-2026-01-04T23:50:15.756846065Z  + distlib==0.4.0
-2026-01-04T23:50:15.756862666Z  + dnspython==2.8.0
-2026-01-04T23:50:15.756863718Z  + docutils==0.22.2
-2026-01-04T23:50:15.756884797Z  + easydict==1.13
-2026-01-04T23:50:15.756887542Z  + einops==0.8.1
-2026-01-04T23:50:15.756901618Z  + exceptiongroup==1.3.0
-2026-01-04T23:50:15.756909623Z  + fastapi==0.121.0
-2026-01-04T23:50:15.756910665Z  + filelock==3.20.0
-2026-01-04T23:50:15.756920884Z  + flash-attn==2.8.3+cu12torch2.8cxx11abifalse (from https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl)
-2026-01-04T23:50:15.756926154Z  + freezegun==1.5.5
-2026-01-04T23:50:15.756932316Z  + frozenlist==1.8.0
-2026-01-04T23:50:15.756939539Z  + fsspec==2025.10.0
-2026-01-04T23:50:15.756946372Z  + ftfy==6.3.1
-2026-01-04T23:50:15.756954608Z  + google-crc32c==1.7.1
-2026-01-04T23:50:15.756960979Z  + h11==0.16.0
-2026-01-04T23:50:15.756968614Z  + hf-xet==1.2.0
-2026-01-04T23:50:15.756972050Z  + httpcore==1.0.9
-2026-01-04T23:50:15.756974294Z  + httpx==0.28.1
-2026-01-04T23:50:15.756978793Z  + huggingface-hub==0.36.0
-2026-01-04T23:50:15.756983552Z  + id==1.5.0
-2026-01-04T23:50:15.756987870Z  + identify==2.6.15
-2026-01-04T23:50:15.756991346Z  + idna==3.11
-2026-01-04T23:50:15.756998399Z  + ifaddr==0.2.0
-2026-01-04T23:50:15.757000814Z  + imageio==2.37.2
-2026-01-04T23:50:15.757009610Z  + imageio-ffmpeg==0.6.0
-2026-01-04T23:50:15.757011284Z  + importlib-metadata==8.7.0
-2026-01-04T23:50:15.757014880Z  + iniconfig==2.3.0
-2026-01-04T23:50:15.757018968Z  + jaraco-classes==3.4.0
-2026-01-04T23:50:15.757023286Z  + jaraco-context==6.0.1
-2026-01-04T23:50:15.757028275Z  + jaraco-functools==4.3.0
-2026-01-04T23:50:15.757033164Z  + jeepney==0.9.0
-2026-01-04T23:50:15.757036721Z  + jinja2==3.1.6
-2026-01-04T23:50:15.757042332Z  + kernels==0.11.0
-2026-01-04T23:50:15.757046089Z  + keyring==25.6.0
-2026-01-04T23:50:15.757049275Z  + lmdb==1.7.5
-2026-01-04T23:50:15.757059614Z  + markdown-it-py==4.0.0
-2026-01-04T23:50:15.757060345Z  + markupsafe==3.0.3
-2026-01-04T23:50:15.757063631Z  + mdurl==0.1.2
-2026-01-04T23:50:15.757069252Z  + more-itertools==10.8.0
-2026-01-04T23:50:15.757072067Z  + mpmath==1.3.0
-2026-01-04T23:50:15.757076175Z  + multidict==6.7.0
-2026-01-04T23:50:15.757081906Z  + networkx==3.4.2
-2026-01-04T23:50:15.757085532Z  + nh3==0.3.2
-2026-01-04T23:50:15.757090171Z  + nodeenv==1.9.1
-2026-01-04T23:50:15.757093718Z  + numpy==2.2.6
-2026-01-04T23:50:15.757099148Z  + nvidia-cublas-cu12==12.8.4.1
-2026-01-04T23:50:15.757104057Z  + nvidia-cuda-cupti-cu12==12.8.90
-2026-01-04T23:50:15.757108766Z  + nvidia-cuda-nvrtc-cu12==12.8.93
-2026-01-04T23:50:15.757114066Z  + nvidia-cuda-runtime-cu12==12.8.90
-2026-01-04T23:50:15.757118534Z  + nvidia-cudnn-cu12==9.10.2.21
-2026-01-04T23:50:15.757123433Z  + nvidia-cufft-cu12==11.3.3.83
-2026-01-04T23:50:15.757127441Z  + nvidia-cufile-cu12==1.13.1.3
-2026-01-04T23:50:15.757132891Z  + nvidia-curand-cu12==10.3.9.90
-2026-01-04T23:50:15.757137770Z  + nvidia-cusolver-cu12==11.7.3.90
-2026-01-04T23:50:15.757143821Z  + nvidia-cusparse-cu12==12.5.8.93
-2026-01-04T23:50:15.757147508Z  + nvidia-cusparselt-cu12==0.7.1
-2026-01-04T23:50:15.757151506Z  + nvidia-nccl-cu12==2.27.3
-2026-01-04T23:50:15.757155974Z  + nvidia-nvjitlink-cu12==12.8.93
-2026-01-04T23:50:15.757159922Z  + nvidia-nvtx-cu12==12.8.90
-2026-01-04T23:50:15.757165402Z  + omegaconf==2.3.0
-2026-01-04T23:50:15.757168768Z  + packaging==25.0
-2026-01-04T23:50:15.757173407Z  + peft==0.17.1
-2026-01-04T23:50:15.757177504Z  + pillow==12.0.0
-2026-01-04T23:50:15.757182143Z  + platformdirs==4.5.0
-2026-01-04T23:50:15.757186792Z  + pluggy==1.6.0
-2026-01-04T23:50:15.757191080Z  + pre-commit==4.3.0
-2026-01-04T23:50:15.757194757Z  + propcache==0.4.1
-2026-01-04T23:50:15.757199456Z  + psutil==7.1.3
-2026-01-04T23:50:15.757203603Z  + pycparser==2.23
-2026-01-04T23:50:15.757207330Z  + pydantic==2.12.4
-2026-01-04T23:50:15.757211879Z  + pydantic-core==2.41.5
-2026-01-04T23:50:15.757215916Z  + pyee==13.0.0
-2026-01-04T23:50:15.757221236Z  + pygments==2.19.2
-2026-01-04T23:50:15.757225053Z  + pyjwt==2.10.1
-2026-01-04T23:50:15.757229822Z  + pylibsrtp==1.0.0
-2026-01-04T23:50:15.757233920Z  + pyopenssl==25.3.0
-2026-01-04T23:50:15.757237457Z  + pytest==8.4.2
-2026-01-04T23:50:15.757243097Z  + python-dateutil==2.9.0.post0
-2026-01-04T23:50:15.757247505Z  + pyyaml==6.0.3
-2026-01-04T23:50:15.757251503Z  + readme-renderer==44.0
-2026-01-04T23:50:15.757255881Z  + regex==2025.11.3
-2026-01-04T23:50:15.757259778Z  + requests==2.32.5
-2026-01-04T23:50:15.757265229Z  + requests-toolbelt==1.0.0
-2026-01-04T23:50:15.757269657Z  + rfc3986==2.0.0
-2026-01-04T23:50:15.757273915Z  + rich==14.2.0
-2026-01-04T23:50:15.757277562Z  + ruff==0.14.3
-2026-01-04T23:50:15.757281669Z  + safetensors==0.6.2
-2026-01-04T23:50:15.757287500Z  + sageattention==2.2.0 (from https://github.com/daydreamlive/SageAttention/releases/download/v2.2.0-linux/sageattention-2.2.0-cp310-cp310-linux_x86_64.whl)
-2026-01-04T23:50:15.757291347Z  + secretstorage==3.4.0
-2026-01-04T23:50:15.757295956Z  + setuptools==80.9.0
-2026-01-04T23:50:15.757302458Z  + six==1.17.0
-2026-01-04T23:50:15.757305404Z  + sniffio==1.3.1
-2026-01-04T23:50:15.757309541Z  + starlette==0.49.3
-2026-01-04T23:50:15.757314300Z  + sympy==1.14.0
-2026-01-04T23:50:15.757318729Z  + tokenizers==0.22.1
-2026-01-04T23:50:15.757322516Z  + tomli==2.3.0
-2026-01-04T23:50:15.757327966Z  + torch==2.8.0+cu128
-2026-01-04T23:50:15.757331843Z  + torchao==0.13.0
-2026-01-04T23:50:15.757337584Z  + torchvision==0.23.0+cu128
-2026-01-04T23:50:15.757341271Z  + tqdm==4.67.1
-2026-01-04T23:50:15.757348464Z  + transformers==4.57.1
-2026-01-04T23:50:15.757363042Z  + triton==3.4.0
-2026-01-04T23:50:15.757368902Z  + twilio==9.8.5
-2026-01-04T23:50:15.757375084Z  + twine==6.2.0
-2026-01-04T23:50:15.757382037Z  + typing-extensions==4.15.0
-2026-01-04T23:50:15.757387868Z  + typing-inspection==0.4.2
-2026-01-04T23:50:15.757396985Z  + urllib3==2.5.0
-2026-01-04T23:50:15.757399690Z  + uvicorn==0.38.0
-2026-01-04T23:50:15.757407334Z  + virtualenv==20.35.4
-2026-01-04T23:50:15.757416111Z  + wcwidth==0.2.14
-2026-01-04T23:50:15.757420910Z  + yarl==1.22.0
-2026-01-04T23:50:15.757428764Z  + zipp==3.23.0
-2026-01-04T23:50:15.771702666Z Building frontend...
-2026-01-04T23:50:17.668272925Z added 274 packages, and audited 275 packages in 2s
-2026-01-04T23:50:17.668276722Z 58 packages are looking for funding
-2026-01-04T23:50:17.668278225Z   run `npm fund` for details
-2026-01-04T23:50:17.671412939Z 2 moderate severity vulnerabilities
-2026-01-04T23:50:17.671416485Z To address all issues, run:
-2026-01-04T23:50:17.671417658Z   npm audit fix
-2026-01-04T23:50:17.671419872Z Run `npm audit` for details.
-2026-01-04T23:50:17.671955774Z npm notice
-2026-01-04T23:50:17.671960463Z npm notice New major version of npm available! 10.8.2 -> 11.7.0
-2026-01-04T23:50:17.671961645Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
-2026-01-04T23:50:17.671971303Z npm notice To update run: npm install -g npm@11.7.0
-2026-01-04T23:50:17.671972646Z npm notice
-2026-01-04T23:50:17.726923983Z > burnmewhileimhot-frontend@0.1.0-beta.2 build
-2026-01-04T23:50:17.726926488Z > tsc -b && vite build
-2026-01-04T23:50:19.045114601Z vite v7.1.5 building for production...
-2026-01-04T23:50:19.164235269Z [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
-2026-01-04T23:50:19.211172314Z transforming...
-2026-01-04T23:50:20.207009057Z ✓ 1790 modules transformed.
-2026-01-04T23:50:20.322803042Z rendering chunks...
-2026-01-04T23:50:20.326214093Z computing gzip size...
-2026-01-04T23:50:20.333739190Z dist/index.html                   0.47 kB │ gzip:   0.30 kB
-2026-01-04T23:50:20.333743518Z dist/assets/index-DWhn2Jmy.css   52.31 kB │ gzip:  10.04 kB
-2026-01-04T23:50:20.333747125Z dist/assets/index-Bes2cqa1.js   437.94 kB │ gzip: 137.49 kB
-2026-01-04T23:50:20.333854906Z ✓ built in 1.28s
-2026-01-04T23:50:20.374843213Z Starting burnmewhileimhot...
-2026-01-04T23:50:20.682659943Z Downloading flash-attn (121.7MiB)
-2026-01-04T23:50:20.724108380Z Downloading sageattention (11.4MiB)
-2026-01-04T23:50:20.854322892Z    Updating https://github.com/facebookresearch/sam3.git (HEAD)
-2026-01-04T23:50:20.934004722Z  Downloaded sageattention
-2026-01-04T23:50:22.318004808Z  Downloaded flash-attn
-2026-01-04T23:50:23.453482475Z     Updated https://github.com/facebookresearch/sam3.git (5eb25fb54b70ec0cb16f949289053be091e16705)
-2026-01-04T23:50:25.093630075Z    Building iopath==0.1.10
-2026-01-04T23:50:25.097597717Z    Building sam3 @ git+https://github.com/facebookresearch/sam3.git@5eb25fb54b70ec0cb16f949289053be091e16705
-2026-01-04T23:50:25.176611909Z       Built iopath==0.1.10
-2026-01-04T23:50:25.216297408Z Downloading opencv-python (60.1MiB)
-2026-01-04T23:50:25.216336531Z Downloading timm (2.4MiB)
-2026-01-04T23:50:25.216371176Z Downloading decord (13.0MiB)
-2026-01-04T23:50:25.216403827Z Downloading numpy (17.4MiB)
-2026-01-04T23:50:25.253619346Z       Built sam3 @ git+https://github.com/facebookresearch/sam3.git@5eb25fb54b70ec0cb16f949289053be091e16705
-2026-01-04T23:50:25.357697414Z  Downloaded timm
-2026-01-04T23:50:25.525928813Z  Downloaded decord
-2026-01-04T23:50:25.599795204Z  Downloaded numpy
-2026-01-04T23:50:26.112567984Z  Downloaded opencv-python
-2026-01-04T23:50:26.121116656Z Uninstalled 2 packages in 8ms
-2026-01-04T23:50:26.130983223Z Installed 9 packages in 9ms
-2026-01-04T23:50:29.228505672Z Modular Diffusers is currently an experimental feature under active development. The API is subject to breaking changes in future releases.
-2026-01-04T23:50:31.028281107Z 2026-01-04 23:50:31,028 - scope.core.pipelines.registry - INFO - GPU detected with 31.4 GB VRAM
-2026-01-04T23:50:31.038955756Z 2026-01-04 23:50:31,038 - scope.core.plugins.manager - INFO - Loaded 0 plugin(s)
-2026-01-04T23:50:31.040662839Z 2026-01-04 23:50:31,040 - scope.core.pipelines.registry - INFO - Registry initialized with 6 pipeline(s)
-2026-01-04T23:50:31.042373750Z 2026-01-04 23:50:31,042 - scope.server.app - INFO - Serving static assets from /app/frontend/dist/assets
-2026-01-04T23:50:31.047811943Z 2026-01-04 23:50:31,047 - uvicorn.error - INFO - Started server process [411]
-2026-01-04T23:50:31.049291691Z 2026-01-04 23:50:31,049 - uvicorn.error - INFO - Waiting for application startup.
-2026-01-04T23:50:31.050642518Z 2026-01-04 23:50:31,050 - scope.server.app - INFO - Logs directory: /workspace/logs
-2026-01-04T23:50:31.052685630Z 2026-01-04 23:50:31,052 - scope.server.app - INFO - Models directory: /workspace/models
-2026-01-04T23:50:31.054708174Z 2026-01-04 23:50:31,054 - scope.server.app - INFO - Assets directory: /workspace/assets
-2026-01-04T23:50:31.055577380Z 2026-01-04 23:50:31,055 - scope.server.app - INFO - Pipeline manager initialized
-2026-01-04T23:50:32.033335092Z 2026-01-04 23:50:32,033 - scope.server.webrtc - INFO - RTCConfiguration created with cloudflare and 2 ICE servers
-2026-01-04T23:50:32.035960373Z 2026-01-04 23:50:32,035 - scope.server.app - INFO - WebRTC manager initialized
-2026-01-04T23:50:32.038118009Z 2026-01-04 23:50:32,038 - uvicorn.error - INFO - Application startup complete.
-2026-01-04T23:50:32.039687084Z 2026-01-04 23:50:32,039 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-2026-01-04T23:51:26.527299386Z /app/.venv/lib/python3.10/site-packages/sam3/model_builder.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
-2026-01-04T23:51:26.527324914Z   import pkg_resources
-2026-01-04T23:51:27.055706723Z [0m[32mINFO 2026-01-04 23:51:27,055 411 sam3_video_predictor.py: 299:[0m using the following GPU IDs: [0]
-2026-01-04T23:51:27.055731670Z [0m[32mINFO 2026-01-04 23:51:27,055 411 sam3_video_predictor.py: 315:[0m
-2026-01-04T23:51:27.055736289Z 	*** START loading model on all ranks ***
-2026-01-04T23:51:27.055741559Z [0m[32mINFO 2026-01-04 23:51:27,055 411 sam3_video_predictor.py: 317:[0m loading model on rank=0 with world_size=1 -- this could take a while ...
-2026-01-04T23:51:30.048753681Z [0m[32mINFO 2026-01-04 23:51:30,048 411 sam3_video_base.py: 124:[0m setting max_num_objects=10000 and num_obj_for_compile=16
-2026-01-04T23:51:35.433349818Z [0m[32mINFO 2026-01-04 23:51:35,433 411 sam3_video_predictor.py: 319:[0m loading model on rank=0 with world_size=1 -- DONE locally
-2026-01-04T23:51:35.433384212Z [0m[32mINFO 2026-01-04 23:51:35,433 411 sam3_video_predictor.py: 330:[0m
-2026-01-04T23:51:35.433391235Z 	*** DONE loading model on all ranks ***
-2026-01-04T23:51:36.042894367Z frame loading (OpenCV) [rank=0]:   0%|          | 0/45 [00:00<?, ?it/s]frame loading (OpenCV) [rank=0]: 100%|██████████| 45/45 [00:00<00:00, 551.04it/s]
-2026-01-04T23:51:48.167266507Z propagate_in_video:   0%|          | 0/45 [00:00<?, ?it/s]propagate_in_video:   2%|▏         | 1/45 [00:00<00:09,  4.88it/s]propagate_in_video:   7%|▋         | 3/45 [00:00<00:04, 10.26it/s]propagate_in_video:  11%|█         | 5/45 [00:00<00:03, 12.75it/s]propagate_in_video:  16%|█▌        | 7/45 [00:00<00:02, 14.00it/s]propagate_in_video:  20%|██        | 9/45 [00:00<00:02, 14.66it/s]propagate_in_video:  24%|██▍       | 11/45 [00:00<00:02, 15.07it/s]propagate_in_video:  29%|██▉       | 13/45 [00:00<00:02, 15.34it/s]propagate_in_video:  33%|███▎      | 15/45 [00:01<00:02, 14.19it/s]propagate_in_video:  38%|███▊      | 17/45 [00:01<00:02, 12.98it/s]propagate_in_video:  42%|████▏     | 19/45 [00:01<00:02, 11.97it/s]propagate_in_video:  47%|████▋     | 21/45 [00:01<00:02, 11.87it/s]propagate_in_video:  51%|█████     | 23/45 [00:01<00:01, 11.78it/s]propagate_in_video:  56%|█████▌    | 25/45 [00:02<00:01, 11.46it/s]propagate_in_video:  60%|██████    | 27/45 [00:02<00:01, 11.19it/s]propagate_in_video:  64%|██████▍   | 29/45 [00:02<00:01, 11.49it/s]propagate_in_video:  69%|██████▉   | 31/45 [00:02<00:01, 11.42it/s]propagate_in_video:  73%|███████▎  | 33/45 [00:02<00:01, 10.98it/s]propagate_in_video:  78%|███████▊  | 35/45 [00:02<00:00, 11.18it/s]propagate_in_video:  82%|████████▏ | 37/45 [00:03<00:00, 11.24it/s]propagate_in_video:  87%|████████▋ | 39/45 [00:03<00:00, 10.92it/s]propagate_in_video:  91%|█████████ | 41/45 [00:03<00:00, 11.21it/s]propagate_in_video:  96%|█████████▌| 43/45 [00:03<00:00, 11.50it/s]propagate_in_video: 100%|██████████| 45/45 [00:03<00:00,  8.89it/s]propagate_in_video: 100%|██████████| 45/45 [00:03<00:00, 11.36it/s]
-2026-01-04T23:51:48.347997780Z [0m[32mINFO 2026-01-04 23:51:48,347 411 sam3_video_predictor.py: 250:[0m removed session f98710e0-b73d-4967-a888-1b1da8eeeb73; live sessions: [], GPU memory: 5119 MiB used and 7000 MiB reserved (max over time: 6707 MiB used and 7000 MiB reserved)
-2026-01-04T23:52:51.880631959Z 2026-01-04 23:52:51,880 - scope.server.pipeline_manager - INFO - Loading pipeline: memflow
-2026-01-04T23:52:51.886670547Z 2026-01-04 23:52:51,886 - scope.server.pipeline_manager - INFO - VACE disabled by load_params, skipping VACE configuration
-2026-01-04T23:52:54.824912924Z Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:02,  2.40it/s]Fetching 6 files:  33%|███▎      | 2/6 [00:02<00:06,  1.53s/it]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.19it/s]
-2026-01-04T23:52:54.903891415Z SageAttention loaded successfully
-2026-01-04T23:52:54.903906093Z flash attn 2 available True
-2026-01-04T23:52:54.903909209Z flash attn 3 available False
-2026-01-04T23:52:54.903909800Z sage attn available True
-2026-01-04T23:53:10.177430053Z 2026-01-04 23:53:10,177 - scope.core.pipelines.wan2_1.vace.mixin - INFO - _init_vace: No vace_path provided, VACE disabled
-2026-01-04T23:53:23.410875436Z Loaded diffusion LoRA in 13.231s
-2026-01-04T23:53:23.411123430Z 2026-01-04 23:53:23,410 - scope.core.pipelines.wan2_1.lora.mixin - INFO - _init_loras: Found 0 LoRA configs to load
-2026-01-04T23:53:25.459224958Z Loaded text encoder in 1.061266s
-2026-01-04T23:53:40.837003452Z Loaded VAE in 0.787s
-2026-01-04T23:53:40.897301812Z 2026-01-04 23:53:40,897 - scope.server.pipeline_manager - INFO - MemFlow pipeline initialized
-2026-01-04T23:53:40.905279628Z 2026-01-04 23:53:40,905 - scope.server.pipeline_manager - INFO - Pipeline memflow loaded successfully
-2026-01-04T23:53:46.312955127Z 2026-01-04 23:53:46,312 - scope.server.webrtc - INFO - Received initial parameters: {'input_mode': 'video', 'prompts': [{'text': 'A luminous silhouette composed of swirling cosmic matter, filled with dense star fields, nebula clouds, flowing fire-like energy, and liquid rainbow colors that continuously move and circulate, emitting a soft yet intense glow; the colors shift smoothly from deep blues and violets to bright reds, greens, and golds, as if powered by an internal stellar engine, with particles drifting, igniting, and dissolving in slow motion; the edges shimmer and pulse with light, slightly translucent, energy crystals, high dynamic range, cinematic lighting, ethereal, otherworldly.', 'weight': 100.0}], 'prompt_interpolation_method': 'linear', 'noise_scale': 0.7, 'noise_controller': True, 'denoising_step_list': [1000, 750, 500, 250], 'manage_cache': True, 'vace_context_scale': 1.0, 'sam3_mask_id': '1bd5661d-7111-4509-a4b9-ebdf07693d53', 'sam3_mask_mode': 'inside'}
-2026-01-04T23:53:46.319030835Z 2026-01-04 23:53:46,318 - scope.server.webrtc - INFO - Created new session: Session(8d36fd64-c0b4-40a7-8702-9baa170a24e8, state=new)
-2026-01-04T23:53:46.320829330Z 2026-01-04 23:53:46,320 - scope.server.webrtc - INFO - Track received: video for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:46.322698537Z 2026-01-04 23:53:46,322 - scope.server.webrtc - INFO - ICE gathering state changed to: gathering for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:46.405798209Z 2026-01-04 23:53:46,405 - scope.server.webrtc - INFO - ICE gathering state changed to: complete for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:46.408666446Z 2026-01-04 23:53:46,408 - scope.server.webrtc - INFO - ICE connection state changed to: checking for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:46.410751928Z 2026-01-04 23:53:46,410 - scope.server.webrtc - INFO - Connection state changed to: connecting for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:49.767393422Z 2026-01-04 23:53:49,767 - scope.server.webrtc - INFO - ICE connection state changed to: completed for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:50.215728881Z 2026-01-04 23:53:50,215 - scope.server.webrtc - INFO - Connection state changed to: connected for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:50.217435484Z 2026-01-04 23:53:50,217 - scope.server.frame_processor - INFO - Worker thread started
-2026-01-04T23:53:50.217527356Z 2026-01-04 23:53:50,217 - scope.server.frame_processor - INFO - FrameProcessor started
-2026-01-04T23:53:50.587890146Z 2026-01-04 23:53:50,587 - scope.server.webrtc - INFO - Data channel received: parameters for session 8d36fd64-c0b4-40a7-8702-9baa170a24e8
-2026-01-04T23:53:50.589383930Z 2026-01-04 23:53:50,589 - scope.server.webrtc - INFO - No pending notifications to flush
-2026-01-04T23:54:07.482975745Z 2026-01-04 23:54:07,482 - scope.server.frame_processor - INFO - Increasing output queue size to 39, current size 8, num_frames 13
-2026-01-04T23:55:14.703764718Z 2026-01-04 23:55:14,703 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
-2026-01-04T23:55:14.708481753Z 2026-01-04 23:55:14,708 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:14.710823515Z 2026-01-04 23:55:14,710 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:15.663378493Z 2026-01-04 23:55:15,663 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:15.665362655Z 2026-01-04 23:55:15,665 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:15.666927734Z 2026-01-04 23:55:15,666 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:16.693897053Z 2026-01-04 23:55:16,693 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
-2026-01-04T23:55:16.695954372Z 2026-01-04 23:55:16,695 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:16.697480187Z 2026-01-04 23:55:16,697 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:17.633935643Z 2026-01-04 23:55:17,633 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:17.635981451Z 2026-01-04 23:55:17,635 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:17.636942649Z 2026-01-04 23:55:17,636 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:18.888539984Z 2026-01-04 23:55:18,888 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
-2026-01-04T23:55:18.892366053Z 2026-01-04 23:55:18,892 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:18.894551442Z 2026-01-04 23:55:18,894 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:19.663798877Z 2026-01-04 23:55:19,663 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:19.665476004Z 2026-01-04 23:55:19,665 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:19.666427405Z 2026-01-04 23:55:19,666 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:19.958600419Z 2026-01-04 23:55:19,958 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:19.960609558Z 2026-01-04 23:55:19,960 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:19.961820143Z 2026-01-04 23:55:19,961 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:20.213824501Z 2026-01-04 23:55:20,213 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
-2026-01-04T23:55:20.216276849Z 2026-01-04 23:55:20,216 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:20.217532038Z 2026-01-04 23:55:20,217 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:20.448426878Z 2026-01-04 23:55:20,448 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:20.450160923Z 2026-01-04 23:55:20,450 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:20.451643507Z 2026-01-04 23:55:20,451 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:21.223488952Z 2026-01-04 23:55:21,223 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:21.249410162Z 2026-01-04 23:55:21,249 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:21.250761801Z 2026-01-04 23:55:21,250 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:21.819584895Z 2026-01-04 23:55:21,819 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:21.821705593Z 2026-01-04 23:55:21,821 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:21.823162319Z 2026-01-04 23:55:21,823 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.020355152Z 2026-01-04 23:55:22,020 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:22.022081352Z 2026-01-04 23:55:22,022 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.023205886Z 2026-01-04 23:55:22,023 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.104822233Z 2026-01-04 23:55:22,104 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
-2026-01-04T23:55:22.107756022Z 2026-01-04 23:55:22,107 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.109416990Z 2026-01-04 23:55:22,109 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.224906313Z 2026-01-04 23:55:22,224 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:22.226736157Z 2026-01-04 23:55:22,226 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.228006895Z 2026-01-04 23:55:22,227 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.345393298Z 2026-01-04 23:55:22,345 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
-2026-01-04T23:55:22.347307109Z 2026-01-04 23:55:22,347 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
-2026-01-04T23:55:22.348162058Z 2026-01-04 23:55:22,348 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:02:49.739771695Z ==========
+2026-01-05T00:02:49.739773058Z == CUDA ==
+2026-01-05T00:02:49.739792975Z ==========
+2026-01-05T00:02:49.741739267Z CUDA Version 12.8.0
+2026-01-05T00:02:49.742496926Z Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+2026-01-05T00:02:49.742928659Z This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+2026-01-05T00:02:49.742930543Z By pulling and using the container, you accept the terms and conditions of this license:
+2026-01-05T00:02:49.742931475Z https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+2026-01-05T00:02:49.742932817Z A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+2026-01-05T00:02:49.749353995Z Cloning repository from https://github.com/emmajane1313/burnme.git...
+2026-01-05T00:02:49.749964691Z Cloning into '.'...
+2026-01-05T00:02:50.823368572Z Installing Python dependencies...
+2026-01-05T00:02:50.862938989Z Using CPython 3.10.12 interpreter at: /usr/bin/python3.10
+2026-01-05T00:02:50.862956281Z Creating virtual environment at: .venv
+2026-01-05T00:02:50.872511601Z    Building burnmewhileimhot @ file:///app
+2026-01-05T00:02:50.956248858Z Downloading setuptools (1.1MiB)
+2026-01-05T00:02:50.989769008Z Downloading hf-xet (3.2MiB)
+2026-01-05T00:02:51.001143953Z Downloading virtualenv (5.7MiB)
+2026-01-05T00:02:51.001179659Z Downloading pillow (6.7MiB)
+2026-01-05T00:02:51.001233550Z Downloading twilio (1.7MiB)
+2026-01-05T00:02:51.001262403Z Downloading pygments (1.2MiB)
+2026-01-05T00:02:51.001289634Z Downloading torchao (6.6MiB)
+2026-01-05T00:02:51.001383719Z Downloading nvidia-cufile-cu12 (1.1MiB)
+2026-01-05T00:02:51.001414516Z Downloading sympy (6.0MiB)
+2026-01-05T00:02:51.001481040Z Downloading imageio-ffmpeg (28.1MiB)
+2026-01-05T00:02:51.001550950Z Downloading aiohttp (1.6MiB)
+2026-01-05T00:02:51.001591706Z Downloading numpy (16.0MiB)
+2026-01-05T00:02:51.001637221Z Downloading nvidia-cusparselt-cu12 (273.9MiB)
+2026-01-05T00:02:51.001682244Z Downloading nvidia-cuda-cupti-cu12 (9.8MiB)
+2026-01-05T00:02:51.001726386Z Downloading nvidia-nvjitlink-cu12 (37.4MiB)
+2026-01-05T00:02:51.001771200Z Downloading transformers (11.4MiB)
+2026-01-05T00:02:51.001826222Z Downloading nvidia-cusparse-cu12 (274.9MiB)
+2026-01-05T00:02:51.001877127Z Downloading nvidia-cublas-cu12 (566.8MiB)
+2026-01-05T00:02:51.001977434Z Downloading ruff (12.7MiB)
+2026-01-05T00:02:51.002076879Z Downloading tokenizers (3.1MiB)
+2026-01-05T00:02:51.002135638Z Downloading nvidia-nccl-cu12 (307.4MiB)
+2026-01-05T00:02:51.002195690Z Downloading cryptography (4.3MiB)
+2026-01-05T00:02:51.002251614Z Downloading av (37.9MiB)
+2026-01-05T00:02:51.002313699Z Downloading nvidia-cufft-cu12 (184.2MiB)
+2026-01-05T00:02:51.002433262Z Downloading nvidia-cuda-nvrtc-cu12 (84.0MiB)
+2026-01-05T00:02:51.002495027Z Downloading nvidia-cudnn-cu12 (674.0MiB)
+2026-01-05T00:02:51.002560318Z Downloading triton (148.2MiB)
+2026-01-05T00:02:51.002921159Z Downloading networkx (1.6MiB)
+2026-01-05T00:02:51.003064857Z Downloading pydantic-core (2.0MiB)
+2026-01-05T00:02:51.003134426Z Downloading diffusers (3.9MiB)
+2026-01-05T00:02:51.003211880Z Downloading nvidia-curand-cu12 (60.7MiB)
+2026-01-05T00:02:51.003285237Z Downloading pylibsrtp (2.3MiB)
+2026-01-05T00:02:51.003368322Z Downloading torch (848.0MiB)
+2026-01-05T00:02:51.003449763Z Downloading torchvision (8.2MiB)
+2026-01-05T00:02:51.015772522Z Downloading nvidia-cusolver-cu12 (255.1MiB)
+2026-01-05T00:02:51.243607557Z Downloading sageattention (21.6MiB)
+2026-01-05T00:02:51.286460943Z Downloading flash-attn (244.2MiB)
+2026-01-05T00:02:51.459327160Z  Downloaded nvidia-cufile-cu12
+2026-01-05T00:02:51.469960255Z  Downloaded torchvision
+2026-01-05T00:02:51.586116363Z  Downloaded pygments
+2026-01-05T00:02:51.631848886Z  Downloaded aiohttp
+2026-01-05T00:02:51.662844188Z  Downloaded setuptools
+2026-01-05T00:02:51.783580228Z  Downloaded pydantic-core
+2026-01-05T00:02:51.798401055Z  Downloaded sageattention
+2026-01-05T00:02:51.846991696Z  Downloaded networkx
+2026-01-05T00:02:51.862071584Z    Building antlr4-python3-runtime==4.9.3
+2026-01-05T00:02:51.889077473Z       Built burnmewhileimhot @ file:///app
+2026-01-05T00:02:51.890319084Z  Downloaded pylibsrtp
+2026-01-05T00:02:52.024239706Z  Downloaded tokenizers
+2026-01-05T00:02:52.025539965Z  Downloaded twilio
+2026-01-05T00:02:52.053767407Z  Downloaded hf-xet
+2026-01-05T00:02:52.172304946Z  Downloaded diffusers
+2026-01-05T00:02:52.208942005Z       Built antlr4-python3-runtime==4.9.3
+2026-01-05T00:02:52.282188313Z  Downloaded cryptography
+2026-01-05T00:02:52.475614184Z  Downloaded virtualenv
+2026-01-05T00:02:52.577610696Z  Downloaded sympy
+2026-01-05T00:02:52.610082445Z  Downloaded pillow
+2026-01-05T00:02:52.710802552Z  Downloaded torchao
+2026-01-05T00:02:52.953205955Z  Downloaded nvidia-cuda-cupti-cu12
+2026-01-05T00:02:53.136260138Z  Downloaded transformers
+2026-01-05T00:02:53.264243182Z  Downloaded ruff
+2026-01-05T00:02:53.587126261Z  Downloaded numpy
+2026-01-05T00:02:54.566918771Z  Downloaded imageio-ffmpeg
+2026-01-05T00:02:55.258890341Z  Downloaded nvidia-nvjitlink-cu12
+2026-01-05T00:02:55.276067672Z  Downloaded av
+2026-01-05T00:02:55.278100575Z  Downloaded flash-attn
+2026-01-05T00:02:56.558416509Z  Downloaded nvidia-curand-cu12
+2026-01-05T00:02:58.016949106Z  Downloaded nvidia-cuda-nvrtc-cu12
+2026-01-05T00:03:00.909303441Z  Downloaded triton
+2026-01-05T00:03:02.355804572Z  Downloaded nvidia-cufft-cu12
+2026-01-05T00:03:04.790618234Z  Downloaded nvidia-cusolver-cu12
+2026-01-05T00:03:05.271813900Z  Downloaded nvidia-cusparselt-cu12
+2026-01-05T00:03:05.298055076Z  Downloaded nvidia-cusparse-cu12
+2026-01-05T00:03:05.832158406Z  Downloaded nvidia-nccl-cu12
+2026-01-05T00:03:09.140561631Z  Downloaded nvidia-cublas-cu12
+2026-01-05T00:03:10.437726157Z  Downloaded nvidia-cudnn-cu12
+2026-01-05T00:03:12.522420497Z  Downloaded torch
+2026-01-05T00:03:12.522484806Z Prepared 135 packages in 21.65s
+2026-01-05T00:03:12.528262928Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusparse-cu12` (v12.5.8.93) or `nvidia-cufile-cu12` (v1.13.1.3).
+2026-01-05T00:03:12.531896328Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvtx-cu12` (v12.8.90) or `nvidia-cusparse-cu12` (v12.5.8.93).
+2026-01-05T00:03:12.532180276Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvtx-cu12` (v12.8.90) or `nvidia-cublas-cu12` (v12.8.4.1).
+2026-01-05T00:03:12.535994473Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusolver-cu12` (v11.7.3.90) or `nvidia-cublas-cu12` (v12.8.4.1).
+2026-01-05T00:03:12.536051900Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cusolver-cu12` (v11.7.3.90) or `nvidia-cufft-cu12` (v11.3.3.83).
+2026-01-05T00:03:12.537200347Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-curand-cu12` (v10.3.9.90) or `nvidia-cufft-cu12` (v11.3.3.83).
+2026-01-05T00:03:12.538691702Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-curand-cu12` (v10.3.9.90) or `nvidia-cuda-nvrtc-cu12` (v12.8.93).
+2026-01-05T00:03:12.539129426Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvjitlink-cu12` (v12.8.93) or `nvidia-cuda-nvrtc-cu12` (v12.8.93).
+2026-01-05T00:03:12.539810584Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-nvjitlink-cu12` (v12.8.93) or `nvidia-cuda-cupti-cu12` (v12.8.90).
+2026-01-05T00:03:12.543859868Z warning: The module `nvidia` is provided by more than one package, which causes an install race condition and can result in a broken module. Consider removing your dependency on either `nvidia-cuda-runtime-cu12` (v12.8.90) or `nvidia-cuda-cupti-cu12` (v12.8.90).
+2026-01-05T00:03:12.637025599Z Installed 135 packages in 114ms
+2026-01-05T00:03:12.637146584Z  + accelerate==1.11.0
+2026-01-05T00:03:12.637153357Z  + aiohappyeyeballs==2.6.1
+2026-01-05T00:03:12.637154539Z  + aiohttp==3.13.2
+2026-01-05T00:03:12.637155611Z  + aiohttp-retry==2.9.1
+2026-01-05T00:03:12.637156633Z  + aioice==0.10.1
+2026-01-05T00:03:12.637157965Z  + aiortc==1.14.0
+2026-01-05T00:03:12.637166190Z  + aiosignal==1.4.0
+2026-01-05T00:03:12.637167262Z  + annotated-doc==0.0.3
+2026-01-05T00:03:12.637171050Z  + annotated-types==0.7.0
+2026-01-05T00:03:12.637181028Z  + antlr4-python3-runtime==4.9.3
+2026-01-05T00:03:12.637193020Z  + anyio==4.11.0
+2026-01-05T00:03:12.637194954Z  + async-timeout==5.0.1
+2026-01-05T00:03:12.637200063Z  + attrs==25.4.0
+2026-01-05T00:03:12.637217666Z  + av==16.0.1
+2026-01-05T00:03:12.637219580Z  + backports-tarfile==1.2.0
+2026-01-05T00:03:12.637228717Z  + burnmewhileimhot==0.1.0b2 (from file:///app)
+2026-01-05T00:03:12.637234718Z  + certifi==2025.10.5
+2026-01-05T00:03:12.637243154Z  + cffi==2.0.0
+2026-01-05T00:03:12.637250778Z  + cfgv==3.4.0
+2026-01-05T00:03:12.637258602Z  + charset-normalizer==3.4.4
+2026-01-05T00:03:12.637265625Z  + click==8.3.1
+2026-01-05T00:03:12.637272729Z  + cryptography==46.0.3
+2026-01-05T00:03:12.637280273Z  + diffusers==0.35.2
+2026-01-05T00:03:12.637292135Z  + distlib==0.4.0
+2026-01-05T00:03:12.637296533Z  + dnspython==2.8.0
+2026-01-05T00:03:12.637304979Z  + docutils==0.22.2
+2026-01-05T00:03:12.637312352Z  + easydict==1.13
+2026-01-05T00:03:12.637320267Z  + einops==0.8.1
+2026-01-05T00:03:12.637326869Z  + exceptiongroup==1.3.0
+2026-01-05T00:03:12.637334263Z  + fastapi==0.121.0
+2026-01-05T00:03:12.637343070Z  + filelock==3.20.0
+2026-01-05T00:03:12.637358598Z  + flash-attn==2.8.3+cu12torch2.8cxx11abifalse (from https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl)
+2026-01-05T00:03:12.637363888Z  + freezegun==1.5.5
+2026-01-05T00:03:12.637374067Z  + frozenlist==1.8.0
+2026-01-05T00:03:12.637378495Z  + fsspec==2025.10.0
+2026-01-05T00:03:12.637387462Z  + ftfy==6.3.1
+2026-01-05T00:03:12.637396259Z  + google-crc32c==1.7.1
+2026-01-05T00:03:12.637401649Z  + h11==0.16.0
+2026-01-05T00:03:12.637409714Z  + hf-xet==1.2.0
+2026-01-05T00:03:12.637417248Z  + httpcore==1.0.9
+2026-01-05T00:03:12.637425182Z  + httpx==0.28.1
+2026-01-05T00:03:12.637433277Z  + huggingface-hub==0.36.0
+2026-01-05T00:03:12.637441022Z  + id==1.5.0
+2026-01-05T00:03:12.637449017Z  + identify==2.6.15
+2026-01-05T00:03:12.637455569Z  + idna==3.11
+2026-01-05T00:03:12.637462622Z  + ifaddr==0.2.0
+2026-01-05T00:03:12.637473222Z  + imageio==2.37.2
+2026-01-05T00:03:12.637478922Z  + imageio-ffmpeg==0.6.0
+2026-01-05T00:03:12.637486637Z  + importlib-metadata==8.7.0
+2026-01-05T00:03:12.637496695Z  + iniconfig==2.3.0
+2026-01-05T00:03:12.637503779Z  + jaraco-classes==3.4.0
+2026-01-05T00:03:12.637510150Z  + jaraco-context==6.0.1
+2026-01-05T00:03:12.637519127Z  + jaraco-functools==4.3.0
+2026-01-05T00:03:12.637525850Z  + jeepney==0.9.0
+2026-01-05T00:03:12.637533634Z  + jinja2==3.1.6
+2026-01-05T00:03:12.637542120Z  + kernels==0.11.0
+2026-01-05T00:03:12.637549213Z  + keyring==25.6.0
+2026-01-05T00:03:12.637558791Z  + lmdb==1.7.5
+2026-01-05T00:03:12.637565083Z  + markdown-it-py==4.0.0
+2026-01-05T00:03:12.637571905Z  + markupsafe==3.0.3
+2026-01-05T00:03:12.637587134Z  + mdurl==0.1.2
+2026-01-05T00:03:12.637596932Z  + more-itertools==10.8.0
+2026-01-05T00:03:12.637609125Z  + mpmath==1.3.0
+2026-01-05T00:03:12.637615687Z  + multidict==6.7.0
+2026-01-05T00:03:12.637620055Z  + networkx==3.4.2
+2026-01-05T00:03:12.637624944Z  + nh3==0.3.2
+2026-01-05T00:03:12.637633209Z  + nodeenv==1.9.1
+2026-01-05T00:03:12.637639191Z  + numpy==2.2.6
+2026-01-05T00:03:12.637643408Z  + nvidia-cublas-cu12==12.8.4.1
+2026-01-05T00:03:12.637650542Z  + nvidia-cuda-cupti-cu12==12.8.90
+2026-01-05T00:03:12.637656663Z  + nvidia-cuda-nvrtc-cu12==12.8.93
+2026-01-05T00:03:12.637663896Z  + nvidia-cuda-runtime-cu12==12.8.90
+2026-01-05T00:03:12.637670509Z  + nvidia-cudnn-cu12==9.10.2.21
+2026-01-05T00:03:12.637684605Z  + nvidia-cufft-cu12==11.3.3.83
+2026-01-05T00:03:12.637685497Z  + nvidia-cufile-cu12==1.13.1.3
+2026-01-05T00:03:12.637692289Z  + nvidia-curand-cu12==10.3.9.90
+2026-01-05T00:03:12.637701807Z  + nvidia-cusolver-cu12==11.7.3.90
+2026-01-05T00:03:12.637707417Z  + nvidia-cusparse-cu12==12.5.8.93
+2026-01-05T00:03:12.637714711Z  + nvidia-cusparselt-cu12==0.7.1
+2026-01-05T00:03:12.637717867Z  + nvidia-nccl-cu12==2.27.3
+2026-01-05T00:03:12.637722656Z  + nvidia-nvjitlink-cu12==12.8.93
+2026-01-05T00:03:12.637727605Z  + nvidia-nvtx-cu12==12.8.90
+2026-01-05T00:03:12.637729749Z  + omegaconf==2.3.0
+2026-01-05T00:03:12.637733436Z  + packaging==25.0
+2026-01-05T00:03:12.637737143Z  + peft==0.17.1
+2026-01-05T00:03:12.637742052Z  + pillow==12.0.0
+2026-01-05T00:03:12.637745338Z  + platformdirs==4.5.0
+2026-01-05T00:03:12.637750518Z  + pluggy==1.6.0
+2026-01-05T00:03:12.637753623Z  + pre-commit==4.3.0
+2026-01-05T00:03:12.637758092Z  + propcache==0.4.1
+2026-01-05T00:03:12.637762049Z  + psutil==7.1.3
+2026-01-05T00:03:12.637764894Z  + pycparser==2.23
+2026-01-05T00:03:12.637771597Z  + pydantic==2.12.4
+2026-01-05T00:03:12.637776746Z  + pydantic-core==2.41.5
+2026-01-05T00:03:12.637782918Z  + pyee==13.0.0
+2026-01-05T00:03:12.637787246Z  + pygments==2.19.2
+2026-01-05T00:03:12.637790953Z  + pyjwt==2.10.1
+2026-01-05T00:03:12.637794950Z  + pylibsrtp==1.0.0
+2026-01-05T00:03:12.637798757Z  + pyopenssl==25.3.0
+2026-01-05T00:03:12.637802945Z  + pytest==8.4.2
+2026-01-05T00:03:12.637807444Z  + python-dateutil==2.9.0.post0
+2026-01-05T00:03:12.637811982Z  + pyyaml==6.0.3
+2026-01-05T00:03:12.637816641Z  + readme-renderer==44.0
+2026-01-05T00:03:12.637827250Z  + regex==2025.11.3
+2026-01-05T00:03:12.637830026Z  + requests==2.32.5
+2026-01-05T00:03:12.637833622Z  + requests-toolbelt==1.0.0
+2026-01-05T00:03:12.637837800Z  + rfc3986==2.0.0
+2026-01-05T00:03:12.637842519Z  + rich==14.2.0
+2026-01-05T00:03:12.637846657Z  + ruff==0.14.3
+2026-01-05T00:03:12.637851976Z  + safetensors==0.6.2
+2026-01-05T00:03:12.637856775Z  + sageattention==2.2.0 (from https://github.com/daydreamlive/SageAttention/releases/download/v2.2.0-linux/sageattention-2.2.0-cp310-cp310-linux_x86_64.whl)
+2026-01-05T00:03:12.637860172Z  + secretstorage==3.4.0
+2026-01-05T00:03:12.637865582Z  + setuptools==80.9.0
+2026-01-05T00:03:12.637868317Z  + six==1.17.0
+2026-01-05T00:03:12.637872465Z  + sniffio==1.3.1
+2026-01-05T00:03:12.637876462Z  + starlette==0.49.3
+2026-01-05T00:03:12.637882704Z  + sympy==1.14.0
+2026-01-05T00:03:12.637889897Z  + tokenizers==0.22.1
+2026-01-05T00:03:12.637896349Z  + tomli==2.3.0
+2026-01-05T00:03:12.637905716Z  + torch==2.8.0+cu128
+2026-01-05T00:03:12.637910004Z  + torchao==0.13.0
+2026-01-05T00:03:12.637917378Z  + torchvision==0.23.0+cu128
+2026-01-05T00:03:12.637923930Z  + tqdm==4.67.1
+2026-01-05T00:03:12.637930803Z  + transformers==4.57.1
+2026-01-05T00:03:12.637936874Z  + triton==3.4.0
+2026-01-05T00:03:12.637942375Z  + twilio==9.8.5
+2026-01-05T00:03:12.637949257Z  + twine==6.2.0
+2026-01-05T00:03:12.637954337Z  + typing-extensions==4.15.0
+2026-01-05T00:03:12.637961560Z  + typing-inspection==0.4.2
+2026-01-05T00:03:12.637965928Z  + urllib3==2.5.0
+2026-01-05T00:03:12.637969926Z  + uvicorn==0.38.0
+2026-01-05T00:03:12.637976368Z  + virtualenv==20.35.4
+2026-01-05T00:03:12.637982139Z  + wcwidth==0.2.14
+2026-01-05T00:03:12.637986276Z  + yarl==1.22.0
+2026-01-05T00:03:12.637990284Z  + zipp==3.23.0
+2026-01-05T00:03:12.650841386Z Building frontend...
+2026-01-05T00:03:14.306588303Z added 274 packages, and audited 275 packages in 2s
+2026-01-05T00:03:14.306590608Z 58 packages are looking for funding
+2026-01-05T00:03:14.306592020Z   run `npm fund` for details
+2026-01-05T00:03:14.308945249Z 2 moderate severity vulnerabilities
+2026-01-05T00:03:14.308948585Z To address all issues, run:
+2026-01-05T00:03:14.308950138Z   npm audit fix
+2026-01-05T00:03:14.308952392Z Run `npm audit` for details.
+2026-01-05T00:03:14.309340424Z npm notice
+2026-01-05T00:03:14.309352066Z npm notice New major version of npm available! 10.8.2 -> 11.7.0
+2026-01-05T00:03:14.309353468Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+2026-01-05T00:03:14.309380910Z npm notice To update run: npm install -g npm@11.7.0
+2026-01-05T00:03:14.309381761Z npm notice
+2026-01-05T00:03:14.366327248Z > burnmewhileimhot-frontend@0.1.0-beta.2 build
+2026-01-05T00:03:14.366328781Z > tsc -b && vite build
+2026-01-05T00:03:15.672222437Z vite v7.1.5 building for production...
+2026-01-05T00:03:15.690304872Z [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+2026-01-05T00:03:15.839637742Z transforming...
+2026-01-05T00:03:16.850549855Z ✓ 1790 modules transformed.
+2026-01-05T00:03:16.968893704Z rendering chunks...
+2026-01-05T00:03:16.972403374Z computing gzip size...
+2026-01-05T00:03:16.979900674Z dist/index.html                   0.47 kB │ gzip:   0.30 kB
+2026-01-05T00:03:16.979913358Z dist/assets/index-DWhn2Jmy.css   52.31 kB │ gzip:  10.04 kB
+2026-01-05T00:03:16.979914930Z dist/assets/index-Bes2cqa1.js   437.94 kB │ gzip: 137.49 kB
+2026-01-05T00:03:16.979993106Z ✓ built in 1.30s
+2026-01-05T00:03:17.013438988Z Starting burnmewhileimhot...
+2026-01-05T00:03:17.297760325Z Downloading sageattention (11.4MiB)
+2026-01-05T00:03:17.353770492Z Downloading flash-attn (121.7MiB)
+2026-01-05T00:03:17.465708331Z    Updating https://github.com/facebookresearch/sam3.git (HEAD)
+2026-01-05T00:03:17.639216453Z  Downloaded sageattention
+2026-01-05T00:03:19.325109432Z  Downloaded flash-attn
+2026-01-05T00:03:19.858339728Z     Updated https://github.com/facebookresearch/sam3.git (5eb25fb54b70ec0cb16f949289053be091e16705)
+2026-01-05T00:03:21.528561657Z    Building iopath==0.1.10
+2026-01-05T00:03:21.532695759Z    Building sam3 @ git+https://github.com/facebookresearch/sam3.git@5eb25fb54b70ec0cb16f949289053be091e16705
+2026-01-05T00:03:21.609089723Z       Built iopath==0.1.10
+2026-01-05T00:03:21.614210862Z Downloading numpy (17.4MiB)
+2026-01-05T00:03:21.650225714Z Downloading decord (13.0MiB)
+2026-01-05T00:03:21.650364672Z Downloading opencv-python (60.1MiB)
+2026-01-05T00:03:21.650391422Z Downloading timm (2.4MiB)
+2026-01-05T00:03:21.697199647Z       Built sam3 @ git+https://github.com/facebookresearch/sam3.git@5eb25fb54b70ec0cb16f949289053be091e16705
+2026-01-05T00:03:21.790044741Z  Downloaded timm
+2026-01-05T00:03:21.994921879Z  Downloaded numpy
+2026-01-05T00:03:22.027427431Z  Downloaded decord
+2026-01-05T00:03:22.542639581Z  Downloaded opencv-python
+2026-01-05T00:03:22.553532469Z Uninstalled 2 packages in 10ms
+2026-01-05T00:03:22.565295767Z Installed 9 packages in 11ms
+2026-01-05T00:03:26.509976142Z Modular Diffusers is currently an experimental feature under active development. The API is subject to breaking changes in future releases.
+2026-01-05T00:03:28.615388531Z 2026-01-05 00:03:28,615 - scope.core.pipelines.registry - INFO - GPU detected with 31.4 GB VRAM
+2026-01-05T00:03:28.627378320Z 2026-01-05 00:03:28,627 - scope.core.plugins.manager - INFO - Loaded 0 plugin(s)
+2026-01-05T00:03:28.628713895Z 2026-01-05 00:03:28,628 - scope.core.pipelines.registry - INFO - Registry initialized with 6 pipeline(s)
+2026-01-05T00:03:28.629998616Z 2026-01-05 00:03:28,629 - scope.server.app - INFO - Serving static assets from /app/frontend/dist/assets
+2026-01-05T00:03:28.636836739Z 2026-01-05 00:03:28,636 - uvicorn.error - INFO - Started server process [417]
+2026-01-05T00:03:28.639522136Z 2026-01-05 00:03:28,639 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-05T00:03:28.641183737Z 2026-01-05 00:03:28,641 - scope.server.app - INFO - Logs directory: /workspace/logs
+2026-01-05T00:03:28.643546564Z 2026-01-05 00:03:28,643 - scope.server.app - INFO - Models directory: /workspace/models
+2026-01-05T00:03:28.645023672Z 2026-01-05 00:03:28,644 - scope.server.app - INFO - Assets directory: /workspace/assets
+2026-01-05T00:03:28.645824092Z 2026-01-05 00:03:28,645 - scope.server.app - INFO - Pipeline manager initialized
+2026-01-05T00:03:29.992885417Z 2026-01-05 00:03:29,992 - scope.server.webrtc - INFO - RTCConfiguration created with cloudflare and 2 ICE servers
+2026-01-05T00:03:29.994863378Z 2026-01-05 00:03:29,994 - scope.server.app - INFO - WebRTC manager initialized
+2026-01-05T00:03:29.996066125Z 2026-01-05 00:03:29,996 - uvicorn.error - INFO - Application startup complete.
+2026-01-05T00:03:29.998054816Z 2026-01-05 00:03:29,997 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-01-05T00:12:30.241998804Z /app/.venv/lib/python3.10/site-packages/sam3/model_builder.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+2026-01-05T00:12:30.242025503Z   import pkg_resources
+2026-01-05T00:12:30.755382220Z [0m[32mINFO 2026-01-05 00:12:30,755 417 sam3_video_predictor.py: 299:[0m using the following GPU IDs: [0]
+2026-01-05T00:12:30.755422976Z [0m[32mINFO 2026-01-05 00:12:30,755 417 sam3_video_predictor.py: 315:[0m
+2026-01-05T00:12:30.755431262Z 	*** START loading model on all ranks ***
+2026-01-05T00:12:30.755433466Z [0m[32mINFO 2026-01-05 00:12:30,755 417 sam3_video_predictor.py: 317:[0m loading model on rank=0 with world_size=1 -- this could take a while ...
+2026-01-05T00:12:33.537361033Z [0m[32mINFO 2026-01-05 00:12:33,537 417 sam3_video_base.py: 124:[0m setting max_num_objects=10000 and num_obj_for_compile=16
+2026-01-05T00:12:39.152261347Z [0m[32mINFO 2026-01-05 00:12:39,152 417 sam3_video_predictor.py: 319:[0m loading model on rank=0 with world_size=1 -- DONE locally
+2026-01-05T00:12:39.152298937Z [0m[32mINFO 2026-01-05 00:12:39,152 417 sam3_video_predictor.py: 330:[0m
+2026-01-05T00:12:39.152304567Z 	*** DONE loading model on all ranks ***
+2026-01-05T00:12:39.763862865Z frame loading (OpenCV) [rank=0]:   0%|          | 0/45 [00:00<?, ?it/s]frame loading (OpenCV) [rank=0]: 100%|██████████| 45/45 [00:00<00:00, 542.36it/s]
+2026-01-05T00:12:51.691766261Z propagate_in_video:   0%|          | 0/45 [00:00<?, ?it/s]propagate_in_video:   2%|▏         | 1/45 [00:00<00:08,  4.90it/s]propagate_in_video:   7%|▋         | 3/45 [00:00<00:04, 10.29it/s]propagate_in_video:  11%|█         | 5/45 [00:00<00:03, 12.52it/s]propagate_in_video:  16%|█▌        | 7/45 [00:00<00:02, 13.53it/s]propagate_in_video:  20%|██        | 9/45 [00:00<00:02, 14.27it/s]propagate_in_video:  24%|██▍       | 11/45 [00:00<00:02, 14.82it/s]propagate_in_video:  29%|██▉       | 13/45 [00:00<00:02, 15.16it/s]propagate_in_video:  33%|███▎      | 15/45 [00:01<00:02, 14.30it/s]propagate_in_video:  38%|███▊      | 17/45 [00:01<00:02, 13.59it/s]propagate_in_video:  42%|████▏     | 19/45 [00:01<00:02, 12.91it/s]propagate_in_video:  47%|████▋     | 21/45 [00:01<00:01, 12.82it/s]propagate_in_video:  51%|█████     | 23/45 [00:01<00:01, 12.58it/s]propagate_in_video:  56%|█████▌    | 25/45 [00:01<00:01, 12.35it/s]propagate_in_video:  60%|██████    | 27/45 [00:02<00:01, 12.25it/s]propagate_in_video:  64%|██████▍   | 29/45 [00:02<00:01, 11.49it/s]propagate_in_video:  69%|██████▉   | 31/45 [00:02<00:01, 11.61it/s]propagate_in_video:  73%|███████▎  | 33/45 [00:02<00:01, 11.23it/s]propagate_in_video:  78%|███████▊  | 35/45 [00:02<00:00, 11.49it/s]propagate_in_video:  82%|████████▏ | 37/45 [00:02<00:00, 11.71it/s]propagate_in_video:  87%|████████▋ | 39/45 [00:03<00:00, 11.61it/s]propagate_in_video:  91%|█████████ | 41/45 [00:03<00:00, 11.48it/s]propagate_in_video:  96%|█████████▌| 43/45 [00:03<00:00, 11.69it/s]propagate_in_video: 100%|██████████| 45/45 [00:03<00:00,  9.17it/s]propagate_in_video: 100%|██████████| 45/45 [00:03<00:00, 11.70it/s]
+2026-01-05T00:12:51.872408336Z [0m[32mINFO 2026-01-05 00:12:51,872 417 sam3_video_predictor.py: 250:[0m removed session e86a51ac-6965-4850-ba13-a6d27215eb9a; live sessions: [], GPU memory: 5119 MiB used and 7000 MiB reserved (max over time: 6707 MiB used and 7000 MiB reserved)
+2026-01-05T00:13:19.743086085Z 2026-01-05 00:13:19,742 - scope.server.pipeline_manager - INFO - Loading pipeline: memflow
+2026-01-05T00:13:19.750754674Z 2026-01-05 00:13:19,750 - scope.server.pipeline_manager - INFO - VACE disabled by load_params, skipping VACE configuration
+2026-01-05T00:13:21.573138427Z Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.53it/s]Fetching 6 files:  33%|███▎      | 2/6 [00:01<00:03,  1.14it/s]Fetching 6 files: 100%|██████████| 6/6 [00:01<00:00,  3.72it/s]
+2026-01-05T00:13:21.642012749Z SageAttention loaded successfully
+2026-01-05T00:13:21.642025583Z flash attn 2 available True
+2026-01-05T00:13:21.642027717Z flash attn 3 available False
+2026-01-05T00:13:21.642028799Z sage attn available True
+2026-01-05T00:13:30.513656747Z 2026-01-05 00:13:30,513 - scope.core.pipelines.wan2_1.vace.mixin - INFO - _init_vace: No vace_path provided, VACE disabled
+2026-01-05T00:13:39.198601147Z Loaded diffusion LoRA in 8.683s
+2026-01-05T00:13:39.198766355Z 2026-01-05 00:13:39,198 - scope.core.pipelines.wan2_1.lora.mixin - INFO - _init_loras: Found 0 LoRA configs to load
+2026-01-05T00:13:40.932020407Z Loaded text encoder in 0.858377s
+2026-01-05T00:13:52.802196022Z Loaded VAE in 0.915s
+2026-01-05T00:13:52.857916320Z 2026-01-05 00:13:52,857 - scope.server.pipeline_manager - INFO - MemFlow pipeline initialized
+2026-01-05T00:13:52.860161118Z 2026-01-05 00:13:52,860 - scope.server.pipeline_manager - INFO - Pipeline memflow loaded successfully
+2026-01-05T00:13:54.684973360Z 2026-01-05 00:13:54,684 - scope.server.webrtc - INFO - Received initial parameters: {'input_mode': 'video', 'prompts': [{'text': 'A luminous silhouette composed of swirling cosmic matter, filled with dense star fields, nebula clouds, flowing fire-like energy, and liquid rainbow colors that continuously move and circulate, emitting a soft yet intense glow; the colors shift smoothly from deep blues and violets to bright reds, greens, and golds, as if powered by an internal stellar engine, with particles drifting, igniting, and dissolving in slow motion; the edges shimmer and pulse with light, slightly translucent, energy crystals, high dynamic range, cinematic lighting, ethereal, otherworldly.', 'weight': 100.0}], 'prompt_interpolation_method': 'linear', 'noise_scale': 0.7, 'noise_controller': True, 'denoising_step_list': [1000, 750, 500, 250], 'manage_cache': True, 'vace_context_scale': 1.0, 'sam3_mask_id': 'e0d5ded2-b1b1-4003-87e0-467a1d51e548', 'sam3_mask_mode': 'inside'}
+2026-01-05T00:13:54.690334718Z 2026-01-05 00:13:54,690 - scope.server.webrtc - INFO - Created new session: Session(54b6573d-1a0a-4002-a3f5-01aaf92abc25, state=new)
+2026-01-05T00:13:54.692849578Z 2026-01-05 00:13:54,692 - scope.server.webrtc - INFO - Track received: video for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:54.695040486Z 2026-01-05 00:13:54,694 - scope.server.webrtc - INFO - ICE gathering state changed to: gathering for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:54.770275272Z 2026-01-05 00:13:54,770 - scope.server.webrtc - INFO - ICE gathering state changed to: complete for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:54.772792997Z 2026-01-05 00:13:54,772 - scope.server.webrtc - INFO - ICE connection state changed to: checking for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:54.774282179Z 2026-01-05 00:13:54,774 - scope.server.webrtc - INFO - Connection state changed to: connecting for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:57.159598552Z 2026-01-05 00:13:57,159 - scope.server.webrtc - INFO - ICE connection state changed to: completed for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:57.461981975Z 2026-01-05 00:13:57,461 - scope.server.webrtc - INFO - Connection state changed to: connected for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:57.463946070Z 2026-01-05 00:13:57,463 - scope.server.frame_processor - INFO - Worker thread started
+2026-01-05T00:13:57.463975175Z 2026-01-05 00:13:57,463 - scope.server.frame_processor - INFO - FrameProcessor started
+2026-01-05T00:13:57.750793660Z 2026-01-05 00:13:57,750 - scope.server.webrtc - INFO - Data channel received: parameters for session 54b6573d-1a0a-4002-a3f5-01aaf92abc25
+2026-01-05T00:13:57.752746805Z 2026-01-05 00:13:57,752 - scope.server.webrtc - INFO - No pending notifications to flush
+2026-01-05T00:14:01.632733545Z 2026-01-05 00:14:01,632 - scope.server.frame_processor - INFO - FrameProcessor input: index=0 buffer=1 pts=0 time_base=1/90000 client_time=None
+2026-01-05T00:14:10.940829738Z 2026-01-05 00:14:10,940 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=0.0 first_time=0.0 last_time=9.363
+2026-01-05T00:14:10.942454662Z 2026-01-05 00:14:10,942 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=0 last=11 mode=inside map=time times=0.0..9.363
+2026-01-05T00:14:11.686734841Z 2026-01-05 00:14:11,686 - scope.server.frame_processor - INFO - Increasing output queue size to 39, current size 8, num_frames 13
+2026-01-05T00:14:12.063121088Z 2026-01-05 00:14:12,062 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=9.426 first_time=9.426 last_time=10.148
+2026-01-05T00:14:12.064161705Z 2026-01-05 00:14:12,064 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=12 last=23 mode=inside map=time times=9.426..10.148
+2026-01-05T00:14:12.297997196Z 2026-01-05 00:14:12,297 - scope.server.frame_processor - INFO - FrameProcessor input: index=30 buffer=7 pts=954990 time_base=1/90000 client_time=None
+2026-01-05T00:14:12.652288232Z 2026-01-05 00:14:12,652 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=10.216 first_time=10.216 last_time=11.074
+2026-01-05T00:14:12.653258458Z 2026-01-05 00:14:12,653 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=24 last=36 mode=inside map=time times=10.216..11.074
+2026-01-05T00:14:23.687678197Z 2026-01-05 00:14:23,687 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=11.138 first_time=11.138 last_time=21.996
+2026-01-05T00:14:23.689239803Z 2026-01-05 00:14:23,689 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=37 last=48 mode=inside map=time times=11.138..21.996
+2026-01-05T00:14:35.641340488Z 2026-01-05 00:14:35,641 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:35.643715328Z 2026-01-05 00:14:35,643 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:35.645831797Z 2026-01-05 00:14:35,645 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:38.731437168Z 2026-01-05 00:14:38,731 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:38.733923325Z 2026-01-05 00:14:38,733 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:38.735304084Z 2026-01-05 00:14:38,735 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:39.681993276Z 2026-01-05 00:14:39,681 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:39.684701045Z 2026-01-05 00:14:39,684 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:39.686144532Z 2026-01-05 00:14:39,686 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:40.681508902Z 2026-01-05 00:14:40,681 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:40.683790248Z 2026-01-05 00:14:40,683 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:40.685567175Z 2026-01-05 00:14:40,685 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:41.767110139Z 2026-01-05 00:14:41,766 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:41.769303101Z 2026-01-05 00:14:41,769 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:41.770874856Z 2026-01-05 00:14:41,770 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:42.682329926Z 2026-01-05 00:14:42,682 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:42.684376305Z 2026-01-05 00:14:42,684 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:42.685866919Z 2026-01-05 00:14:42,685 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:43.642163813Z 2026-01-05 00:14:43,642 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:43.644658466Z 2026-01-05 00:14:43,644 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:43.646974646Z 2026-01-05 00:14:43,646 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:44.661550421Z 2026-01-05 00:14:44,661 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:44.663741319Z 2026-01-05 00:14:44,663 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:44.665992599Z 2026-01-05 00:14:44,665 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:45.736666425Z 2026-01-05 00:14:45,736 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:45.738355869Z 2026-01-05 00:14:45,738 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:45.739897148Z 2026-01-05 00:14:45,739 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:46.686788668Z 2026-01-05 00:14:46,686 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:46.689029739Z 2026-01-05 00:14:46,688 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:46.690492812Z 2026-01-05 00:14:46,690 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:47.701380262Z 2026-01-05 00:14:47,701 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:47.712718503Z 2026-01-05 00:14:47,712 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:47.716080560Z 2026-01-05 00:14:47,715 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:48.707211403Z 2026-01-05 00:14:48,707 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:48.710328183Z 2026-01-05 00:14:48,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:48.712145485Z 2026-01-05 00:14:48,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:49.702312594Z 2026-01-05 00:14:49,702 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:49.710410104Z 2026-01-05 00:14:49,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:49.712562119Z 2026-01-05 00:14:49,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:50.641437691Z 2026-01-05 00:14:50,641 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:50.642923927Z 2026-01-05 00:14:50,642 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:50.644612309Z 2026-01-05 00:14:50,644 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:51.682144937Z 2026-01-05 00:14:51,681 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:51.684339872Z 2026-01-05 00:14:51,684 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:51.685600628Z 2026-01-05 00:14:51,685 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:52.707604437Z 2026-01-05 00:14:52,707 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:52.710283052Z 2026-01-05 00:14:52,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:52.712278676Z 2026-01-05 00:14:52,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:53.702359543Z 2026-01-05 00:14:53,702 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:53.710318534Z 2026-01-05 00:14:53,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:53.712862268Z 2026-01-05 00:14:53,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:54.682042147Z 2026-01-05 00:14:54,681 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:54.683988199Z 2026-01-05 00:14:54,683 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:54.685592425Z 2026-01-05 00:14:54,685 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:55.761644991Z 2026-01-05 00:14:55,761 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:55.763695858Z 2026-01-05 00:14:55,763 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:55.764979988Z 2026-01-05 00:14:55,764 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:56.731723775Z 2026-01-05 00:14:56,731 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:14:56.733471748Z 2026-01-05 00:14:56,733 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:56.735264835Z 2026-01-05 00:14:56,735 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:57.702484117Z 2026-01-05 00:14:57,702 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:57.710236965Z 2026-01-05 00:14:57,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:57.712657871Z 2026-01-05 00:14:57,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:58.702547913Z 2026-01-05 00:14:58,702 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:58.715298182Z 2026-01-05 00:14:58,715 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:58.717197527Z 2026-01-05 00:14:58,717 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:59.721970177Z 2026-01-05 00:14:59,721 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:14:59.724531934Z 2026-01-05 00:14:59,724 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:14:59.725993605Z 2026-01-05 00:14:59,725 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:00.721919291Z 2026-01-05 00:15:00,721 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:00.723980366Z 2026-01-05 00:15:00,723 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:00.726764267Z 2026-01-05 00:15:00,726 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:01.687516864Z 2026-01-05 00:15:01,687 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:01.689365134Z 2026-01-05 00:15:01,689 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:01.691080336Z 2026-01-05 00:15:01,691 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:02.701528450Z 2026-01-05 00:15:02,701 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:02.710324400Z 2026-01-05 00:15:02,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:02.712469322Z 2026-01-05 00:15:02,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:03.722602747Z 2026-01-05 00:15:03,722 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:03.725506681Z 2026-01-05 00:15:03,725 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:03.727403922Z 2026-01-05 00:15:03,727 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:04.686871478Z 2026-01-05 00:15:04,686 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:04.688578716Z 2026-01-05 00:15:04,688 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:04.689978931Z 2026-01-05 00:15:04,689 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:05.611530362Z 2026-01-05 00:15:05,611 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:05.614504056Z 2026-01-05 00:15:05,614 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:05.616678092Z 2026-01-05 00:15:05,616 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:06.721834133Z 2026-01-05 00:15:06,721 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:06.724019009Z 2026-01-05 00:15:06,723 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:06.725805273Z 2026-01-05 00:15:06,725 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:07.701414398Z 2026-01-05 00:15:07,701 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:07.709479788Z 2026-01-05 00:15:07,709 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:07.711894352Z 2026-01-05 00:15:07,711 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:08.681666635Z 2026-01-05 00:15:08,681 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:08.683806668Z 2026-01-05 00:15:08,683 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:08.685961819Z 2026-01-05 00:15:08,685 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:09.962196977Z 2026-01-05 00:15:09,962 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:09.964765547Z 2026-01-05 00:15:09,964 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:09.965926318Z 2026-01-05 00:15:09,965 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:10.641333841Z 2026-01-05 00:15:10,641 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:10.642940421Z 2026-01-05 00:15:10,642 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:10.644545758Z 2026-01-05 00:15:10,644 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:12.721939410Z 2026-01-05 00:15:12,721 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:12.724339817Z 2026-01-05 00:15:12,724 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:12.731895909Z 2026-01-05 00:15:12,731 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:13.701653715Z 2026-01-05 00:15:13,701 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:13.710064889Z 2026-01-05 00:15:13,709 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:13.713412349Z 2026-01-05 00:15:13,713 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:14.641408073Z 2026-01-05 00:15:14,641 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:14.644002392Z 2026-01-05 00:15:14,643 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:14.645060882Z 2026-01-05 00:15:14,645 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:15.641334204Z 2026-01-05 00:15:15,641 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:15.643473856Z 2026-01-05 00:15:15,643 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:15.645413666Z 2026-01-05 00:15:15,645 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:16.741726820Z 2026-01-05 00:15:16,741 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:16.744550705Z 2026-01-05 00:15:16,744 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:16.746978303Z 2026-01-05 00:15:16,746 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:17.716674814Z 2026-01-05 00:15:17,716 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:17.718399013Z 2026-01-05 00:15:17,718 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:17.719864951Z 2026-01-05 00:15:17,719 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:18.706655316Z 2026-01-05 00:15:18,706 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:18.710054993Z 2026-01-05 00:15:18,710 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:18.712144872Z 2026-01-05 00:15:18,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:19.741789040Z 2026-01-05 00:15:19,741 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:19.744007869Z 2026-01-05 00:15:19,743 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:19.745641450Z 2026-01-05 00:15:19,745 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:20.681700980Z 2026-01-05 00:15:20,681 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:20.683749032Z 2026-01-05 00:15:20,683 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:20.686660881Z 2026-01-05 00:15:20,686 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:21.621573959Z 2026-01-05 00:15:21,621 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:21.624154011Z 2026-01-05 00:15:21,624 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:21.625967385Z 2026-01-05 00:15:21,625 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:22.682097025Z 2026-01-05 00:15:22,681 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:22.684620491Z 2026-01-05 00:15:22,684 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:22.686790990Z 2026-01-05 00:15:22,686 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:24.142135091Z 2026-01-05 00:15:24,141 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:24.144541540Z 2026-01-05 00:15:24,144 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:24.146202361Z 2026-01-05 00:15:24,146 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 1 length
+2026-01-05T00:15:24.461248671Z 2026-01-05 00:15:24,461 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:24.463947974Z 2026-01-05 00:15:24,463 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:24.465734940Z 2026-01-05 00:15:24,465 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:24.671346165Z 2026-01-05 00:15:24,671 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:24.673170460Z 2026-01-05 00:15:24,673 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:24.674914215Z 2026-01-05 00:15:24,674 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:24.886997324Z 2026-01-05 00:15:24,886 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:24.888719168Z 2026-01-05 00:15:24,888 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:24.890103194Z 2026-01-05 00:15:24,890 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:24.931616132Z 2026-01-05 00:15:24,931 - scope.server.frame_processor - INFO - FrameProcessor input: index=60 buffer=12 pts=7566480 time_base=1/90000 client_time=None
+2026-01-05T00:15:25.002499921Z 2026-01-05 00:15:25,002 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=24.994 first_time=24.994 last_time=84.072
+2026-01-05T00:15:25.010263339Z 2026-01-05 00:15:25,010 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=49 last=60 mode=inside map=time times=24.994..84.072
+2026-01-05T00:15:25.121797040Z 2026-01-05 00:15:25,121 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:25.123689091Z 2026-01-05 00:15:25,123 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:25.125345233Z 2026-01-05 00:15:25,125 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:25.902415917Z 2026-01-05 00:15:25,902 - libav.libvpx - ERROR - Failed to decode frame: Corrupt frame detected
+2026-01-05T00:15:25.910311451Z 2026-01-05 00:15:25,910 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:25.913019852Z 2026-01-05 00:15:25,912 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:26.130894589Z 2026-01-05 00:15:26,130 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=84.139 first_time=84.139 last_time=85.194
+2026-01-05T00:15:26.132762566Z 2026-01-05 00:15:26,132 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=61 last=72 mode=inside map=time times=84.139..85.194
+2026-01-05T00:15:26.849799854Z 2026-01-05 00:15:26,849 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=85.259 first_time=85.259 last_time=86.118
+2026-01-05T00:15:26.850694469Z 2026-01-05 00:15:26,850 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=73 last=84 mode=inside map=time times=85.259..86.118
+2026-01-05T00:15:27.153096297Z 2026-01-05 00:15:27,152 - scope.server.frame_processor - INFO - FrameProcessor input: index=90 buffer=6 pts=7786080 time_base=1/90000 client_time=None
+2026-01-05T00:15:30.136156766Z 2026-01-05 00:15:30,135 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=86.182 first_time=86.182 last_time=88.006
+2026-01-05T00:15:30.138423674Z 2026-01-05 00:15:30,138 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=85 last=96 mode=inside map=time times=86.182..88.006
+2026-01-05T00:15:32.251547772Z 2026-01-05 00:15:32,251 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:32.254509124Z 2026-01-05 00:15:32,254 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:32.257170416Z 2026-01-05 00:15:32,257 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:32.706749079Z 2026-01-05 00:15:32,706 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:32.710046796Z 2026-01-05 00:15:32,709 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:32.712704362Z 2026-01-05 00:15:32,712 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:32.872061325Z 2026-01-05 00:15:32,871 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:32.874098416Z 2026-01-05 00:15:32,874 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:32.875389298Z 2026-01-05 00:15:32,875 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:33.312207663Z 2026-01-05 00:15:33,312 - libav.libvpx - ERROR - Failed to decode frame: Bitstream not supported by this decoder
+2026-01-05T00:15:33.314390305Z 2026-01-05 00:15:33,314 - libav.libvpx - ERROR - Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:33.316776556Z 2026-01-05 00:15:33,316 - aiortc.codecs.vpx - WARNING - Vp8Decoder() failed to decode, skipping package: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [libvpx] Additional information: Truncated packet or corrupt partition 0 length
+2026-01-05T00:15:33.491662960Z 2026-01-05 00:15:33,491 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=88.999 first_time=88.999 last_time=92.456
+2026-01-05T00:15:33.492861069Z 2026-01-05 00:15:33,492 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=97 last=108 mode=inside map=time times=88.999..92.456
+2026-01-05T00:15:33.882084918Z 2026-01-05 00:15:33,881 - scope.server.frame_processor - INFO - FrameProcessor input: index=120 buffer=12 pts=8392050 time_base=1/90000 client_time=None
+2026-01-05T00:15:34.100188872Z 2026-01-05 00:15:34,100 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=92.521 first_time=92.521 last_time=93.377
+2026-01-05T00:15:34.108437884Z 2026-01-05 00:15:34,108 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=109 last=122 mode=inside map=time times=92.521..93.377
+2026-01-05T00:15:35.248610922Z 2026-01-05 00:15:35,248 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=93.443 first_time=93.443 last_time=94.511
+2026-01-05T00:15:35.249800786Z 2026-01-05 00:15:35,249 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=123 last=134 mode=inside map=time times=93.443..94.511
+2026-01-05T00:15:36.078444932Z 2026-01-05 00:15:36,078 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=94.564 first_time=94.564 last_time=95.356
+2026-01-05T00:15:36.079424224Z 2026-01-05 00:15:36,079 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=135 last=146 mode=inside map=time times=94.564..95.356
+2026-01-05T00:15:36.257970349Z 2026-01-05 00:15:36,257 - scope.server.frame_processor - INFO - FrameProcessor input: index=150 buffer=4 pts=8605890 time_base=1/90000 client_time=None
+2026-01-05T00:15:36.874510306Z 2026-01-05 00:15:36,874 - scope.server.sam3_manager - INFO - SAM3 mask fetch (time): session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 hits=12 misses=0 sam3_fps=15.0 origin=95.421 first_time=95.421 last_time=96.147
+2026-01-05T00:15:36.875505678Z 2026-01-05 00:15:36,875 - scope.server.frame_processor - INFO - SAM3 apply: session=e0d5ded2-b1b1-4003-87e0-467a1d51e548 frames=12 first=147 last=158 mode=inside map=time times=95.421..96.147
