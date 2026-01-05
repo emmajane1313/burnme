@@ -793,11 +793,19 @@ class FrameProcessor:
                 mask_id = self.parameters.get("sam3_mask_id")
                 if mask_id and frame_indices is not None:
                     try:
+                        use_server_video = (
+                            self.parameters.get("server_video_source") == "sam3"
+                        )
                         use_time_mapping = (
-                            frame_times is not None
+                            not use_server_video
+                            and frame_times is not None
                             and any(time_val is not None for time_val in frame_times)
                         )
-                        if use_time_mapping:
+                        if use_server_video:
+                            mask_frames = sam3_mask_manager.get_masks_for_indices(
+                                mask_id, frame_indices
+                            )
+                        elif use_time_mapping:
                             mask_frames = sam3_mask_manager.get_masks_for_times(
                                 mask_id,
                                 frame_times,
@@ -814,7 +822,11 @@ class FrameProcessor:
                             frame_indices[0] if frame_indices else None,
                             frame_indices[-1] if frame_indices else None,
                             self.parameters.get("sam3_mask_mode"),
-                            "time" if use_time_mapping else "index",
+                            (
+                                "index"
+                                if use_server_video
+                                else ("time" if use_time_mapping else "index")
+                            ),
                             frame_times[0] if frame_times else None,
                             frame_times[-1] if frame_times else None,
                         )

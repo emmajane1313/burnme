@@ -312,6 +312,41 @@ class Sam3MaskManager:
             )
         return frames
 
+    def get_masks_for_indices(
+        self, session_id: str, frame_indices: Iterable[int]
+    ) -> list[torch.Tensor]:
+        session = self._sessions.get(session_id)
+        if not session:
+            raise KeyError(f"Mask session {session_id} not found")
+
+        frames = []
+        hits = 0
+        misses = 0
+        for frame_idx in frame_indices:
+            mask_frame_idx = (
+                frame_idx % session.frame_count if session.frame_count > 0 else frame_idx
+            )
+            mask_path = self._mask_path(session.mask_dir, mask_frame_idx)
+            if not mask_path.exists():
+                blank = np.zeros((session.height, session.width), dtype=np.uint8)
+                mask_array = blank
+                misses += 1
+            else:
+                mask_array = np.array(Image.open(mask_path).convert("L"), dtype=np.uint8)
+                hits += 1
+
+            tensor = torch.from_numpy(mask_array).float().unsqueeze(0).unsqueeze(-1)
+            frames.append(tensor)
+
+        logger.info(
+            "SAM3 mask fetch (index): session=%s frames=%d hits=%d misses=%d",
+            session_id,
+            len(frames),
+            hits,
+            misses,
+        )
+        return frames
+
     def get_session(self, session_id: str) -> Sam3MaskSession | None:
         return self._sessions.get(session_id)
 
