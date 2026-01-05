@@ -1439,9 +1439,20 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
 @app.post("/api/v1/mp4p/load")
 async def load_mp4p_endpoint(request: LoadMP4PRequest):
     try:
+        logger.info(
+            "Load MP4P start: mp4p_id=%s burn_index=%s versions=%s",
+            request.mp4pData.metadata.id,
+            request.burnIndex,
+            len(request.mp4pData.encryptedSynthedVideos or []),
+        )
         synthed_video = await decrypt_synthed_video(
             request.mp4pData, request.burnIndex
         )
+        if synthed_video:
+            logger.info(
+                "Load MP4P decrypted: bytes=%s",
+                len(synthed_video),
+            )
         mime_type = "video/mp4"
         versions_meta = request.mp4pData.metadata.synthedVersions or []
         if versions_meta:
@@ -1456,6 +1467,12 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
                     mime_type = version_mime
         if request.mp4pData.metadata.synthedMimeType:
             mime_type = request.mp4pData.metadata.synthedMimeType
+        logger.info(
+            "Load MP4P done: mp4p_id=%s mime=%s has_video=%s",
+            request.mp4pData.metadata.id,
+            mime_type,
+            bool(synthed_video),
+        )
         return {
             "success": True,
             "showSynthed": True,

@@ -208,6 +208,7 @@ export function InputAndControlsPanel({
     try {
       setIsExporting(true);
       setPendingKeyDownload(null);
+      let keyDownload: { filename: string; payload: string } | null = null;
       let mp4pData = baseMp4pData;
       if (!mp4pData) {
         mp4pData = await createMP4P();
@@ -306,10 +307,11 @@ export function InputAndControlsPanel({
           const keyName = uploadedVideoFile
             ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
             : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
-          setPendingKeyDownload({
+          keyDownload = {
             filename: `${keyName}.mp4p-key.json`,
             payload: JSON.stringify(keyData, null, 2),
-          });
+          };
+          setPendingKeyDownload(keyDownload);
         }
       }
 
@@ -317,6 +319,19 @@ export function InputAndControlsPanel({
         ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
         : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
       await downloadMP4P(mp4pData, filename);
+      if (keyDownload) {
+        const keyBlob = new Blob([keyDownload.payload], {
+          type: "application/json",
+        });
+        const keyUrl = URL.createObjectURL(keyBlob);
+        const anchor = document.createElement("a");
+        anchor.href = keyUrl;
+        anchor.download = keyDownload.filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(keyUrl);
+      }
 
       console.log("MP4P file exported successfully");
     } catch (error) {

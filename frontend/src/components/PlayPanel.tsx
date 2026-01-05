@@ -86,11 +86,21 @@ export function PlayPanel({
     setIsLoading(true);
     setLoadError(null);
     try {
+      console.info("MP4P load start", {
+        name: file.name,
+        size: file.size,
+        burnIndex: burnIndex ?? null,
+      });
       const fileText = await file.text();
       const parsed: MP4PData = JSON.parse(fileText);
       setMp4pData(parsed);
 
       const result = await loadMP4P(file, burnIndex);
+      console.info("MP4P load response", {
+        burnIndex: result.selectedBurnIndex ?? null,
+        mimeType: result.mimeType,
+        hasVideo: Boolean(result.videoBase64),
+      });
       setMetadata(result.metadata);
       if (result.videoBase64) {
         const url = base64ToUrl(result.videoBase64, result.mimeType || "video/mp4");
@@ -112,6 +122,7 @@ export function PlayPanel({
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Failed to load MP4P");
       setVideoUrl(null);
+      console.error("MP4P load failed", error);
     } finally {
       setIsLoading(false);
     }
