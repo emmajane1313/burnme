@@ -1406,6 +1406,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 fps,
             )
 
+            composite_bytes = out_path.read_bytes()
+
         visual_cipher = VisualCipherMetadata(
             version=1,
             pipelineId=request.pipelineId,
@@ -1419,7 +1421,6 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             fps=fps,
         )
 
-        composite_bytes = out_path.read_bytes()
         return {
             "success": True,
             "visualCipher": visual_cipher.model_dump(exclude_none=True),
