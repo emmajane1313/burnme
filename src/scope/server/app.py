@@ -846,59 +846,6 @@ async def get_current_logs():
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/{path:path}")
-async def serve_frontend(request: Request, path: str):
-    """Serve the frontend for all non-API routes (fallback for client-side routing)."""
-    if path.startswith("api/") or path.startswith("api"):
-        raise HTTPException(status_code=404, detail="API route not found")
-    frontend_dist = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
-
-    # Only serve SPA if frontend dist exists (production mode)
-    if not frontend_dist.exists():
-        raise HTTPException(status_code=404, detail="Frontend not built")
-
-    # Check if requesting a specific file that exists
-    file_path = frontend_dist / path
-    if file_path.exists() and file_path.is_file():
-        # Determine media type based on extension to fix MIME type issues on Windows
-        file_extension = file_path.suffix.lower()
-        media_types = {
-            ".js": "application/javascript",
-            ".mjs": "application/javascript",
-            ".css": "text/css",
-            ".html": "text/html",
-            ".json": "application/json",
-            ".png": "image/png",
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".gif": "image/gif",
-            ".svg": "image/svg+xml",
-            ".ico": "image/x-icon",
-            ".woff": "font/woff",
-            ".woff2": "font/woff2",
-            ".ttf": "font/ttf",
-            ".eot": "application/vnd.ms-fontobject",
-        }
-        media_type = media_types.get(file_extension)
-        return FileResponse(file_path, media_type=media_type)
-
-    # Fallback to index.html for SPA routing
-    # This ensures clients like Electron alway fetch the latest HTML (which references hashed assets)
-    index_file = frontend_dist / "index.html"
-    if index_file.exists():
-        return FileResponse(
-            index_file,
-            media_type="text/html",
-            headers={
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                "Pragma": "no-cache",
-                "Expires": "0",
-            },
-        )
-
-    raise HTTPException(status_code=404, detail="Frontend index.html not found")
-
-
 def open_browser_when_ready(host: str, port: int, server):
     """Open browser when server is ready, with fallback to URL logging."""
     # Wait for server to be ready
@@ -1804,6 +1751,59 @@ async def get_sam3_mask_status(job_id: str):
     if not job:
         return {"success": False, "error": "Job not found"}
     return {"success": True, **job}
+
+
+@app.get("/{path:path}")
+async def serve_frontend(request: Request, path: str):
+    """Serve the frontend for all non-API routes (fallback for client-side routing)."""
+    if path.startswith("api/") or path.startswith("api"):
+        raise HTTPException(status_code=404, detail="API route not found")
+    frontend_dist = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
+
+    # Only serve SPA if frontend dist exists (production mode)
+    if not frontend_dist.exists():
+        raise HTTPException(status_code=404, detail="Frontend not built")
+
+    # Check if requesting a specific file that exists
+    file_path = frontend_dist / path
+    if file_path.exists() and file_path.is_file():
+        # Determine media type based on extension to fix MIME type issues on Windows
+        file_extension = file_path.suffix.lower()
+        media_types = {
+            ".js": "application/javascript",
+            ".mjs": "application/javascript",
+            ".css": "text/css",
+            ".html": "text/html",
+            ".json": "application/json",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".svg": "image/svg+xml",
+            ".ico": "image/x-icon",
+            ".woff": "font/woff",
+            ".woff2": "font/woff2",
+            ".ttf": "font/ttf",
+            ".eot": "application/vnd.ms-fontobject",
+        }
+        media_type = media_types.get(file_extension)
+        return FileResponse(file_path, media_type=media_type)
+
+    # Fallback to index.html for SPA routing
+    # This ensures clients like Electron alway fetch the latest HTML (which references hashed assets)
+    index_file = frontend_dist / "index.html"
+    if index_file.exists():
+        return FileResponse(
+            index_file,
+            media_type="text/html",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
+
+    raise HTTPException(status_code=404, detail="Frontend index.html not found")
 
 
 if __name__ == "__main__":
