@@ -1302,9 +1302,13 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             mask_dir = session.mask_dir
             mask_width = session.width
             mask_height = session.height
-            fps = session.input_fps or session.sam3_fps or float(
-                cap_orig.get(cv2.CAP_PROP_FPS) or 15.0
-            )
+            orig_fps = float(cap_orig.get(cv2.CAP_PROP_FPS) or 0.0)
+            synth_fps = float(cap_synth.get(cv2.CAP_PROP_FPS) or 0.0)
+            if synth_fps <= 0:
+                synth_fps = session.input_fps or session.sam3_fps or orig_fps or 15.0
+            if orig_fps <= 0:
+                orig_fps = session.input_fps or session.sam3_fps or synth_fps or 15.0
+            fps = synth_fps
             out_width = int(cap_orig.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
             out_height = int(cap_orig.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
             if out_width <= 0 or out_height <= 0:
@@ -1334,22 +1338,40 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             base_key_bytes = base_key.finalize()
 
             frame_index = 0
+            last_orig_index = -1
+            last_orig_frame = None
+            frame_count = int(cap_synth.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
             while True:
-                ret_orig, frame_orig = cap_orig.read()
                 ret_synth, frame_synth = cap_synth.read()
-                if not ret_orig or not ret_synth:
+                if not ret_synth:
+                    break
+                if frame_count and frame_index >= frame_count:
                     break
 
-                mask_path = mask_dir / f"{frame_index:06d}.png"
-                if not mask_path.exists():
-                    frame_index += 1
-                    continue
+                target_time = frame_index / fps if fps > 0 else 0.0
+                orig_index = int(round(target_time * orig_fps))
+                if orig_index < 0:
+                    orig_index = 0
+                if orig_index != last_orig_index:
+                    cap_orig.set(cv2.CAP_PROP_POS_FRAMES, orig_index)
+                    ret_orig, frame_orig = cap_orig.read()
+                    if not ret_orig:
+                        break
+                    last_orig_index = orig_index
+                    last_orig_frame = frame_orig
+                if last_orig_frame is None:
+                    break
 
-                mask = np.array(Image.open(mask_path).convert("L"))
+                mask_path = mask_dir / f"{orig_index:06d}.png"
+                if mask_path.exists():
+                    mask = np.array(Image.open(mask_path).convert("L"))
+                else:
+                    mask = np.zeros((mask_height, mask_width), dtype=np.uint8)
+
                 if mask.shape[0] != mask_height or mask.shape[1] != mask_width:
                     mask = cv2.resize(mask, (mask_width, mask_height), interpolation=cv2.INTER_NEAREST)
 
-                orig_rgb = cv2.cvtColor(frame_orig, cv2.COLOR_BGR2RGB)
+                orig_rgb = cv2.cvtColor(last_orig_frame, cv2.COLOR_BGR2RGB)
                 synth_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
                 if orig_rgb.shape[:2] != (mask_height, mask_width):
                     orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
