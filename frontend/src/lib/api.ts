@@ -249,6 +249,63 @@ export const generateSam3Mask = async (
   return result;
 };
 
+export const startSam3MaskJob = async (
+  videoBase64: string,
+  prompt: string,
+  box?: [number, number, number, number] | null,
+  inputFps?: number | null
+): Promise<{ jobId: string }> => {
+  const response = await fetch(apiUrl("/api/v1/sam3/mask/start"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ videoBase64, prompt, box, input_fps: inputFps }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `SAM3 mask start failed: ${response.status} ${response.statusText}: ${errorText}`
+    );
+  }
+
+  const result = await response.json();
+  if (!result.success || !result.jobId) {
+    throw new Error(result.error || "SAM3 mask start failed");
+  }
+
+  return { jobId: result.jobId };
+};
+
+export const getSam3MaskJob = async (
+  jobId: string
+): Promise<{
+  status: string;
+  error?: string | null;
+  result?: Sam3MaskResponse | null;
+}> => {
+  const response = await fetch(apiUrl(`/api/v1/sam3/mask/status/${jobId}`), {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `SAM3 mask status failed: ${response.status} ${response.statusText}: ${errorText}`
+    );
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || "SAM3 mask status failed");
+  }
+
+  return {
+    status: result.status,
+    error: result.error,
+    result: result.result,
+  };
+};
+
 export interface HardwareInfoResponse {
   vram_gb: number | null;
   spout_available: boolean;

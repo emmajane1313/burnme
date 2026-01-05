@@ -1110,6 +1110,7 @@ from .mp4p import (
     VisualCipherMetadata,
 )
 from uuid import uuid4
+from threading import Lock
 
 
 class EncryptVideoRequest(BaseModel):
@@ -1164,6 +1165,17 @@ class Sam3MaskRequest(BaseModel):
     prompt: str
     box: list[int] | None = None
     input_fps: float | None = None
+
+
+class Sam3MaskJobRequest(BaseModel):
+    videoBase64: str
+    prompt: str
+    box: list[int] | None = None
+    input_fps: float | None = None
+
+
+sam3_jobs_lock = Lock()
+sam3_jobs: dict[str, dict] = {}
 
 
 class RestoreMP4PRequest(BaseModel):
@@ -1743,6 +1755,53 @@ async def generate_sam3_mask(request: Sam3MaskRequest):
     except Exception as e:
         logger.error(f"Error generating SAM3 masks: {e}")
         return {"success": False, "error": str(e)}
+
+
+@app.post("/api/v1/sam3/mask/start")
+async def start_sam3_mask_job(request: Sam3MaskJobRequest):
+    job_id = str(uuid4())
+    with sam3_jobs_lock:
+        sam3_jobs[job_id] = {"status": "queued", "error": None, "result": None}
+
+    async def run_job():
+        with sam3_jobs_lock:
+            sam3_jobs[job_id]["status"] = "running"
+        try:
+            session = await asyncio.to_thread(
+                sam3_mask_manager.generate_masks,
+                request.videoBase64,
+                request.prompt,
+                request.box,
+                request.input_fps,
+            )
+            result = {
+                "maskId": session.session_id,
+                "frameCount": session.frame_count,
+                "height": session.height,
+                "width": session.width,
+                "inputFps": session.input_fps,
+                "sam3Fps": session.sam3_fps,
+            }
+            with sam3_jobs_lock:
+                sam3_jobs[job_id]["status"] = "completed"
+                sam3_jobs[job_id]["result"] = result
+        except Exception as exc:
+            logger.error(f"Error generating SAM3 masks: {exc}")
+            with sam3_jobs_lock:
+                sam3_jobs[job_id]["status"] = "failed"
+                sam3_jobs[job_id]["error"] = str(exc)
+
+    asyncio.create_task(run_job())
+    return {"success": True, "jobId": job_id}
+
+
+@app.get("/api/v1/sam3/mask/status/{job_id}")
+async def get_sam3_mask_status(job_id: str):
+    with sam3_jobs_lock:
+        job = sam3_jobs.get(job_id)
+    if not job:
+        return {"success": False, "error": "Job not found"}
+    return {"success": True, **job}
 
 
 if __name__ == "__main__":
