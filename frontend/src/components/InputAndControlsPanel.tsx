@@ -43,7 +43,6 @@ interface InputAndControlsPanelProps {
   onTogglePause?: () => void;
   sam3MaskId?: string | null;
   onSam3Generate?: () => void;
-  onSam3Clear?: () => void;
   sam3Ready?: boolean;
   sam3Status?: string | null;
   isSam3Generating?: boolean;
@@ -130,7 +129,6 @@ export function InputAndControlsPanel({
   onTogglePause,
   sam3MaskId = null,
   onSam3Generate,
-  onSam3Clear,
   sam3Ready = false,
   sam3Status = null,
   isSam3Generating = false,
@@ -265,7 +263,7 @@ export function InputAndControlsPanel({
               mp4pData,
               payload.compositedVideoBase64,
               publicLabels,
-              "video/mp4",
+              "video/webm",
               undefined,
               encryptedMaskFrames,
               maskFrameIndexMap,
@@ -487,16 +485,6 @@ export function InputAndControlsPanel({
               >
                 {isSam3Generating ? "Generating..." : "Regenerate Mask"}
               </Button>
-              {sam3MaskId && (
-                <Button
-                  size="xs"
-                  variant="destructive"
-                  onClick={onSam3Clear}
-                  disabled={isSam3Generating}
-                >
-                  Clear Mask
-                </Button>
-              )}
             </div>
             {sam3Status && (
               <div className="text-xs text-muted-foreground">{sam3Status}</div>

@@ -168,7 +168,7 @@ export function VideoOutput({
                   Click to start the pipeline.
                 </p>
               </div>
-            ) : autoplayBlocked || needsUserPlay ? (
+            ) : (autoplayBlocked || needsUserPlay) && !isMaskLoading ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
                 <button
                   type="button"

@@ -71,6 +71,10 @@ try:
     import cv2  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     cv2 = None
+try:
+    import imageio.v2 as iio  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    iio = None
 
 
 class STUNErrorFilter(logging.Filter):
@@ -1307,11 +1311,16 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 out_width = mask_width
                 out_height = mask_height
 
-            out_path = Path(tmpdir) / "burn_composite.mp4"
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            writer = cv2.VideoWriter(str(out_path), fourcc, fps, (out_width, out_height))
-            if not writer.isOpened():
-                raise RuntimeError("Failed to open burn video writer.")
+            if iio is None:
+                raise RuntimeError("imageio is required for burn video encoding.")
+            out_path = Path(tmpdir) / "burn_composite.webm"
+            writer = iio.get_writer(
+                str(out_path),
+                fps=fps,
+                codec="libvpx",
+                quality=8,
+                macro_block_size=None,
+            )
 
             payload_frames: list[str] = []
             index_map: list[int] = []
@@ -1394,12 +1403,12 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                         (out_width, out_height),
                         interpolation=cv2.INTER_LINEAR,
                     )
-                writer.write(cv2.cvtColor(composite_frame, cv2.COLOR_RGB2BGR))
+                writer.append_data(composite_frame)
                 frame_index += 1
 
             cap_orig.release()
             cap_synth.release()
-            writer.release()
+            writer.close()
             logger.info(
                 "VisualCipher done: frames=%s mask_res=%sx%s fps=%s",
                 len(payload_frames),
@@ -1445,9 +1454,8 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
             request.burnIndex,
             len(request.mp4pData.encryptedSynthedVideos or []),
         )
-        synthed_video = await decrypt_synthed_video(
-            request.mp4pData, request.burnIndex
-        )
+        burn_index = request.burnIndex if request.burnIndex is not None else 0
+        synthed_video = await decrypt_synthed_video(request.mp4pData, burn_index)
         if synthed_video:
             logger.info(
                 "Load MP4P decrypted: bytes=%s",
@@ -1456,11 +1464,7 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
         mime_type = "video/mp4"
         versions_meta = request.mp4pData.metadata.synthedVersions or []
         if versions_meta:
-            index = (
-                request.burnIndex
-                if request.burnIndex is not None
-                else len(versions_meta) - 1
-            )
+            index = request.burnIndex if request.burnIndex is not None else 0
             if 0 <= index < len(versions_meta):
                 version_mime = versions_meta[index].get("synthedMimeType")
                 if version_mime:
@@ -1478,7 +1482,7 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
             "showSynthed": True,
             "videoBase64": base64.b64encode(synthed_video).decode() if synthed_video else None,
             "metadata": request.mp4pData.metadata.model_dump(),
-            "selectedBurnIndex": request.burnIndex,
+            "selectedBurnIndex": burn_index,
             "mimeType": mime_type,
         }
     except Exception as e:
@@ -1516,7 +1520,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             synth_path = Path(tmpdir) / "synth.mp4"
-            out_path = Path(tmpdir) / "restored.mp4"
+            out_path = Path(tmpdir) / "restored.webm"
             synth_path.write_bytes(synthed_video)
 
             cap = cv2.VideoCapture(str(synth_path))
@@ -1529,10 +1533,15 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             if width <= 0 or height <= 0:
                 raise RuntimeError("Invalid burn video resolution.")
 
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            writer = cv2.VideoWriter(str(out_path), fourcc, fps, (width, height))
-            if not writer.isOpened():
-                raise RuntimeError("Failed to open output writer.")
+            if iio is None:
+                raise RuntimeError("imageio is required for restore encoding.")
+            writer = iio.get_writer(
+                str(out_path),
+                fps=fps,
+                codec="libvpx",
+                quality=8,
+                macro_block_size=None,
+            )
 
             mask_width = visual_cipher.maskResolution.get("width", 0)
             mask_height = visual_cipher.maskResolution.get("height", 0)
@@ -1603,12 +1612,11 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
                         synth_frame, (width, height), interpolation=cv2.INTER_LINEAR
                     )
 
-                out_bgr = cv2.cvtColor(synth_frame, cv2.COLOR_RGB2BGR)
-                writer.write(out_bgr)
+                writer.append_data(synth_frame)
                 frame_index += 1
 
             cap.release()
-            writer.release()
+            writer.close()
 
             restored_bytes = out_path.read_bytes()
 
@@ -1616,6 +1624,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
         return {
             "success": True,
             "videoBase64": base64.b64encode(restored_bytes).decode(),
+            "mimeType": "video/webm",
         }
     except Exception as e:
         logger.error(f"Error restoring MP4P: {e}")

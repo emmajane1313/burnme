@@ -172,7 +172,7 @@ export async function restoreMP4P(
   mp4pData: MP4PData,
   visualCipher: MP4PMetadata["visualCipher"],
   burnIndex?: number | null
-): Promise<{ videoBase64: string }> {
+): Promise<{ videoBase64: string; mimeType?: string }> {
   const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/restore`, {
     method: "POST",
     headers: {
@@ -194,7 +194,7 @@ export async function restoreMP4P(
     throw new Error(result.error || "Failed to restore MP4P");
   }
 
-  return { videoBase64: result.videoBase64 };
+  return { videoBase64: result.videoBase64, mimeType: result.mimeType };
 }
 
 export async function addSynthedVideo(

@@ -192,7 +192,7 @@ export function PlayPanel({
     setRestoreError(null);
     try {
       const result = await restoreMP4P(mp4pData, keyData, keyBurnIndex);
-      const url = base64ToUrl(result.videoBase64, "video/mp4");
+      const url = base64ToUrl(result.videoBase64, result.mimeType || "video/webm");
       setVideoUrl(prev => {
         if (prev) URL.revokeObjectURL(prev);
         return url;
