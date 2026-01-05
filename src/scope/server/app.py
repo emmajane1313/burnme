@@ -1267,14 +1267,14 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
         if session is None:
             raise RuntimeError(f"SAM3 session {request.maskId} not found")
 
-        logger.info(
-            "VisualCipher start: mp4p_id=%s mask_id=%s pipeline=%s seed=%s prompt_len=%s",
-            request.mp4pData.metadata.id,
-            request.maskId,
-            request.pipelineId,
-            request.seed,
-            len(request.prompt or ""),
-        )
+            logger.info(
+                "VisualCipher start: mp4p_id=%s mask_id=%s pipeline=%s seed=%s prompt_len=%s",
+                request.mp4pData.metadata.id,
+                request.maskId,
+                request.pipelineId,
+                request.seed,
+                len(request.prompt or ""),
+            )
 
         if request.originalVideoBase64:
             original_video = base64.b64decode(request.originalVideoBase64)
@@ -1293,17 +1293,46 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             synth_path = Path(tmpdir) / f"synth.{synth_ext}"
             original_path.write_bytes(original_video)
             synth_path.write_bytes(synthed_video)
+            logger.info(
+                "VisualCipher videos: original_bytes=%s synth_bytes=%s synth_ext=%s",
+                len(original_video),
+                len(synthed_video),
+                synth_ext,
+            )
 
             cap_orig = cv2.VideoCapture(str(original_path))
-            cap_synth = cv2.VideoCapture(str(synth_path))
-            if not cap_orig.isOpened() or not cap_synth.isOpened():
-                raise RuntimeError("Failed to open video streams for visual cipher.")
+            if not cap_orig.isOpened():
+                raise RuntimeError("Failed to open original video stream for visual cipher.")
+
+            use_imageio_synth = bool(
+                request.synthedMimeType
+                and "webm" in request.synthedMimeType.lower()
+            )
+            if use_imageio_synth and iio is None:
+                raise RuntimeError("imageio is required for WebM synth decoding.")
+
+            cap_synth = None
+            synth_reader = None
+            if use_imageio_synth:
+                synth_reader = iio.get_reader(str(synth_path), plugin="pyav")
+            else:
+                cap_synth = cv2.VideoCapture(str(synth_path))
+                if not cap_synth.isOpened():
+                    raise RuntimeError("Failed to open synth video stream for visual cipher.")
 
             mask_dir = session.mask_dir
             mask_width = session.width
             mask_height = session.height
             orig_fps = float(cap_orig.get(cv2.CAP_PROP_FPS) or 0.0)
-            synth_fps = float(cap_synth.get(cv2.CAP_PROP_FPS) or 0.0)
+            synth_fps = 0.0
+            frame_count = 0
+            if use_imageio_synth and synth_reader is not None:
+                synth_meta = synth_reader.get_meta_data()
+                synth_fps = float(synth_meta.get("fps") or 0.0)
+                frame_count = int(synth_meta.get("nframes") or 0)
+            else:
+                synth_fps = float(cap_synth.get(cv2.CAP_PROP_FPS) or 0.0)
+                frame_count = int(cap_synth.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
             if synth_fps <= 0:
                 synth_fps = session.input_fps or session.sam3_fps or orig_fps or 15.0
             if orig_fps <= 0:
@@ -1314,6 +1343,18 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             if out_width <= 0 or out_height <= 0:
                 out_width = mask_width
                 out_height = mask_height
+            logger.info(
+                "VisualCipher timing: orig_fps=%.3f synth_fps=%.3f out_fps=%.3f frames=%s mask=%sx%s out=%sx%s reader=%s",
+                orig_fps,
+                synth_fps,
+                fps,
+                frame_count,
+                mask_width,
+                mask_height,
+                out_width,
+                out_height,
+                "imageio" if use_imageio_synth else "opencv",
+            )
 
             if iio is None:
                 raise RuntimeError("imageio is required for burn video encoding.")
@@ -1340,11 +1381,21 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             frame_index = 0
             last_orig_index = -1
             last_orig_frame = None
-            frame_count = int(cap_synth.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            synth_iter = (
+                enumerate(synth_reader)
+                if use_imageio_synth and synth_reader is not None
+                else None
+            )
             while True:
-                ret_synth, frame_synth = cap_synth.read()
-                if not ret_synth:
-                    break
+                if synth_iter is not None:
+                    try:
+                        frame_index, frame_synth = next(synth_iter)
+                    except StopIteration:
+                        break
+                else:
+                    ret_synth, frame_synth = cap_synth.read()
+                    if not ret_synth:
+                        break
                 if frame_count and frame_index >= frame_count:
                     break
 
@@ -1361,6 +1412,13 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                     last_orig_frame = frame_orig
                 if last_orig_frame is None:
                     break
+                if frame_index % 60 == 0:
+                    logger.info(
+                        "VisualCipher frame sync: synth=%s orig=%s t=%.3f",
+                        frame_index,
+                        orig_index,
+                        target_time,
+                    )
 
                 mask_path = mask_dir / f"{orig_index:06d}.png"
                 if mask_path.exists():
@@ -1372,7 +1430,10 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                     mask = cv2.resize(mask, (mask_width, mask_height), interpolation=cv2.INTER_NEAREST)
 
                 orig_rgb = cv2.cvtColor(last_orig_frame, cv2.COLOR_BGR2RGB)
-                synth_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
+                if use_imageio_synth:
+                    synth_rgb = frame_synth
+                else:
+                    synth_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
                 if orig_rgb.shape[:2] != (mask_height, mask_width):
                     orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
                 if synth_rgb.shape[:2] != (mask_height, mask_width):
@@ -1429,7 +1490,10 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 frame_index += 1
 
             cap_orig.release()
-            cap_synth.release()
+            if cap_synth is not None:
+                cap_synth.release()
+            if synth_reader is not None:
+                synth_reader.close()
             writer.close()
             logger.info(
                 "VisualCipher done: frames=%s mask_res=%sx%s fps=%s",
@@ -1438,6 +1502,10 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 mask_height,
                 fps,
             )
+            if frame_index == 0:
+                raise RuntimeError("No synth frames decoded; burn video not created.")
+            if not out_path.exists():
+                raise RuntimeError("Burn composite was not created.")
 
             composite_bytes = out_path.read_bytes()
 
