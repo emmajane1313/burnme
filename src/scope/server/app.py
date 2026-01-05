@@ -1129,6 +1129,7 @@ class BurnVideoRequest(BaseModel):
 class AddSynthedVideoRequest(BaseModel):
     mp4pData: MP4PData
     synthedVideoBase64: str
+    synthedMimeType: str | None = None
     promptsUsed: list
     visualCipher: dict | None = None
     encryptedMaskFrames: list[str] | None = None
@@ -1239,6 +1240,7 @@ async def add_synthed_video_endpoint(request: AddSynthedVideoRequest):
             request.mp4pData,
             synthed_video_data,
             request.promptsUsed,
+            synthed_mime_type=request.synthedMimeType,
             visual_cipher=visual_cipher,
             encrypted_mask_frames=request.encryptedMaskFrames,
             mask_frame_index_map=request.maskFrameIndexMap,
@@ -1440,12 +1442,27 @@ async def load_mp4p_endpoint(request: LoadMP4PRequest):
         synthed_video = await decrypt_synthed_video(
             request.mp4pData, request.burnIndex
         )
+        mime_type = "video/mp4"
+        versions_meta = request.mp4pData.metadata.synthedVersions or []
+        if versions_meta:
+            index = (
+                request.burnIndex
+                if request.burnIndex is not None
+                else len(versions_meta) - 1
+            )
+            if 0 <= index < len(versions_meta):
+                version_mime = versions_meta[index].get("synthedMimeType")
+                if version_mime:
+                    mime_type = version_mime
+        if request.mp4pData.metadata.synthedMimeType:
+            mime_type = request.mp4pData.metadata.synthedMimeType
         return {
             "success": True,
             "showSynthed": True,
             "videoBase64": base64.b64encode(synthed_video).decode() if synthed_video else None,
             "metadata": request.mp4pData.metadata.model_dump(),
-            "selectedBurnIndex": request.burnIndex
+            "selectedBurnIndex": request.burnIndex,
+            "mimeType": mime_type,
         }
     except Exception as e:
         logger.error(f"Error loading MP4P: {e}")

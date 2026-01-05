@@ -264,6 +264,7 @@ export function InputAndControlsPanel({
               mp4pData,
               payload.compositedVideoBase64,
               publicLabels,
+              "video/mp4",
               undefined,
               encryptedMaskFrames,
               maskFrameIndexMap,
@@ -274,6 +275,7 @@ export function InputAndControlsPanel({
               mp4pData,
               synthedBase64,
               publicLabels,
+              mimeType,
               undefined,
               encryptedMaskFrames,
               maskFrameIndexMap,
@@ -287,6 +289,7 @@ export function InputAndControlsPanel({
             mp4pData,
             synthedBase64,
             publicLabels,
+            mimeType,
             undefined,
             encryptedMaskFrames,
             maskFrameIndexMap,
@@ -512,8 +515,7 @@ export function InputAndControlsPanel({
           </div>
           {isSynthCapturing && (
             <div className="mt-2 text-xs text-muted-foreground">
-              {isRecordingSynthed ? "Recording" : "Preparing"} from start with:{" "}
-              {synthLockedPrompt || "Prompt"}
+              {isRecordingSynthed ? "Recording" : "Preparing"} from start.
             </div>
           )}
         </div>

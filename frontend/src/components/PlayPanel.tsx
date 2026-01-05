@@ -14,14 +14,14 @@ type BurnVersionOption = {
   index: number;
 };
 
-function base64ToUrl(base64: string): string {
+function base64ToUrl(base64: string, mimeType: string): string {
   const byteCharacters = atob(base64);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i += 1) {
     byteNumbers[i] = byteCharacters.charCodeAt(i);
   }
   const byteArray = new Uint8Array(byteNumbers);
-  const blob = new Blob([byteArray], { type: "video/mp4" });
+  const blob = new Blob([byteArray], { type: mimeType });
   return URL.createObjectURL(blob);
 }
 
@@ -93,7 +93,7 @@ export function PlayPanel({
       const result = await loadMP4P(file, burnIndex);
       setMetadata(result.metadata);
       if (result.videoBase64) {
-        const url = base64ToUrl(result.videoBase64);
+        const url = base64ToUrl(result.videoBase64, result.mimeType || "video/mp4");
         setVideoUrl(prev => {
           if (prev) URL.revokeObjectURL(prev);
           return url;
@@ -181,7 +181,7 @@ export function PlayPanel({
     setRestoreError(null);
     try {
       const result = await restoreMP4P(mp4pData, keyData, keyBurnIndex);
-      const url = base64ToUrl(result.videoBase64);
+      const url = base64ToUrl(result.videoBase64, "video/mp4");
       setVideoUrl(prev => {
         if (prev) URL.revokeObjectURL(prev);
         return url;

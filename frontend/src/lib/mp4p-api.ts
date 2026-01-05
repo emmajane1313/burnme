@@ -11,6 +11,7 @@ export interface MP4PMetadata {
   synthedSalt?: string;
   synthedIv?: string;
   synthedAuthTag?: string;
+  synthedMimeType?: string;
   promptsUsed?: string[];
   synthedVersions?: Array<{
     createdAt: number;
@@ -18,6 +19,7 @@ export interface MP4PMetadata {
     synthedSalt: string;
     synthedIv: string;
     synthedAuthTag: string;
+    synthedMimeType?: string;
   }>;
   visualCipher?: {
     version: number;
@@ -48,6 +50,7 @@ export interface LoadMP4PResponse {
   success: boolean;
   showSynthed: boolean;
   videoBase64: string;
+  mimeType?: string;
   metadata: MP4PMetadata;
   selectedBurnIndex?: number | null;
 }
@@ -198,6 +201,7 @@ export async function addSynthedVideo(
   mp4pData: MP4PData,
   synthedBlob: Blob,
   prompts: string[],
+  synthedMimeType?: string,
   visualCipher?: MP4PMetadata["visualCipher"],
   encryptedMaskFrames?: string[],
   maskFrameIndexMap?: number[],
@@ -218,6 +222,7 @@ export async function addSynthedVideo(
     body: JSON.stringify({
       mp4pData,
       synthedVideoBase64: synthedBase64,
+      synthedMimeType: synthedMimeType ?? mimeType,
       promptsUsed: prompts,
       visualCipher,
       encryptedMaskFrames,
@@ -242,6 +247,7 @@ export async function addSynthedVideoBase64(
   mp4pData: MP4PData,
   synthedVideoBase64: string,
   prompts: string[],
+  synthedMimeType?: string,
   visualCipher?: MP4PMetadata["visualCipher"],
   encryptedMaskFrames?: string[],
   maskFrameIndexMap?: number[],
@@ -255,6 +261,7 @@ export async function addSynthedVideoBase64(
     body: JSON.stringify({
       mp4pData,
       synthedVideoBase64,
+      synthedMimeType,
       promptsUsed: prompts,
       visualCipher,
       encryptedMaskFrames,

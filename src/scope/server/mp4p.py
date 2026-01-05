@@ -40,6 +40,7 @@ class MP4PMetadata(BaseModel):
     synthedSalt: Optional[str] = None
     synthedIv: Optional[str] = None
     synthedAuthTag: Optional[str] = None
+    synthedMimeType: Optional[str] = None
     promptsUsed: Optional[list] = None
     synthedVersions: Optional[list] = None
     visualCipher: Optional[VisualCipherMetadata] = None
@@ -158,6 +159,7 @@ async def add_synthed_video(
     mp4p_data: MP4PData,
     synthed_video_data: bytes,
     prompts_used: list,
+    synthed_mime_type: str | None = None,
     visual_cipher: VisualCipherMetadata | None = None,
     encrypted_mask_frames: list[str] | None = None,
     mask_frame_index_map: list[int] | None = None,
@@ -184,6 +186,7 @@ async def add_synthed_video(
         "synthedSalt": salt,
         "synthedIv": iv.hex(),
         "synthedAuthTag": auth_tag.hex(),
+        "synthedMimeType": synthed_mime_type,
     }
 
     versions = mp4p_data.metadata.synthedVersions or []
@@ -198,6 +201,7 @@ async def add_synthed_video(
     mp4p_data.metadata.synthedSalt = salt
     mp4p_data.metadata.synthedIv = iv.hex()
     mp4p_data.metadata.synthedAuthTag = auth_tag.hex()
+    mp4p_data.metadata.synthedMimeType = synthed_mime_type
     mp4p_data.metadata.promptsUsed = prompts_used
     mp4p_data.encryptedSynthedVideo = encrypted_versions[-1]
 
