@@ -1,8 +1,7 @@
 import type { IceServersResponse, ModelStatusResponse } from "../types";
 
-const API_BASE =
-  (import.meta as ImportMeta).env?.VITE_API_BASE ?? "";
-const API_ROOT = API_BASE.replace(/\/$/, "");
+const API_ROOT =
+  typeof window !== "undefined" ? window.location.origin : "";
 const apiUrl = (path: string) => `${API_ROOT}${path}`;
 
 export interface PromptItem {

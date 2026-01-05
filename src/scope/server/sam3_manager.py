@@ -163,6 +163,10 @@ class Sam3MaskManager:
         response = predictor.handle_request(
             {"type": "start_session", "resource_path": str(video_path)}
         )
+        if not isinstance(response, dict) or "session_id" not in response:
+            raise RuntimeError(
+                f"SAM3 start_session failed: {response}"
+            )
         sam3_session_id = response["session_id"]
 
         frame_count_guess = None
