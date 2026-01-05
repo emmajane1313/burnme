@@ -1020,6 +1020,114 @@
         rgba(255, 255, 255, 0.9) 100%);
   }
 
+  .mac-upload-skin .burn-time-popover {
+    background:
+      radial-gradient(circle at top left, rgba(255, 215, 235, 0.6) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(255, 235, 245, 0.92) 0%, rgba(255, 195, 215, 0.9) 100%);
+    color: #2a0a18;
+    border: 1px solid rgba(255, 180, 205, 0.7);
+    border-radius: 10px;
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.7),
+      0 10px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  .mac-upload-skin .burn-time-cell {
+    height: 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2a0a18;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 210, 225, 0.85) 100%);
+    border: 1px solid rgba(255, 170, 200, 0.7);
+    border-radius: 6px;
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.7),
+      0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .mac-upload-skin .burn-time-cell:hover:not(:disabled) {
+    background:
+      linear-gradient(180deg, rgba(255, 245, 250, 0.9) 0%, rgba(255, 190, 215, 0.95) 100%);
+  }
+
+  .mac-upload-skin .burn-time-cell-selected {
+    color: #2a0a18;
+    border-color: rgba(255, 140, 180, 0.9);
+    background:
+      linear-gradient(180deg, rgba(255, 200, 225, 0.95) 0%, rgba(255, 140, 180, 0.95) 100%);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.75),
+      0 0 0 2px rgba(255, 150, 190, 0.35);
+  }
+
+  .mac-upload-skin .prompt-orb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 10px;
+  }
+
+  .mac-upload-skin .prompt-orb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #2a0a18;
+    background: transparent;
+  }
+
+  .mac-upload-skin .prompt-orb:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .mac-upload-skin .prompt-orb-frame {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    padding: 6px;
+    background:
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.7) 0%, transparent 55%),
+      linear-gradient(135deg, rgba(255, 210, 230, 0.6) 0%, rgba(255, 170, 200, 0.85) 100%);
+    border: 1px solid rgba(255, 175, 205, 0.85);
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.9),
+      0 6px 14px rgba(0, 0, 0, 0.25),
+      0 0 18px rgba(255, 140, 180, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .mac-upload-skin .prompt-orb-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  .mac-upload-skin .prompt-orb-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mac-upload-skin .prompt-orb.is-selected .prompt-orb-frame {
+    border-color: rgba(255, 140, 180, 0.95);
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.95),
+      0 0 0 3px rgba(255, 150, 190, 0.4),
+      0 8px 18px rgba(0, 0, 0, 0.3);
+  }
+
   .mac-frosted-input {
     background: linear-gradient(180deg,
       rgba(255, 255, 255, 0.15) 0%,

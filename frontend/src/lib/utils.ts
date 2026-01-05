@@ -14,10 +14,8 @@ export function getResolutionScaleFactor(
   pipelineId: PipelineId
 ): number | null {
   if (
-    pipelineId === "longlive" ||
     pipelineId === "streamdiffusionv2" ||
-    pipelineId === "krea-realtime-video" ||
-    pipelineId === "reward-forcing"
+    pipelineId === "memflow"
   ) {
     // VAE downsample (8) * patch embedding downsample (2) = 16
     return 16;

@@ -36,36 +36,6 @@ PIPELINE_ARTIFACTS = {
             files=["wan_causal_dmd_v2v/model.pt"],
         ),
     ],
-    "longlive": [
-        WAN_1_3B_ARTIFACT,
-        UMT5_ENCODER_ARTIFACT,
-        VACE_ARTIFACT,
-        HuggingfaceRepoArtifact(
-            repo_id="Efficient-Large-Model/LongLive-1.3B",
-            files=["models/longlive_base.pt", "models/lora.pt"],
-        ),
-    ],
-    "krea-realtime-video": [
-        WAN_1_3B_ARTIFACT,
-        UMT5_ENCODER_ARTIFACT,
-        HuggingfaceRepoArtifact(
-            repo_id="Wan-AI/Wan2.1-T2V-14B",
-            files=["config.json"],
-        ),
-        HuggingfaceRepoArtifact(
-            repo_id="krea/krea-realtime-video",
-            files=["krea-realtime-video-14b.safetensors"],
-        ),
-    ],
-    "reward-forcing": [
-        WAN_1_3B_ARTIFACT,
-        UMT5_ENCODER_ARTIFACT,
-        VACE_ARTIFACT,
-        HuggingfaceRepoArtifact(
-            repo_id="JaydenLu666/Reward-Forcing-T2V-1.3B",
-            files=["rewardforcing.pt"],
-        ),
-    ],
     "memflow": [
         WAN_1_3B_ARTIFACT,
         UMT5_ENCODER_ARTIFACT,

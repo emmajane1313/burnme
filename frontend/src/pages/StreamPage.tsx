@@ -116,12 +116,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [promptItems, setPromptItems] = useState<PromptItem[]>([
     { text: getDefaultPromptForMode(initialMode), weight: 100 },
   ]);
-  const [interpolationMethod, setInterpolationMethod] = useState<
-    "linear" | "slerp"
-  >("linear");
-  const [temporalInterpolationMethod, setTemporalInterpolationMethod] =
-    useState<"linear" | "slerp">("slerp");
-  const [transitionSteps, setTransitionSteps] = useState(4);
+  const [interpolationMethod] = useState<"linear" | "slerp">("linear");
 
   // Track when we need to reinitialize video source
   const [shouldReinitializeVideo, setShouldReinitializeVideo] = useState(false);
@@ -265,18 +260,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     },
   });
 
-  const handlePromptsSubmit = (prompts: PromptItem[]) => {
-    setPromptItems(prompts);
-
-    if (isStreaming) {
-      sendParameterUpdate({
-        prompts,
-        prompt_interpolation_method: interpolationMethod,
-        denoising_step_list: settings.denoisingSteps || [700, 500],
-      });
-    }
-  };
-
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -414,33 +397,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       await handleUploadVideoFile(videoFile);
     } catch (error) {
       console.error("Failed to load MP4P burn source:", error);
-    }
-  };
-
-  const handleSendPrompt = () => {
-    const prompts = promptItems.length
-      ? promptItems
-      : [{ text: "", weight: 100 }];
-
-    if (isStreaming) {
-      const effectiveTransitionSteps =
-        transitionSteps > 0 ? transitionSteps : 0;
-
-      if (effectiveTransitionSteps > 0) {
-        sendParameterUpdate({
-          transition: {
-            target_prompts: prompts,
-            num_steps: effectiveTransitionSteps,
-            temporal_interpolation_method: temporalInterpolationMethod,
-          },
-        });
-      } else {
-        sendParameterUpdate({
-          prompts,
-          prompt_interpolation_method: interpolationMethod,
-          denoising_step_list: settings.denoisingSteps || [700, 500],
-        });
-      }
     }
   };
 
@@ -924,21 +880,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     await handleStartStream();
   };
 
-  // Update temporal interpolation defaults and clear prompts when pipeline changes
+  // Clear prompts if pipeline doesn't support them
   useEffect(() => {
     const pipeline = pipelines?.[settings.pipelineId];
-    if (pipeline) {
-      const defaultMethod =
-        pipeline.defaultTemporalInterpolationMethod || "slerp";
-      const defaultSteps = pipeline.defaultTemporalInterpolationSteps ?? 4;
-
-      setTemporalInterpolationMethod(defaultMethod);
-      setTransitionSteps(defaultSteps);
-
-      // Clear prompts if pipeline doesn't support them
-      if (pipeline.supportsPrompts === false) {
-        setPromptItems([{ text: "", weight: 1.0 }]);
-      }
+    if (pipeline?.supportsPrompts === false) {
+      setPromptItems([{ text: "", weight: 1.0 }]);
     }
   }, [settings.pipelineId, pipelines]);
 
@@ -1228,16 +1174,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   pipelineId={settings.pipelineId}
                   prompts={promptItems}
                   onPromptsChange={setPromptItems}
-                  onPromptsSubmit={handlePromptsSubmit}
                   onTransitionSubmit={handleTransitionSubmit}
-                  interpolationMethod={interpolationMethod}
-                  onInterpolationMethodChange={setInterpolationMethod}
-                  temporalInterpolationMethod={temporalInterpolationMethod}
-                  onTemporalInterpolationMethodChange={setTemporalInterpolationMethod}
                   onLivePromptSubmit={handleLivePromptSubmit}
                   isVideoPaused={settings.paused}
-                  transitionSteps={transitionSteps}
-                  onTransitionStepsChange={setTransitionSteps}
                   confirmedSynthedBlob={confirmedSynthedBlob}
                   isRecordingSynthed={isRecordingSynthed}
                   isSynthCapturing={isSynthCapturing}
@@ -1245,7 +1184,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onStartSynth={handleStartSynth}
                   onCancelSynth={handleCancelSynth}
                   onDeleteBurn={handleDeleteBurn}
-                  onPromptSend={handleSendPrompt}
                   onTogglePause={handleTogglePause}
                   sam3MaskId={sam3MaskId}
                   onSam3Generate={handleGenerateSam3Mask}

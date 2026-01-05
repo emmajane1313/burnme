@@ -143,7 +143,7 @@ class PipelineManager:
         """Synchronous wrapper for pipeline loading with proper locking."""
 
         if pipeline_id is None:
-            pipeline_id = os.getenv("PIPELINE", "longlive")
+            pipeline_id = os.getenv("PIPELINE", "memflow")
 
         with self._lock:
             # Normalize None to empty dict for comparison
@@ -326,10 +326,6 @@ class PipelineManager:
         # List of built-in pipelines with custom initialization
         BUILTIN_PIPELINES = {
             "streamdiffusionv2",
-            "passthrough",
-            "longlive",
-            "krea-realtime-video",
-            "reward-forcing",
             "memflow",
         }
 
@@ -398,198 +394,6 @@ class PipelineManager:
                 dtype=torch.bfloat16,
             )
             logger.info("StreamDiffusionV2 pipeline initialized")
-            return pipeline
-
-        elif pipeline_id == "passthrough":
-            from scope.core.pipelines import PassthroughPipeline
-
-            # Use load parameters for resolution, default to 512x512
-            height = 512
-            width = 512
-            if load_params:
-                height = load_params.get("height", 512)
-                width = load_params.get("width", 512)
-
-            pipeline = PassthroughPipeline(
-                height=height,
-                width=width,
-                device=get_device(),
-                dtype=torch.bfloat16,
-            )
-            logger.info("Passthrough pipeline initialized")
-            return pipeline
-
-        elif pipeline_id == "longlive":
-            from scope.core.pipelines import LongLivePipeline
-
-            from .models_config import get_model_file_path, get_models_dir
-
-            models_dir = get_models_dir()
-            config = OmegaConf.create(
-                {
-                    "model_dir": str(models_dir),
-                    "generator_path": str(
-                        get_model_file_path("LongLive-1.3B/models/longlive_base.pt")
-                    ),
-                    "lora_path": str(
-                        get_model_file_path("LongLive-1.3B/models/lora.pt")
-                    ),
-                    "text_encoder_path": str(
-                        get_model_file_path(
-                            "WanVideo_comfy/umt5-xxl-enc-fp8_e4m3fn.safetensors"
-                        )
-                    ),
-                    "tokenizer_path": str(
-                        get_model_file_path("Wan2.1-T2V-1.3B/google/umt5-xxl")
-                    ),
-                }
-            )
-
-            # Configure VACE support if enabled in load_params (default: True)
-            vace_enabled = True
-            if load_params:
-                vace_enabled = load_params.get("vace_enabled", True)
-
-            if vace_enabled:
-                self._configure_vace(config, load_params)
-            else:
-                logger.info("VACE disabled by load_params, skipping VACE configuration")
-
-            # Apply load parameters (resolution, seed, LoRAs) to config
-            self._apply_load_params(
-                config,
-                load_params,
-                default_height=320,
-                default_width=576,
-                default_seed=42,
-            )
-
-            quantization = None
-            if load_params:
-                quantization = load_params.get("quantization", None)
-
-            pipeline = LongLivePipeline(
-                config,
-                quantization=quantization,
-                device=torch.device("cuda"),
-                dtype=torch.bfloat16,
-            )
-            logger.info("LongLive pipeline initialized")
-            return pipeline
-
-        elif pipeline_id == "krea-realtime-video":
-            from scope.core.pipelines import (
-                KreaRealtimeVideoPipeline,
-            )
-
-            from .models_config import get_model_file_path, get_models_dir
-
-            config = OmegaConf.create(
-                {
-                    "model_dir": str(get_models_dir()),
-                    "generator_path": str(
-                        get_model_file_path(
-                            "krea-realtime-video/krea-realtime-video-14b.safetensors"
-                        )
-                    ),
-                    "text_encoder_path": str(
-                        get_model_file_path(
-                            "WanVideo_comfy/umt5-xxl-enc-fp8_e4m3fn.safetensors"
-                        )
-                    ),
-                    "tokenizer_path": str(
-                        get_model_file_path("Wan2.1-T2V-1.3B/google/umt5-xxl")
-                    ),
-                    "vae_path": str(
-                        get_model_file_path("Wan2.1-T2V-1.3B/Wan2.1_VAE.pth")
-                    ),
-                }
-            )
-
-            # Apply load parameters (resolution, seed, LoRAs) to config
-            self._apply_load_params(
-                config,
-                load_params,
-                default_height=512,
-                default_width=512,
-                default_seed=42,
-            )
-
-            quantization = None
-            if load_params:
-                quantization = load_params.get("quantization", None)
-
-            pipeline = KreaRealtimeVideoPipeline(
-                config,
-                quantization=quantization,
-                # Only compile diffusion model for hopper right now
-                compile=any(
-                    x in torch.cuda.get_device_name(0).lower()
-                    for x in ("h100", "hopper")
-                ),
-                device=torch.device("cuda"),
-                dtype=torch.bfloat16,
-            )
-            logger.info("krea-realtime-video pipeline initialized")
-            return pipeline
-
-        elif pipeline_id == "reward-forcing":
-            from scope.core.pipelines import (
-                RewardForcingPipeline,
-            )
-
-            from .models_config import get_model_file_path, get_models_dir
-
-            config = OmegaConf.create(
-                {
-                    "model_dir": str(get_models_dir()),
-                    "generator_path": str(
-                        get_model_file_path("Reward-Forcing-T2V-1.3B/rewardforcing.pt")
-                    ),
-                    "text_encoder_path": str(
-                        get_model_file_path(
-                            "WanVideo_comfy/umt5-xxl-enc-fp8_e4m3fn.safetensors"
-                        )
-                    ),
-                    "tokenizer_path": str(
-                        get_model_file_path("Wan2.1-T2V-1.3B/google/umt5-xxl")
-                    ),
-                    "vae_path": str(
-                        get_model_file_path("Wan2.1-T2V-1.3B/Wan2.1_VAE.pth")
-                    ),
-                }
-            )
-
-            # Configure VACE support if enabled in load_params (default: True)
-            vace_enabled = True
-            if load_params:
-                vace_enabled = load_params.get("vace_enabled", True)
-
-            if vace_enabled:
-                self._configure_vace(config, load_params)
-            else:
-                logger.info("VACE disabled by load_params, skipping VACE configuration")
-
-            # Apply load parameters (resolution, seed, LoRAs) to config
-            self._apply_load_params(
-                config,
-                load_params,
-                default_height=320,
-                default_width=576,
-                default_seed=42,
-            )
-
-            quantization = None
-            if load_params:
-                quantization = load_params.get("quantization", None)
-
-            pipeline = RewardForcingPipeline(
-                config,
-                quantization=quantization,
-                device=torch.device("cuda"),
-                dtype=torch.bfloat16,
-            )
-            logger.info("RewardForcing pipeline initialized")
             return pipeline
 
         elif pipeline_id == "memflow":

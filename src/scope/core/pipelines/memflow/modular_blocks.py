@@ -2,9 +2,10 @@ from diffusers.modular_pipelines import SequentialPipelineBlocks
 from diffusers.modular_pipelines.modular_pipeline_utils import InsertableDict
 from diffusers.utils import logging as diffusers_logging
 
-from ..longlive.blocks import (
+from .blocks import (
     PrepareRecacheFramesBlock,
     RecacheFramesBlock,
+    SetupMemoryBankBlock,
 )
 from ..wan2_1.blocks import (
     AutoPrepareLatentsBlock,
@@ -21,7 +22,6 @@ from ..wan2_1.blocks import (
     TextConditioningBlock,
 )
 from ..wan2_1.vace.blocks import VaceEncodingBlock
-from .blocks import SetupMemoryBankBlock
 
 logger = diffusers_logging.get_logger(__name__)
 

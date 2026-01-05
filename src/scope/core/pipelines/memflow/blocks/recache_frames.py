@@ -64,10 +64,16 @@ class RecacheFramesBlock(ModularPipelineBlocks):
                 description="Initialized KV memory bank",
             ),
             InputParam(
-                "height", required=True, type_hint=int, description="Height of video"
+                "height",
+                required=True,
+                type_hint=int,
+                description="Height of video",
             ),
             InputParam(
-                "width", required=True, type_hint=int, description="Width of video"
+                "width",
+                required=True,
+                type_hint=int,
+                description="Width of video",
             ),
             InputParam(
                 "conditioning_embeds",

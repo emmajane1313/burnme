@@ -5,8 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from scope.core.pipelines.krea_realtime_video.schema import KreaRealtimeVideoConfig
-from scope.core.pipelines.longlive.schema import LongLiveConfig
+from scope.core.pipelines.memflow.schema import MemFlowConfig
 from scope.core.pipelines.streamdiffusionv2.schema import StreamDiffusionV2Config
 from scope.core.pipelines.utils import Quantization
 
@@ -332,32 +331,26 @@ class StreamDiffusionV2LoadParams(LoRAEnabledLoadParams):
     )
 
 
-class PassthroughLoadParams(PipelineLoadParams):
-    """Load parameters for Passthrough pipeline."""
+class MemFlowLoadParams(LoRAEnabledLoadParams):
+    """Load parameters for MemFlow pipeline.
 
-    pass
-
-
-class LongLiveLoadParams(LoRAEnabledLoadParams):
-    """Load parameters for LongLive pipeline.
-
-    Defaults are derived from LongLiveConfig to ensure consistency.
+    Defaults are derived from MemFlowConfig to ensure consistency.
     """
 
     height: int = Field(
-        default=LongLiveConfig.model_fields["height"].default,
+        default=MemFlowConfig.model_fields["height"].default,
         description="Target video height",
         ge=16,
         le=2048,
     )
     width: int = Field(
-        default=LongLiveConfig.model_fields["width"].default,
+        default=MemFlowConfig.model_fields["width"].default,
         description="Target video width",
         ge=16,
         le=2048,
     )
     seed: int = Field(
-        default=LongLiveConfig.model_fields["base_seed"].default,
+        default=MemFlowConfig.model_fields["base_seed"].default,
         description="Random seed for generation",
         ge=0,
     )
@@ -371,48 +364,13 @@ class LongLiveLoadParams(LoRAEnabledLoadParams):
     )
 
 
-class KreaRealtimeVideoLoadParams(LoRAEnabledLoadParams):
-    """Load parameters for KreaRealtimeVideo pipeline.
-
-    Defaults are derived from KreaRealtimeVideoConfig to ensure consistency.
-    """
-
-    height: int = Field(
-        default=KreaRealtimeVideoConfig.model_fields["height"].default,
-        description="Target video height",
-        ge=64,
-        le=2048,
-    )
-    width: int = Field(
-        default=KreaRealtimeVideoConfig.model_fields["width"].default,
-        description="Target video width",
-        ge=64,
-        le=2048,
-    )
-    seed: int = Field(
-        default=KreaRealtimeVideoConfig.model_fields["base_seed"].default,
-        description="Random seed for generation",
-        ge=0,
-    )
-    quantization: Quantization | None = Field(
-        default=Quantization.FP8_E4M3FN,
-        description="Quantization method to use for diffusion model. If None, no quantization is applied.",
-    )
-
-
 class PipelineLoadRequest(BaseModel):
     """Pipeline load request schema."""
 
-    pipeline_id: str = Field(
-        default="streamdiffusionv2", description="ID of pipeline to load"
+    pipeline_id: str = Field(default="memflow", description="ID of pipeline to load")
+    load_params: StreamDiffusionV2LoadParams | MemFlowLoadParams | None = Field(
+        default=None, description="Pipeline-specific load parameters"
     )
-    load_params: (
-        StreamDiffusionV2LoadParams
-        | PassthroughLoadParams
-        | LongLiveLoadParams
-        | KreaRealtimeVideoLoadParams
-        | None
-    ) = Field(default=None, description="Pipeline-specific load parameters")
 
 
 class PipelineStatusResponse(BaseModel):

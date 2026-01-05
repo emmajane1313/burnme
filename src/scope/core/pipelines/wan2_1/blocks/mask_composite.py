@@ -86,11 +86,18 @@ class MaskCompositeBlock(ModularPipelineBlocks):
         if mask.shape[2] != 1:
             mask = mask.mean(dim=2, keepdim=True)
 
-        # Align channel count between output and original video
-        if output_video.shape[2] != video_raw.shape[2]:
-            min_channels = min(output_video.shape[2], video_raw.shape[2])
-            output_video = output_video[:, :, :min_channels]
-            video_raw = video_raw[:, :, :min_channels]
+        # Align channel count between output and original video.
+        output_channels = output_video.shape[2]
+        raw_channels = video_raw.shape[2]
+        if output_channels != raw_channels:
+            if output_channels == 1 and raw_channels > 1:
+                output_video = output_video.expand(-1, -1, raw_channels, -1, -1)
+            elif raw_channels == 1 and output_channels > 1:
+                video_raw = video_raw.expand(-1, -1, output_channels, -1, -1)
+            else:
+                min_channels = min(output_channels, raw_channels)
+                output_video = output_video[:, :, :min_channels]
+                video_raw = video_raw[:, :, :min_channels]
 
         # Normalize mask to [0, 1]
         if mask.max() > 1.0:

@@ -14,7 +14,7 @@ from .attention_blocks import (
 
 
 # TODO: Consolidate this with other pipeline implementations into a shared wan2_1/utils module.
-# This is a standard sinusoidal positional embedding - identical across all pipelines apart from krea which has forced dtype
+# This is a standard sinusoidal positional embedding used across all pipelines.
 def sinusoidal_embedding_1d(dim, position):
     """
     Standard sinusoidal positional embedding.
@@ -39,8 +39,7 @@ class CausalVaceWanModel(nn.Module):
     VACE wrapper that adds reference image conditioning to any CausalWanModel.
 
     Uses composition to wrap an existing CausalWanModel instance.
-    Pipeline-agnostic via duck typing - works with longlive, streamdiffusionv2,
-    krea_realtime_video, reward_forcing, or any future CausalWanModel implementation.
+    Pipeline-agnostic via duck typing - works with any CausalWanModel implementation.
     """
 
     def __init__(

@@ -119,19 +119,7 @@ def _register_pipelines():
             ".streamdiffusionv2.pipeline",
             "StreamDiffusionV2Pipeline",
         ),
-        ("longlive", ".longlive.pipeline", "LongLivePipeline"),
-        (
-            "krea_realtime_video",
-            ".krea_realtime_video.pipeline",
-            "KreaRealtimeVideoPipeline",
-        ),
-        (
-            "reward_forcing",
-            ".reward_forcing.pipeline",
-            "RewardForcingPipeline",
-        ),
         ("memflow", ".memflow.pipeline", "MemFlowPipeline"),
-        ("passthrough", ".passthrough.pipeline", "PassthroughPipeline"),
     ]
 
     # Try to import and register each pipeline

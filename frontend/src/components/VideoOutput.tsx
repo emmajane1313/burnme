@@ -47,6 +47,7 @@ export function VideoOutput({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [needsUserPlay, setNeedsUserPlay] = useState(false);
+  const isMaskLoading = isSam3Generating || sam3AutoPending;
 
   const attemptPlay = () => {
     const video = videoRef.current;
@@ -154,17 +155,17 @@ export function VideoOutput({
               muted
               playsInline
             />
-            {sourceVideoBlocked ? (
+            {sourceVideoBlocked && !isMaskLoading ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
                 <button
                   type="button"
                   onClick={handleStartSourceVideo}
                   className="mac-frosted-button px-4 py-2 text-sm text-white"
                 >
-                  Start Video
+                  Start Pipeline
                 </button>
                 <p className="text-xs text-muted-foreground">
-                  Click to start the source video.
+                  Click to start the pipeline.
                 </p>
               </div>
             ) : autoplayBlocked || needsUserPlay ? (

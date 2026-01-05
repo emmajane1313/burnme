@@ -103,7 +103,7 @@ def get_required_model_files(pipeline_id: str | None = None) -> list[Path]:
 
     from .pipeline_artifacts import PIPELINE_ARTIFACTS
 
-    if pipeline_id == "passthrough" or pipeline_id not in PIPELINE_ARTIFACTS:
+    if pipeline_id not in PIPELINE_ARTIFACTS:
         return []
 
     artifacts = PIPELINE_ARTIFACTS[pipeline_id]

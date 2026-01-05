@@ -9,7 +9,7 @@ This module provides Pydantic models for pipeline configuration that can be used
 Pipeline-specific configs inherit from BasePipelineConfig and override defaults.
 Each pipeline defines its supported modes and can provide mode-specific defaults.
 
-Each pipeline's config class is defined in its own directory (e.g., longlive/schema.py)
+Each pipeline's config class is defined in its own directory (e.g., streamdiffusionv2/schema.py)
 and re-exported here for backwards compatibility.
 """
 
@@ -18,20 +18,13 @@ from .base_schema import BasePipelineConfig, InputMode, ModeDefaults
 
 # Import pipeline-specific configs from their respective directories
 # This provides backwards compatibility for existing imports from this module
-from .krea_realtime_video.schema import KreaRealtimeVideoConfig
-from .longlive.schema import LongLiveConfig
 from .memflow.schema import MemFlowConfig
-from .passthrough.schema import PassthroughConfig
-from .reward_forcing.schema import RewardForcingConfig
 from .streamdiffusionv2.schema import StreamDiffusionV2Config
 
 # Registry of pipeline config classes
 PIPELINE_CONFIGS: dict[str, type[BasePipelineConfig]] = {
     "streamdiffusionv2": StreamDiffusionV2Config,
-    "longlive": LongLiveConfig,
-    "krea-realtime-video": KreaRealtimeVideoConfig,
-    "reward-forcing": RewardForcingConfig,
-    "passthrough": PassthroughConfig,
+    "memflow": MemFlowConfig,
 }
 
 
@@ -54,11 +47,7 @@ __all__ = [
     "ModeDefaults",
     # Pipeline configs
     "StreamDiffusionV2Config",
-    "LongLiveConfig",
-    "KreaRealtimeVideoConfig",
-    "RewardForcingConfig",
     "MemFlowConfig",
-    "PassthroughConfig",
     # Registry
     "PIPELINE_CONFIGS",
     "get_config_class",
