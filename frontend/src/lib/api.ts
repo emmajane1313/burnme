@@ -268,7 +268,15 @@ export const startSam3MaskJob = async (
     );
   }
 
-  const result = await response.json();
+  const rawText = await response.text();
+  let result: any;
+  try {
+    result = JSON.parse(rawText);
+  } catch (error) {
+    throw new Error(
+      `SAM3 mask start failed: Invalid JSON response: ${rawText.slice(0, 200)}`
+    );
+  }
   if (!result.success || !result.jobId) {
     throw new Error(result.error || "SAM3 mask start failed");
   }
@@ -294,7 +302,15 @@ export const getSam3MaskJob = async (
     );
   }
 
-  const result = await response.json();
+  const rawText = await response.text();
+  let result: any;
+  try {
+    result = JSON.parse(rawText);
+  } catch (error) {
+    throw new Error(
+      `SAM3 mask status failed: Invalid JSON response: ${rawText.slice(0, 200)}`
+    );
+  }
   if (!result.success) {
     throw new Error(result.error || "SAM3 mask status failed");
   }
