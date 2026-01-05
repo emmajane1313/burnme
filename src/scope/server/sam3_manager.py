@@ -3,6 +3,7 @@ import logging
 import os
 import threading
 import uuid
+import contextlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -133,6 +134,7 @@ class Sam3MaskManager:
         input_fps: float | None = None,
     ) -> Sam3MaskSession:
         prompt = SAM3_PERSON_PROMPT
+        torch.set_default_dtype(torch.float32)
 
         predictor = self._get_predictor()
         session_id = str(uuid.uuid4())
@@ -160,9 +162,15 @@ class Sam3MaskManager:
             video_path, resampled_path, effective_fps
         )
 
-        response = predictor.handle_request(
-            {"type": "start_session", "resource_path": str(video_path)}
+        autocast_ctx = (
+            torch.autocast("cuda", enabled=False)
+            if torch.cuda.is_available()
+            else contextlib.nullcontext()
         )
+        with autocast_ctx:
+            response = predictor.handle_request(
+                {"type": "start_session", "resource_path": str(video_path)}
+            )
         if not isinstance(response, dict) or "session_id" not in response:
             raise RuntimeError(
                 f"SAM3 start_session failed: {response}"
@@ -201,46 +209,47 @@ class Sam3MaskManager:
         height = 0
         width = 0
 
-        for result in predictor.handle_stream_request(
-            {
-                "type": "propagate_in_video",
-                "session_id": sam3_session_id,
-                "propagation_direction": "forward",
-                "start_frame_index": 0,
-                "max_frame_num_to_track": None,
-            }
-        ):
-            frame_idx = result["frame_index"]
-            masks = result["outputs"].get("out_binary_masks")
-            if masks is None:
-                continue
-            if isinstance(masks, np.ndarray):
-                if masks.size == 0:
+        with autocast_ctx:
+            for result in predictor.handle_stream_request(
+                {
+                    "type": "propagate_in_video",
+                    "session_id": sam3_session_id,
+                    "propagation_direction": "forward",
+                    "start_frame_index": 0,
+                    "max_frame_num_to_track": None,
+                }
+            ):
+                frame_idx = result["frame_index"]
+                masks = result["outputs"].get("out_binary_masks")
+                if masks is None:
                     continue
-                merged = np.any(masks, axis=0).astype(np.uint8) * 255
-            else:
-                if masks.numel() == 0:
-                    continue
-                merged = masks.any(dim=0).cpu().numpy().astype(np.uint8) * 255
-            if cv2 is not None:
-                mask = merged
-                if SAM3_MASK_DILATE > 0:
-                    kernel = np.ones(
-                        (SAM3_MASK_DILATE, SAM3_MASK_DILATE), dtype=np.uint8
-                    )
-                    mask = cv2.dilate(mask, kernel, iterations=SAM3_MASK_DILATE_ITERS)
-                if SAM3_MASK_BLUR > 0:
-                    blur_size = SAM3_MASK_BLUR
-                    if blur_size % 2 == 0:
-                        blur_size += 1
-                    mask = cv2.GaussianBlur(mask, (blur_size, blur_size), 0)
-                if SAM3_MASK_INTENSITY != 1.0:
-                    mask = np.clip(mask.astype(np.float32) * SAM3_MASK_INTENSITY, 0, 255)
-                    mask = mask.astype(np.uint8)
-                merged = mask
-            height, width = merged.shape
-            frame_count = max(frame_count, frame_idx + 1)
-            Image.fromarray(merged, mode="L").save(self._mask_path(session_dir, frame_idx))
+                if isinstance(masks, np.ndarray):
+                    if masks.size == 0:
+                        continue
+                    merged = np.any(masks, axis=0).astype(np.uint8) * 255
+                else:
+                    if masks.numel() == 0:
+                        continue
+                    merged = masks.any(dim=0).cpu().numpy().astype(np.uint8) * 255
+                if cv2 is not None:
+                    mask = merged
+                    if SAM3_MASK_DILATE > 0:
+                        kernel = np.ones(
+                            (SAM3_MASK_DILATE, SAM3_MASK_DILATE), dtype=np.uint8
+                        )
+                        mask = cv2.dilate(mask, kernel, iterations=SAM3_MASK_DILATE_ITERS)
+                    if SAM3_MASK_BLUR > 0:
+                        blur_size = SAM3_MASK_BLUR
+                        if blur_size % 2 == 0:
+                            blur_size += 1
+                        mask = cv2.GaussianBlur(mask, (blur_size, blur_size), 0)
+                    if SAM3_MASK_INTENSITY != 1.0:
+                        mask = np.clip(mask.astype(np.float32) * SAM3_MASK_INTENSITY, 0, 255)
+                        mask = mask.astype(np.uint8)
+                    merged = mask
+                height, width = merged.shape
+                frame_count = max(frame_count, frame_idx + 1)
+                Image.fromarray(merged, mode="L").save(self._mask_path(session_dir, frame_idx))
 
         predictor.handle_request({"type": "close_session", "session_id": sam3_session_id})
 

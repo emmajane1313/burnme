@@ -849,6 +849,8 @@ async def get_current_logs():
 @app.get("/{path:path}")
 async def serve_frontend(request: Request, path: str):
     """Serve the frontend for all non-API routes (fallback for client-side routing)."""
+    if path.startswith("api/") or path.startswith("api"):
+        raise HTTPException(status_code=404, detail="API route not found")
     frontend_dist = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
 
     # Only serve SPA if frontend dist exists (production mode)
