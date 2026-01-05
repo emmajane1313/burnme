@@ -358,7 +358,8 @@ export async function downloadMP4P(
   filename: string
 ): Promise<void> {
   const jsonString = JSON.stringify(mp4pData, null, 2);
-  const blob = new Blob([jsonString], { type: "application/json" });
+  // Use a generic binary MIME type so browsers keep the .mp4p extension.
+  const blob = new Blob([jsonString], { type: "application/octet-stream" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");

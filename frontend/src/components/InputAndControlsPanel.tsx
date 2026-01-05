@@ -154,6 +154,10 @@ export function InputAndControlsPanel({
   };
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [pendingKeyDownload, setPendingKeyDownload] = useState<{
+    filename: string;
+    payload: string;
+  } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,6 +207,7 @@ export function InputAndControlsPanel({
 
     try {
       setIsExporting(true);
+      setPendingKeyDownload(null);
       let mp4pData = baseMp4pData;
       if (!mp4pData) {
         mp4pData = await createMP4P();
@@ -295,20 +300,13 @@ export function InputAndControlsPanel({
             burnIndex: (mp4pData.metadata.synthedVersions?.length || 1) - 1,
             visualCipher,
           };
-          const keyBlob = new Blob([JSON.stringify(keyData, null, 2)], {
-            type: "application/json",
-          });
-          const keyUrl = URL.createObjectURL(keyBlob);
           const keyName = uploadedVideoFile
             ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
             : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
-          const anchor = document.createElement("a");
-          anchor.href = keyUrl;
-          anchor.download = `${keyName}.mp4p-key.json`;
-          document.body.appendChild(anchor);
-          anchor.click();
-          document.body.removeChild(anchor);
-          URL.revokeObjectURL(keyUrl);
+          setPendingKeyDownload({
+            filename: `${keyName}.mp4p-key.json`,
+            payload: JSON.stringify(keyData, null, 2),
+          });
         }
       }
 
@@ -536,6 +534,31 @@ export function InputAndControlsPanel({
             {isExporting ? "Exporting..." : "Export MP4P"}
           </Button>
         </div>
+
+        {pendingKeyDownload && (
+          <div>
+            <Button
+              onClick={() => {
+                const keyBlob = new Blob([pendingKeyDownload.payload], {
+                  type: "application/json",
+                });
+                const keyUrl = URL.createObjectURL(keyBlob);
+                const anchor = document.createElement("a");
+                anchor.href = keyUrl;
+                anchor.download = pendingKeyDownload.filename;
+                document.body.appendChild(anchor);
+                anchor.click();
+                document.body.removeChild(anchor);
+                URL.revokeObjectURL(keyUrl);
+              }}
+              className="w-full"
+              size="sm"
+              variant="secondary"
+            >
+              Download Key File
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
