@@ -1289,9 +1289,13 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             synth_fps = 0.0
             frame_count = 0
             if use_imageio_synth and synth_reader is not None:
-                synth_meta = synth_reader.get_meta_data()
-                synth_fps = float(synth_meta.get("fps") or 0.0)
-                frame_count = int(synth_meta.get("nframes") or 0)
+                if request.synthedFps and request.synthedFps > 0:
+                    synth_fps = float(request.synthedFps)
+                    frame_count = 0
+                else:
+                    synth_meta = synth_reader.get_meta_data()
+                    synth_fps = float(synth_meta.get("fps") or 0.0)
+                    frame_count = int(synth_meta.get("nframes") or 0)
             else:
                 synth_fps = float(cap_synth.get(cv2.CAP_PROP_FPS) or 0.0)
                 frame_count = int(cap_synth.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
