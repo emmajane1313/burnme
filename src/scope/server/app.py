@@ -1314,7 +1314,7 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             cap_synth = None
             synth_reader = None
             if use_imageio_synth:
-                synth_reader = iio.get_reader(str(synth_path), plugin="pyav")
+                synth_reader = iio.get_reader(str(synth_path), format="pyav")
             else:
                 cap_synth = cv2.VideoCapture(str(synth_path))
                 if not cap_synth.isOpened():
