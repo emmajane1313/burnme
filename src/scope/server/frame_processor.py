@@ -240,6 +240,8 @@ class FrameProcessor:
         except (TypeError, ValueError):
             return
         with self.frame_meta_lock:
+            if payload.get("reset"):
+                self.frame_meta_queue.clear()
             self.frame_meta_queue.append(time_value)
         now = time.time()
         if now - self._last_frame_meta_log > 1.0:

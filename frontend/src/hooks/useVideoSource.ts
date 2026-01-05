@@ -8,7 +8,7 @@ interface UseVideoSourceProps {
   shouldReinitialize?: boolean;
   enabled?: boolean;
   fpsOverride?: number | null;
-  onFrameMeta?: (meta: { time: number }) => void;
+  onFrameMeta?: (meta: { time: number; reset?: boolean }) => void;
   // Called when a custom video is uploaded with its detected resolution
   onCustomVideoResolution?: (resolution: {
     width: number;
@@ -33,6 +33,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
     height: number;
   } | null>(null);
   const [sourceVideoBlocked, setSourceVideoBlocked] = useState(false);
+  const lastFrameMetaTimeRef = useRef<number | null>(null);
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const activeFps =
@@ -103,7 +104,19 @@ export function useVideoSource(props?: UseVideoSourceProps) {
                   detectedResolution.height
                 );
                 if (props?.onFrameMeta && !video.ended) {
-                  props.onFrameMeta({ time: video.currentTime });
+                  const mediaTime = video.currentTime;
+                  const lastTime = lastFrameMetaTimeRef.current;
+                  const minDelta = 1 / Math.max(1, activeFps * 2);
+                  const isReset =
+                    lastTime !== null && mediaTime + 0.25 < lastTime;
+                  const shouldSend =
+                    lastTime === null ||
+                    isReset ||
+                    Math.abs(mediaTime - lastTime) >= minDelta;
+                  if (shouldSend) {
+                    props.onFrameMeta({ time: mediaTime, reset: isReset });
+                    lastFrameMetaTimeRef.current = mediaTime;
+                  }
                 }
               }
             };
@@ -252,6 +265,7 @@ export function useVideoSource(props?: UseVideoSourceProps) {
       videoElementRef.current = null;
     }
     setSourceVideoBlocked(false);
+    lastFrameMetaTimeRef.current = null;
   }, [localStream]);
 
   const reinitializeVideoSource = useCallback(async () => {

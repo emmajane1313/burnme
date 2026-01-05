@@ -369,14 +369,14 @@ export function useWebRTC(options?: UseWebRTCOptions) {
     []
   );
 
-  const sendFrameMeta = useCallback((meta: { time: number }) => {
+  const sendFrameMeta = useCallback((meta: { time: number; reset?: boolean }) => {
     if (
       dataChannelRef.current &&
       dataChannelRef.current.readyState === "open"
     ) {
       try {
         dataChannelRef.current.send(
-          JSON.stringify({ type: "frame_meta", time: meta.time })
+          JSON.stringify({ type: "frame_meta", time: meta.time, reset: meta.reset })
         );
       } catch (error) {
         console.error("Failed to send frame meta:", error);
