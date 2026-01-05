@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import type { PromptItem, PromptTransition } from "../lib/api";
 import type { PipelineInfo } from "../types";
 import { Button } from "./ui/button";
 import {
-  encryptVideo,
+  createMP4P,
   downloadMP4P,
-  addSynthedVideo,
+  addSynthedVideoBase64,
+  blobToBase64,
+  generateVisualCipherPayload,
   type MP4PData,
 } from "../lib/mp4p-api";
 
@@ -23,9 +25,9 @@ interface InputAndControlsPanelProps {
   onVideoFileUpload?: (file: File) => Promise<boolean>;
   baseMp4pData?: MP4PData | null;
   prefillVideoFile?: File | null;
-  fixedBurnDateTimestamp?: number | null;
   hideLocalPreview?: boolean;
   pipelineId: string;
+  seed?: number;
   prompts: PromptItem[];
   onPromptsChange: (prompts: PromptItem[]) => void;
   onTransitionSubmit: (transition: PromptTransition) => void;
@@ -110,9 +112,9 @@ export function InputAndControlsPanel({
   onVideoFileUpload,
   baseMp4pData = null,
   prefillVideoFile = null,
-  fixedBurnDateTimestamp = null,
   hideLocalPreview = false,
   pipelineId,
+  seed = 42,
   prompts,
   onPromptsChange,
   onTransitionSubmit,
@@ -134,24 +136,6 @@ export function InputAndControlsPanel({
   isSam3Generating = false,
   sourceVideoBlocked = false,
 }: InputAndControlsPanelProps) {
-  const [burnDate, setBurnDate] = useState<string>("");
-  const [burnTime, setBurnTime] = useState<string>("");
-  const [burnDateTimestamp, setBurnDateTimestamp] = useState<number | null>(
-    null
-  );
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
-  const [timeSelectionTouched, setTimeSelectionTouched] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [timeSelection, setTimeSelection] = useState<{
-    hour: number | null;
-    minute: number | null;
-    second: number | null;
-  }>({ hour: null, minute: null, second: null });
-
   const handlePresetSelect = (preset: (typeof PROMPT_PRESETS)[number]) => {
     const nextPrompts = [{ text: preset.prompt, weight: 100 }];
     onPromptsChange(nextPrompts);
@@ -168,21 +152,12 @@ export function InputAndControlsPanel({
       onLivePromptSubmit?.(nextPrompts);
     }
   };
-  const dateButtonRef = useRef<HTMLButtonElement>(null);
-  const timeButtonRef = useRef<HTMLButtonElement>(null);
-  const datePickerRef = useRef<HTMLDivElement>(null);
-  const timePickerRef = useRef<HTMLDivElement>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pipeline = pipelines?.[pipelineId];
-
-  const formatBurnDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  };
 
   useEffect(() => {
     if (videoRef.current && localStream) {
@@ -196,20 +171,11 @@ export function InputAndControlsPanel({
     }
   }, [prefillVideoFile]);
 
-  useEffect(() => {
-    if (!fixedBurnDateTimestamp) return;
-    const date = new Date(fixedBurnDateTimestamp);
-    setBurnDate(date.toISOString().split("T")[0]);
-    setBurnTime(date.toTimeString().slice(0, 8));
-    setBurnDateTimestamp(fixedBurnDateTimestamp);
-  }, [fixedBurnDateTimestamp]);
-
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (fixedBurnDateTimestamp) return;
 
     setUploadedVideoFile(file);
 
@@ -226,12 +192,11 @@ export function InputAndControlsPanel({
   };
 
   const handleTriggerFilePicker = () => {
-    if (fixedBurnDateTimestamp) return;
     fileInputRef.current?.click();
   };
 
   const handleExportMP4P = async () => {
-    if ((!uploadedVideoFile && !baseMp4pData) || !burnDateTimestamp) {
+    if (!uploadedVideoFile && !baseMp4pData) {
       console.error("Missing required data for MP4P export");
       return;
     }
@@ -239,22 +204,112 @@ export function InputAndControlsPanel({
     try {
       setIsExporting(true);
       let mp4pData = baseMp4pData;
-      if (!mp4pData && uploadedVideoFile) {
-        mp4pData = await encryptVideo(uploadedVideoFile, burnDateTimestamp);
-      }
       if (!mp4pData) {
-        throw new Error("Missing MP4P data");
+        mp4pData = await createMP4P();
       }
 
       if (confirmedSynthedBlob) {
         const promptTexts = synthLockedPrompt
           ? [synthLockedPrompt]
           : prompts.map(prompt => prompt.text);
-        mp4pData = await addSynthedVideo(
-          mp4pData,
+        const publicLabels: string[] = [];
+        const mimeType = confirmedSynthedBlob.type || "video/webm";
+        const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+        const synthedBase64 = await blobToBase64(
           confirmedSynthedBlob,
-          promptTexts
+          `synthed.${extension}`
         );
+
+        let visualCipher;
+        let encryptedMaskFrames;
+        let maskFrameIndexMap;
+        let maskPayloadCodec;
+        if (sam3MaskId && promptTexts[0]) {
+          if (!uploadedVideoFile) {
+            throw new Error("Missing original video for visual cipher payload.");
+          }
+          const originalVideoBase64 = uploadedVideoFile
+            ? await blobToBase64(uploadedVideoFile, uploadedVideoFile.name)
+            : undefined;
+          const params = {
+            denoising_step_list: [1000, 750, 500, 250],
+            prompt_interpolation_method: "linear",
+            noise_scale: 1.0,
+            noise_controller: false,
+          };
+          const payload = await generateVisualCipherPayload(
+            mp4pData,
+            synthedBase64,
+            mimeType,
+            originalVideoBase64,
+            sam3MaskId,
+            promptTexts[0],
+            params,
+            seed ?? 42,
+            pipelineId,
+            "inside"
+          );
+          visualCipher = payload.visualCipher;
+          encryptedMaskFrames = payload.encryptedMaskFrames;
+          maskFrameIndexMap = payload.maskFrameIndexMap;
+          maskPayloadCodec = payload.maskPayloadCodec;
+
+          if (payload.compositedVideoBase64) {
+            mp4pData = await addSynthedVideoBase64(
+              mp4pData,
+              payload.compositedVideoBase64,
+              publicLabels,
+              undefined,
+              encryptedMaskFrames,
+              maskFrameIndexMap,
+              maskPayloadCodec
+            );
+          } else {
+            mp4pData = await addSynthedVideoBase64(
+              mp4pData,
+              synthedBase64,
+              publicLabels,
+              undefined,
+              encryptedMaskFrames,
+              maskFrameIndexMap,
+              maskPayloadCodec
+            );
+          }
+        }
+
+        if (!sam3MaskId || !promptTexts[0]) {
+          mp4pData = await addSynthedVideoBase64(
+            mp4pData,
+            synthedBase64,
+            publicLabels,
+            undefined,
+            encryptedMaskFrames,
+            maskFrameIndexMap,
+            maskPayloadCodec
+          );
+        }
+
+        if (visualCipher) {
+          const keyData = {
+            mp4pId: mp4pData.metadata.id,
+            burnIndex: (mp4pData.metadata.synthedVersions?.length || 1) - 1,
+            visualCipher,
+          };
+          const keyBlob = new Blob([JSON.stringify(keyData, null, 2)], {
+            type: "application/json",
+          });
+          const keyUrl = URL.createObjectURL(keyBlob);
+          const keyName = uploadedVideoFile
+            ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
+            : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
+          const anchor = document.createElement("a");
+          anchor.href = keyUrl;
+          anchor.download = `${keyName}.mp4p-key.json`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          URL.revokeObjectURL(keyUrl);
+        }
       }
 
       const filename = uploadedVideoFile
@@ -270,173 +325,13 @@ export function InputAndControlsPanel({
     }
   };
 
-  const todayDate = new Date().toISOString().split("T")[0];
-  const nowDate = new Date();
-  const nowHour = nowDate.getHours();
-  const nowMinute = nowDate.getMinutes();
-  const nowSecond = nowDate.getSeconds();
-
-  const padTime = (value: number) => value.toString().padStart(2, "0");
-  const todayMidnight = new Date(
-    nowDate.getFullYear(),
-    nowDate.getMonth(),
-    nowDate.getDate()
-  );
-
-  const toIsoDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = padTime(date.getMonth() + 1);
-    const day = padTime(date.getDate());
-    return `${year}-${month}-${day}`;
-  };
-
-  const formatDateDisplay = (value: string) => {
-    if (!value) return "Select date";
-    const parsed = new Date(`${value}T00:00:00`);
-    return parsed.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
-  };
-
-  const formatTimeDisplay = (value: string) => (value ? value : "Select time");
-
-  const selectedDateIsToday = burnDate === todayDate;
-
-  const monthLabel = useMemo(() => {
-    return calendarMonth.toLocaleDateString(undefined, {
-      month: "long",
-      year: "numeric",
-    });
-  }, [calendarMonth]);
-
-  const calendarDays = useMemo(() => {
-    const year = calendarMonth.getFullYear();
-    const month = calendarMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startWeekday = firstDay.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const days: Array<{ date: Date | null; label: string }> = [];
-
-    for (let i = 0; i < startWeekday; i += 1) {
-      days.push({ date: null, label: "" });
-    }
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      days.push({ date: new Date(year, month, day), label: String(day) });
-    }
-
-    return days;
-  }, [calendarMonth]);
-
-  useEffect(() => {
-    if (!burnDate) return;
-    const parsed = new Date(`${burnDate}T00:00:00`);
-    setCalendarMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
-  }, [burnDate]);
-
-  useEffect(() => {
-    if (!isTimePickerOpen) return;
-    if (burnTime) {
-      const [hour, minute, second] = burnTime.split(":").map(Number);
-      setTimeSelection({
-        hour,
-        minute,
-        second: Number.isFinite(second) ? second : 0,
-      });
-    } else {
-      setTimeSelection({ hour: null, minute: null, second: null });
-    }
-    setTimeSelectionTouched(false);
-  }, [burnTime, isTimePickerOpen]);
-
-  useEffect(() => {
-    if (!burnDate || !burnTime) return;
-    if (fixedBurnDateTimestamp) return;
-    if (!selectedDateIsToday) return;
-    const [hour, minute, second] = burnTime.split(":").map(Number);
-    const totalSeconds = hour * 3600 + minute * 60 + (second || 0);
-    const nowSeconds = nowHour * 3600 + nowMinute * 60 + nowSecond;
-    if (totalSeconds < nowSeconds) {
-      setBurnTime("");
-    }
-  }, [burnDate, burnTime, nowHour, nowMinute, nowSecond, selectedDateIsToday]);
-
-  useEffect(() => {
-    if (!isDatePickerOpen && !isTimePickerOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        isDatePickerOpen &&
-        datePickerRef.current &&
-        !datePickerRef.current.contains(target) &&
-        dateButtonRef.current &&
-        !dateButtonRef.current.contains(target)
-      ) {
-        setIsDatePickerOpen(false);
-      }
-      if (
-        isTimePickerOpen &&
-        timePickerRef.current &&
-        !timePickerRef.current.contains(target) &&
-        timeButtonRef.current &&
-        !timeButtonRef.current.contains(target)
-      ) {
-        setIsTimePickerOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isDatePickerOpen, isTimePickerOpen]);
-
-  useEffect(() => {
-    if (
-      timeSelection.hour === null ||
-      timeSelection.minute === null ||
-      timeSelection.second === null ||
-      !timeSelectionTouched
-    ) {
-      return;
-    }
-    const nextTime = `${padTime(timeSelection.hour)}:${padTime(
-      timeSelection.minute
-    )}:${padTime(timeSelection.second)}`;
-    setBurnTime(nextTime);
-    setIsTimePickerOpen(false);
-  }, [timeSelection, timeSelectionTouched]);
-  useEffect(() => {
-    if (fixedBurnDateTimestamp) {
-      setBurnDateTimestamp(fixedBurnDateTimestamp);
-      return;
-    }
-    if (!burnDate) {
-      setBurnDateTimestamp(null);
-      return;
-    }
-
-    const dateTime = burnTime
-      ? new Date(`${burnDate}T${burnTime}`)
-      : new Date(`${burnDate}T23:59:59`);
-
-    if (dateTime.getTime() > Date.now()) {
-      setBurnDateTimestamp(dateTime.getTime());
-    } else {
-      setBurnDateTimestamp(null);
-    }
-  }, [burnDate, burnTime]);
-
   const canStartSynth =
     !isSynthCapturing &&
     !!uploadedVideoFile &&
-    !!burnDateTimestamp &&
     !!prompts[0]?.text?.trim() &&
     isStreaming &&
     !isLoading &&
     sam3Ready;
-
-  const isBurnDateLocked = fixedBurnDateTimestamp !== null;
 
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
@@ -449,16 +344,14 @@ export function InputAndControlsPanel({
         <div>
           <h3 className="text-xs font-medium mb-1.5">Video Input</h3>
           <div
-            className={`rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px] ${
-              fixedBurnDateTimestamp ? "" : "cursor-pointer"
-            }`}
+            className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px] cursor-pointer"
             onClick={() => {
               if (localStream && !hideLocalPreview) {
                 handleTriggerFilePicker();
               }
             }}
           >
-            {onVideoFileUpload && !isBurnDateLocked && (
+            {onVideoFileUpload && (
               <input
                 type="file"
                 accept="video/mp4"
@@ -489,28 +382,20 @@ export function InputAndControlsPanel({
                 {sourceVideoBlocked ? (
                   <div className="absolute inset-0 bg-black/20" />
                 ) : null}
-                {!fixedBurnDateTimestamp ? (
-                  <div className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none">
-                    <span className="mac-frosted-button px-3 py-1 text-[11px] text-white opacity-80">
-                      Click to change video
-                    </span>
-                  </div>
-                ) : null}
+                <div className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none">
+                  <span className="mac-frosted-button px-3 py-1 text-[11px] text-white opacity-80">
+                    Click to change video
+                  </span>
+                </div>
               </div>
             ) : (
               onVideoFileUpload && (
                 <>
                   <label
                     htmlFor="video-upload"
-                    className={`mac-frosted-button px-4 py-3 text-sm text-center ${
-                      isBurnDateLocked
-                        ? "opacity-50 cursor-not-allowed"
-                        : "cursor-pointer"
-                    }`}
+                    className="mac-frosted-button px-4 py-3 text-sm text-center cursor-pointer"
                   >
-                    {isBurnDateLocked
-                      ? "Burn source loaded"
-                      : "Upload a vid to begin"}
+                    Upload a vid to begin
                   </label>
                 </>
               )
@@ -528,293 +413,6 @@ export function InputAndControlsPanel({
               </Button>
             </div>
           )}
-        </div>
-
-        <div>
-          <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-            Burn Date
-          </h3>
-          <div className="flex flex-col relative gap-3">
-            <div className="flex flex-col relative gap-2">
-              <div className="relative">
-                <button
-                  ref={dateButtonRef}
-                  type="button"
-                  className="win98-input text-sm w-full flex items-center justify-between px-3 py-2"
-                  onClick={() => {
-                    if (isBurnDateLocked) return;
-                    setIsDatePickerOpen(open => !open);
-                    setIsTimePickerOpen(false);
-                  }}
-                  disabled={isBurnDateLocked}
-                >
-                  <span>{formatDateDisplay(burnDate)}</span>
-                  <span className="text-xs">▼</span>
-                </button>
-                {isDatePickerOpen && (
-                  <div
-                    ref={datePickerRef}
-                    className="win98-popover absolute left-0 right-0 mt-2 p-3 z-50"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <button
-                        type="button"
-                        className="win98-button px-2 py-1 text-xs"
-                        onClick={() =>
-                          setCalendarMonth(
-                            prev =>
-                              new Date(
-                                prev.getFullYear(),
-                                prev.getMonth() - 1,
-                                1
-                              )
-                          )
-                        }
-                      >
-                        ◀
-                      </button>
-                      <span className="text-xs font-semibold">
-                        {monthLabel}
-                      </span>
-                      <button
-                        type="button"
-                        className="win98-button px-2 py-1 text-xs"
-                        onClick={() =>
-                          setCalendarMonth(
-                            prev =>
-                              new Date(
-                                prev.getFullYear(),
-                                prev.getMonth() + 1,
-                                1
-                              )
-                          )
-                        }
-                      >
-                        ▶
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1 text-[10px] text-gray-700 mb-1">
-                      {["S", "M", "T", "W", "T", "F", "S"].map(label => (
-                        <div key={label} className="text-center">
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {calendarDays.map((day, index) => {
-                        if (!day.date) {
-                          return <div key={`empty-${index}`} className="h-7" />;
-                        }
-                        const isoDate = toIsoDate(day.date);
-                        const isSelected = isoDate === burnDate;
-                        const isDisabled =
-                          day.date.getTime() < todayMidnight.getTime();
-                        return (
-                          <button
-                            key={isoDate}
-                            type="button"
-                            className={`win98-button h-7 text-xs ${
-                              isSelected ? "bg-[#0b246a] text-white" : ""
-                            }`}
-                            disabled={isDisabled}
-                            onClick={() => {
-                              if (isDisabled) return;
-                              setBurnDate(isoDate);
-                              setIsDatePickerOpen(false);
-                            }}
-                          >
-                            {day.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="relative">
-                <button
-                  ref={timeButtonRef}
-                  type="button"
-                  className="win98-input text-sm w-full flex items-center justify-between px-3 py-2 disabled:opacity-50 tabular-nums"
-                  disabled={!burnDate || isBurnDateLocked}
-                  onClick={() => {
-                    if (!burnDate || isBurnDateLocked) return;
-                    setIsTimePickerOpen(open => !open);
-                    setIsDatePickerOpen(false);
-                    setTimeSelectionTouched(false);
-                  }}
-                >
-                  <span>{formatTimeDisplay(burnTime)}</span>
-                  <span className="text-xs">▼</span>
-                </button>
-                {isTimePickerOpen && (
-                  <div
-                    ref={timePickerRef}
-                    className="win98-popover burn-time-popover absolute left-0 right-0 mt-2 p-3 z-50"
-                  >
-                    <div className="text-sm font-semibold mb-2 text-[#3a0f1f]">
-                      Select time (HH:MM:SS)
-                    </div>
-                    <div className="text-base font-semibold mb-3 tabular-nums text-[#2a0a18]">
-                      {timeSelection.hour !== null &&
-                      timeSelection.minute !== null &&
-                      timeSelection.second !== null
-                        ? `${padTime(timeSelection.hour)}:${padTime(
-                            timeSelection.minute
-                          )}:${padTime(timeSelection.second)}`
-                        : "--:--:--"}
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-xs text-center mb-1 text-[#5a1d32] uppercase tracking-[0.12em]">
-                        Hours
-                      </div>
-                      <div className="text-xs text-center mb-1 text-[#5a1d32] uppercase tracking-[0.12em]">
-                        Minutes
-                      </div>
-                      <div className="text-xs text-center mb-1 text-[#5a1d32] uppercase tracking-[0.12em]">
-                        Seconds
-                      </div>
-                      <div className="max-h-40 overflow-y-auto pr-1">
-                        <div className="grid grid-cols-2 gap-1">
-                          {Array.from({ length: 24 }, (_, hour) => {
-                            const isHourDisabled =
-                              selectedDateIsToday && hour < nowHour;
-                            const isSelected = timeSelection.hour === hour;
-                            return (
-                              <button
-                                key={`hour-${hour}`}
-                                type="button"
-                                className={`win98-button burn-time-cell tabular-nums ${
-                                  isSelected ? "burn-time-cell-selected" : ""
-                                }`}
-                                disabled={isHourDisabled}
-                                onClick={() => {
-                                  if (isHourDisabled) return;
-                                  setTimeSelectionTouched(true);
-                                  setTimeSelection(prev => {
-                                    const minute =
-                                      prev.minute !== null &&
-                                      selectedDateIsToday &&
-                                      hour === nowHour &&
-                                      prev.minute < nowMinute
-                                        ? null
-                                        : prev.minute;
-                                    const second =
-                                      prev.second !== null &&
-                                      selectedDateIsToday &&
-                                      hour === nowHour &&
-                                      minute !== null &&
-                                      prev.minute === nowMinute &&
-                                      prev.second < nowSecond
-                                        ? null
-                                        : prev.second;
-                                    return { hour, minute, second };
-                                  });
-                                }}
-                              >
-                                {padTime(hour)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <div className="max-h-40 overflow-y-auto pr-1">
-                        <div className="grid grid-cols-2 gap-1">
-                          {Array.from({ length: 60 }, (_, minute) => {
-                            const hour = timeSelection.hour;
-                            const minuteDisabled =
-                              hour === null ||
-                              (selectedDateIsToday &&
-                                hour === nowHour &&
-                                minute < nowMinute);
-                            const isSelected = timeSelection.minute === minute;
-                            return (
-                              <button
-                                key={`minute-${minute}`}
-                                type="button"
-                                className={`win98-button burn-time-cell tabular-nums ${
-                                  isSelected ? "burn-time-cell-selected" : ""
-                                }`}
-                                disabled={minuteDisabled}
-                                onClick={() => {
-                                  if (minuteDisabled) return;
-                                  setTimeSelectionTouched(true);
-                                  setTimeSelection(prev => ({
-                                    hour:
-                                      prev.hour ??
-                                      (selectedDateIsToday ? nowHour : 0),
-                                    minute,
-                                    second:
-                                      prev.second !== null &&
-                                      prev.hour === nowHour &&
-                                      minute === nowMinute &&
-                                      selectedDateIsToday &&
-                                      prev.second < nowSecond
-                                        ? null
-                                        : prev.second,
-                                  }));
-                                }}
-                              >
-                                {padTime(minute)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <div className="max-h-40 overflow-y-auto pr-1">
-                        <div className="grid grid-cols-2 gap-1">
-                          {Array.from({ length: 60 }, (_, second) => {
-                            const hour = timeSelection.hour;
-                            const minute = timeSelection.minute;
-                            const secondDisabled =
-                              hour === null ||
-                              minute === null ||
-                              (selectedDateIsToday &&
-                                hour === nowHour &&
-                                minute === nowMinute &&
-                                second < nowSecond);
-                            const isSelected = timeSelection.second === second;
-                            return (
-                              <button
-                                key={`second-${second}`}
-                                type="button"
-                                className={`win98-button burn-time-cell tabular-nums ${
-                                  isSelected ? "burn-time-cell-selected" : ""
-                                }`}
-                                disabled={secondDisabled}
-                                onClick={() => {
-                                  if (secondDisabled) return;
-                                  setTimeSelectionTouched(true);
-                                  setTimeSelection(prev => ({
-                                    hour: prev.hour,
-                                    minute: prev.minute,
-                                    second,
-                                  }));
-                                }}
-                              >
-                                {padTime(second)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            {burnDateTimestamp && (
-              <div className="flex flex-col relative p-3 bg-muted/30 rounded-md">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Vid will burn on:
-                </p>
-                <p className="text-sm font-medium">
-                  {formatBurnDate(burnDateTimestamp)}
-                </p>
-              </div>
-            )}
-          </div>
         </div>
 
         <div>
@@ -927,7 +525,6 @@ export function InputAndControlsPanel({
             onClick={handleExportMP4P}
             disabled={
               (!uploadedVideoFile && !baseMp4pData) ||
-              !burnDateTimestamp ||
               !confirmedSynthedBlob ||
               isConnecting ||
               isSynthCapturing ||

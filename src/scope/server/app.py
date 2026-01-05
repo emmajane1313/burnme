@@ -3,12 +3,14 @@ import os
 import base64
 import contextlib
 import io
+import json
 import logging
 import os
 import subprocess
 import sys
 import threading
 import time
+import tempfile
 import warnings
 import webbrowser
 from contextlib import asynccontextmanager
@@ -20,12 +22,16 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import click
+import numpy as np
 import torch
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from PIL import Image
+from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.hazmat.backends import default_backend
 from pydantic import BaseModel
 
 from .download_models import download_models
@@ -60,6 +66,11 @@ from .schema import (
     WebRTCOfferResponse,
 )
 from .webrtc import WebRTCManager
+
+try:
+    import cv2  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    cv2 = None
 
 
 class STUNErrorFilter(logging.Filter):
@@ -1086,12 +1097,13 @@ def uninstall(packages, yes):
 
 from .mp4p import (
     encrypt_video,
+    create_public_mp4p,
     decrypt_video,
     burn_video,
     add_synthed_video,
     decrypt_synthed_video,
-    should_show_synthed,
-    MP4PData
+    MP4PData,
+    VisualCipherMetadata,
 )
 from uuid import uuid4
 
@@ -1099,6 +1111,10 @@ from uuid import uuid4
 class EncryptVideoRequest(BaseModel):
     videoBase64: str
     expiresAt: int
+
+
+class CreateMP4PRequest(BaseModel):
+    videoId: str | None = None
 
 
 class DecryptVideoRequest(BaseModel):
@@ -1114,6 +1130,23 @@ class AddSynthedVideoRequest(BaseModel):
     mp4pData: MP4PData
     synthedVideoBase64: str
     promptsUsed: list
+    visualCipher: dict | None = None
+    encryptedMaskFrames: list[str] | None = None
+    maskFrameIndexMap: list[int] | None = None
+    maskPayloadCodec: str | None = None
+
+
+class VisualCipherRequest(BaseModel):
+    mp4pData: MP4PData
+    synthedVideoBase64: str
+    synthedMimeType: str | None = None
+    originalVideoBase64: str | None = None
+    maskId: str
+    prompt: str
+    params: dict
+    seed: int
+    pipelineId: str
+    maskMode: str = "inside"
 
 
 class LoadMP4PRequest(BaseModel):
@@ -1128,6 +1161,12 @@ class Sam3MaskRequest(BaseModel):
     input_fps: float | None = None
 
 
+class RestoreMP4PRequest(BaseModel):
+    mp4pData: MP4PData
+    visualCipher: dict
+    burnIndex: int | None = None
+
+
 @app.post("/api/v1/mp4p/encrypt")
 async def encrypt_video_endpoint(request: EncryptVideoRequest):
     try:
@@ -1139,6 +1178,17 @@ async def encrypt_video_endpoint(request: EncryptVideoRequest):
         return {"success": True, "data": mp4p_data.model_dump()}
     except Exception as e:
         logger.error(f"Error encrypting video: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/v1/mp4p/create")
+async def create_mp4p_endpoint(request: CreateMP4PRequest):
+    try:
+        video_id = request.videoId or str(uuid4())
+        mp4p_data = create_public_mp4p(video_id)
+        return {"success": True, "data": mp4p_data.model_dump()}
+    except Exception as e:
+        logger.error(f"Error creating MP4P: {e}")
         return {"success": False, "error": str(e)}
 
 
@@ -1179,10 +1229,20 @@ async def add_synthed_video_endpoint(request: AddSynthedVideoRequest):
     try:
         synthed_video_data = base64.b64decode(request.synthedVideoBase64)
 
+        visual_cipher = (
+            VisualCipherMetadata.model_validate(request.visualCipher)
+            if request.visualCipher is not None
+            else None
+        )
+
         updated_mp4p = await add_synthed_video(
             request.mp4pData,
             synthed_video_data,
-            request.promptsUsed
+            request.promptsUsed,
+            visual_cipher=visual_cipher,
+            encrypted_mask_frames=request.encryptedMaskFrames,
+            mask_frame_index_map=request.maskFrameIndexMap,
+            mask_payload_codec=request.maskPayloadCodec,
         )
 
         return {"success": True, "data": updated_mp4p.model_dump()}
@@ -1191,42 +1251,339 @@ async def add_synthed_video_endpoint(request: AddSynthedVideoRequest):
         return {"success": False, "error": str(e)}
 
 
+@app.post("/api/v1/mp4p/visual-cipher")
+async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
+    try:
+        if cv2 is None:
+            raise RuntimeError("OpenCV is required for visual cipher generation.")
+
+        session = sam3_mask_manager.get_session(request.maskId)
+        if session is None:
+            raise RuntimeError(f"SAM3 session {request.maskId} not found")
+
+        logger.info(
+            "VisualCipher start: mp4p_id=%s mask_id=%s pipeline=%s seed=%s prompt_len=%s",
+            request.mp4pData.metadata.id,
+            request.maskId,
+            request.pipelineId,
+            request.seed,
+            len(request.prompt or ""),
+        )
+
+        if request.originalVideoBase64:
+            original_video = base64.b64decode(request.originalVideoBase64)
+        else:
+            original_video = await decrypt_video(request.mp4pData)
+        synthed_video = base64.b64decode(request.synthedVideoBase64)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            original_path = Path(tmpdir) / "original.mp4"
+            synth_ext = "mp4"
+            if request.synthedMimeType:
+                if "webm" in request.synthedMimeType:
+                    synth_ext = "webm"
+                elif "mp4" in request.synthedMimeType:
+                    synth_ext = "mp4"
+            synth_path = Path(tmpdir) / f"synth.{synth_ext}"
+            original_path.write_bytes(original_video)
+            synth_path.write_bytes(synthed_video)
+
+            cap_orig = cv2.VideoCapture(str(original_path))
+            cap_synth = cv2.VideoCapture(str(synth_path))
+            if not cap_orig.isOpened() or not cap_synth.isOpened():
+                raise RuntimeError("Failed to open video streams for visual cipher.")
+
+            mask_dir = session.mask_dir
+            mask_width = session.width
+            mask_height = session.height
+            fps = session.input_fps or session.sam3_fps or float(
+                cap_orig.get(cv2.CAP_PROP_FPS) or 15.0
+            )
+            out_width = int(cap_orig.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+            out_height = int(cap_orig.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+            if out_width <= 0 or out_height <= 0:
+                out_width = mask_width
+                out_height = mask_height
+
+            out_path = Path(tmpdir) / "burn_composite.mp4"
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(str(out_path), fourcc, fps, (out_width, out_height))
+            if not writer.isOpened():
+                raise RuntimeError("Failed to open burn video writer.")
+
+            payload_frames: list[str] = []
+            index_map: list[int] = []
+
+            prompt_bytes = request.prompt.encode()
+            params_bytes = json.dumps(request.params, sort_keys=True).encode()
+            seed_bytes = str(request.seed).encode()
+            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
+            base_key.update(base_key_material)
+            base_key_bytes = base_key.finalize()
+
+            frame_index = 0
+            while True:
+                ret_orig, frame_orig = cap_orig.read()
+                ret_synth, frame_synth = cap_synth.read()
+                if not ret_orig or not ret_synth:
+                    break
+
+                mask_path = mask_dir / f"{frame_index:06d}.png"
+                if not mask_path.exists():
+                    frame_index += 1
+                    continue
+
+                mask = np.array(Image.open(mask_path).convert("L"))
+                if mask.shape[0] != mask_height or mask.shape[1] != mask_width:
+                    mask = cv2.resize(mask, (mask_width, mask_height), interpolation=cv2.INTER_NEAREST)
+
+                orig_rgb = cv2.cvtColor(frame_orig, cv2.COLOR_BGR2RGB)
+                synth_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
+                if orig_rgb.shape[:2] != (mask_height, mask_width):
+                    orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+                if synth_rgb.shape[:2] != (mask_height, mask_width):
+                    synth_rgb = cv2.resize(synth_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+
+                mask_bool = mask > 0
+                if request.maskMode == "outside":
+                    mask_bool = ~mask_bool
+
+                composite_frame = orig_rgb.copy()
+                composite_frame[mask_bool] = synth_rgb[mask_bool]
+
+                frame_hash = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                frame_hash.update(composite_frame.tobytes())
+                frame_hash_bytes = frame_hash.finalize()
+
+                h = hmac.HMAC(base_key_bytes, hashes.SHA256(), backend=default_backend())
+                h.update(frame_index.to_bytes(4, "big"))
+                h.update(frame_hash_bytes)
+                frame_key = h.finalize()
+
+                key_stream = bytearray()
+                counter = 0
+                target_len = mask_height * mask_width * 3
+                while len(key_stream) < target_len:
+                    h = hmac.HMAC(frame_key, hashes.SHA256(), backend=default_backend())
+                    h.update(counter.to_bytes(4, "big"))
+                    key_stream.extend(h.finalize())
+                    counter += 1
+                key_bytes = np.frombuffer(bytes(key_stream[:target_len]), dtype=np.uint8).reshape(
+                    (mask_height, mask_width, 3)
+                )
+
+                encrypted = np.bitwise_xor(orig_rgb, key_bytes)
+                encrypted[mask == 0] = 0
+
+                rgba = np.zeros((mask_height, mask_width, 4), dtype=np.uint8)
+                rgba[:, :, :3] = encrypted
+                rgba[:, :, 3] = mask
+
+                img = Image.fromarray(rgba, mode="RGBA")
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                payload_frames.append(base64.b64encode(buf.getvalue()).decode())
+                index_map.append(frame_index)
+
+                if (mask_height, mask_width) != (out_height, out_width):
+                    composite_frame = cv2.resize(
+                        composite_frame,
+                        (out_width, out_height),
+                        interpolation=cv2.INTER_LINEAR,
+                    )
+                writer.write(cv2.cvtColor(composite_frame, cv2.COLOR_RGB2BGR))
+                frame_index += 1
+
+            cap_orig.release()
+            cap_synth.release()
+            writer.release()
+            logger.info(
+                "VisualCipher done: frames=%s mask_res=%sx%s fps=%s",
+                len(payload_frames),
+                mask_width,
+                mask_height,
+                fps,
+            )
+
+        visual_cipher = VisualCipherMetadata(
+            version=1,
+            pipelineId=request.pipelineId,
+            pipelineVersionHash=None,
+            prompt=request.prompt,
+            params=request.params,
+            seed=request.seed,
+            maskMode=request.maskMode,
+            maskResolution={"width": mask_width, "height": mask_height},
+            frameCount=len(payload_frames),
+            fps=fps,
+        )
+
+        composite_bytes = out_path.read_bytes()
+        return {
+            "success": True,
+            "visualCipher": visual_cipher.model_dump(exclude_none=True),
+            "encryptedMaskFrames": payload_frames,
+            "maskFrameIndexMap": index_map,
+            "maskPayloadCodec": "png-rgba",
+            "compositedVideoBase64": base64.b64encode(composite_bytes).decode(),
+        }
+    except Exception as e:
+        logger.error(f"Error generating visual cipher: {e}")
+        return {"success": False, "error": str(e)}
+
+
 @app.post("/api/v1/mp4p/load")
 async def load_mp4p_endpoint(request: LoadMP4PRequest):
     try:
-        now = int(datetime.now().timestamp() * 1000)
-        is_expired = now >= request.mp4pData.metadata.expiresAt
-        show_synthed = should_show_synthed(request.mp4pData)
-
-        if is_expired:
-            if show_synthed:
-                synthed_video = await decrypt_synthed_video(
-                    request.mp4pData, request.burnIndex
-                )
-                return {
-                    "success": True,
-                    "showSynthed": True,
-                    "videoBase64": base64.b64encode(synthed_video).decode() if synthed_video else None,
-                    "metadata": request.mp4pData.metadata.model_dump(),
-                    "selectedBurnIndex": request.burnIndex
-                }
-            return {
-                "success": True,
-                "showSynthed": False,
-                "videoBase64": None,
-                "metadata": request.mp4pData.metadata.model_dump(),
-                "selectedBurnIndex": None
-            }
-        original_video = await decrypt_video(request.mp4pData)
+        synthed_video = await decrypt_synthed_video(
+            request.mp4pData, request.burnIndex
+        )
         return {
             "success": True,
-            "showSynthed": False,
-            "videoBase64": base64.b64encode(original_video).decode(),
+            "showSynthed": True,
+            "videoBase64": base64.b64encode(synthed_video).decode() if synthed_video else None,
             "metadata": request.mp4pData.metadata.model_dump(),
-            "selectedBurnIndex": None
+            "selectedBurnIndex": request.burnIndex
         }
     except Exception as e:
         logger.error(f"Error loading MP4P: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/v1/mp4p/restore")
+async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
+    try:
+        if cv2 is None:
+            raise RuntimeError("OpenCV is required for restore.")
+
+        visual_cipher = VisualCipherMetadata.model_validate(request.visualCipher)
+        logger.info(
+            "Restore start: mp4p_id=%s burn_index=%s prompt_len=%s",
+            request.mp4pData.metadata.id,
+            request.burnIndex,
+            len(visual_cipher.prompt or ""),
+        )
+        synthed_video = await decrypt_synthed_video(
+            request.mp4pData, request.burnIndex
+        )
+        if not synthed_video:
+            raise RuntimeError("No burn video available for restore.")
+
+        encrypted_frames = request.mp4pData.encryptedMaskFrames or []
+        index_map = request.mp4pData.maskFrameIndexMap or []
+        if not encrypted_frames or not index_map:
+            raise RuntimeError("Missing encrypted mask payload.")
+
+        payload_by_index = {
+            index_map[i]: encrypted_frames[i] for i in range(len(index_map))
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            synth_path = Path(tmpdir) / "synth.mp4"
+            out_path = Path(tmpdir) / "restored.mp4"
+            synth_path.write_bytes(synthed_video)
+
+            cap = cv2.VideoCapture(str(synth_path))
+            if not cap.isOpened():
+                raise RuntimeError("Failed to open burn video.")
+
+            fps = visual_cipher.fps or float(cap.get(cv2.CAP_PROP_FPS) or 15.0)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+            if width <= 0 or height <= 0:
+                raise RuntimeError("Invalid burn video resolution.")
+
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(str(out_path), fourcc, fps, (width, height))
+            if not writer.isOpened():
+                raise RuntimeError("Failed to open output writer.")
+
+            mask_width = visual_cipher.maskResolution.get("width", 0)
+            mask_height = visual_cipher.maskResolution.get("height", 0)
+            if mask_width <= 0 or mask_height <= 0:
+                mask_width = width
+                mask_height = height
+
+            prompt_bytes = visual_cipher.prompt.encode()
+            params_bytes = json.dumps(visual_cipher.params, sort_keys=True).encode()
+            seed_bytes = str(visual_cipher.seed).encode()
+            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
+            base_key.update(base_key_material)
+            base_key_bytes = base_key.finalize()
+
+            frame_index = 0
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                synth_frame = rgb_frame
+                if (mask_height, mask_width) != (height, width):
+                    synth_frame = cv2.resize(
+                        rgb_frame, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR
+                    )
+
+                payload_b64 = payload_by_index.get(frame_index)
+                if payload_b64:
+                    payload_bytes = base64.b64decode(payload_b64)
+                    payload_img = Image.open(io.BytesIO(payload_bytes)).convert("RGBA")
+                    payload = np.array(payload_img)
+                    if mask_width <= 0 or mask_height <= 0:
+                        mask_height, mask_width = payload.shape[:2]
+                    encrypted = payload[:, :, :3]
+                    mask = payload[:, :, 3]
+
+                    frame_hash = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                    frame_hash.update(synth_frame.tobytes())
+                    frame_hash_bytes = frame_hash.finalize()
+
+                    h = hmac.HMAC(base_key_bytes, hashes.SHA256(), backend=default_backend())
+                    h.update(frame_index.to_bytes(4, "big"))
+                    h.update(frame_hash_bytes)
+                    frame_key = h.finalize()
+
+                    key_stream = bytearray()
+                    counter = 0
+                    target_len = mask_height * mask_width * 3
+                    while len(key_stream) < target_len:
+                        h = hmac.HMAC(frame_key, hashes.SHA256(), backend=default_backend())
+                        h.update(counter.to_bytes(4, "big"))
+                        key_stream.extend(h.finalize())
+                        counter += 1
+                    key_bytes = np.frombuffer(
+                        bytes(key_stream[:target_len]), dtype=np.uint8
+                    ).reshape((mask_height, mask_width, 3))
+
+                    decrypted = np.bitwise_xor(encrypted, key_bytes)
+                    if visual_cipher.maskMode == "inside":
+                        synth_frame[mask > 0] = decrypted[mask > 0]
+                    else:
+                        synth_frame[mask == 0] = decrypted[mask == 0]
+
+                if (mask_height, mask_width) != (height, width):
+                    synth_frame = cv2.resize(
+                        synth_frame, (width, height), interpolation=cv2.INTER_LINEAR
+                    )
+
+                out_bgr = cv2.cvtColor(synth_frame, cv2.COLOR_RGB2BGR)
+                writer.write(out_bgr)
+                frame_index += 1
+
+            cap.release()
+            writer.release()
+
+            restored_bytes = out_path.read_bytes()
+
+        logger.info("Restore done: bytes=%s", len(restored_bytes))
+        return {
+            "success": True,
+            "videoBase64": base64.b64encode(restored_bytes).decode(),
+        }
+    except Exception as e:
+        logger.error(f"Error restoring MP4P: {e}")
         return {"success": False, "error": str(e)}
 
 

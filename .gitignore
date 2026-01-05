@@ -7,7 +7,7 @@ __pycache__
 /models
 
 /logs
-
+/*.txt
 .DS_Store
 
 output.mp4

@@ -19,6 +19,18 @@ export interface MP4PMetadata {
     synthedIv: string;
     synthedAuthTag: string;
   }>;
+  visualCipher?: {
+    version: number;
+    pipelineId: string;
+    pipelineVersionHash?: string;
+    prompt: string;
+    params: Record<string, unknown>;
+    seed: number;
+    maskMode: string;
+    maskResolution: { width: number; height: number };
+    frameCount: number;
+    fps: number;
+  };
 }
 
 export interface MP4PData {
@@ -26,6 +38,9 @@ export interface MP4PData {
   encryptedVideo: string;
   encryptedSynthedVideo?: string;
   encryptedSynthedVideos?: string[];
+  encryptedMaskFrames?: string[];
+  maskFrameIndexMap?: number[];
+  maskPayloadCodec?: string;
   signature: string;
 }
 
@@ -51,6 +66,14 @@ async function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+export async function blobToBase64(
+  blob: Blob,
+  filename: string
+): Promise<string> {
+  const file = new File([blob], filename, { type: blob.type });
+  return fileToBase64(file);
 }
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
@@ -92,6 +115,26 @@ export async function encryptVideo(
   return result.data;
 }
 
+export async function createMP4P(videoId?: string): Promise<MP4PData> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ videoId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create MP4P: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error("Failed to create MP4P file");
+  }
+
+  return result.data;
+}
 export async function loadMP4P(
   mp4pFile: File,
   burnIndex?: number | null
@@ -122,15 +165,49 @@ export async function loadMP4P(
   return result;
 }
 
+export async function restoreMP4P(
+  mp4pData: MP4PData,
+  visualCipher: MP4PMetadata["visualCipher"],
+  burnIndex?: number | null
+): Promise<{ videoBase64: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/restore`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      mp4pData,
+      visualCipher,
+      burnIndex,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to restore MP4P: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || "Failed to restore MP4P");
+  }
+
+  return { videoBase64: result.videoBase64 };
+}
+
 export async function addSynthedVideo(
   mp4pData: MP4PData,
   synthedBlob: Blob,
-  prompts: string[]
+  prompts: string[],
+  visualCipher?: MP4PMetadata["visualCipher"],
+  encryptedMaskFrames?: string[],
+  maskFrameIndexMap?: number[],
+  maskPayloadCodec?: string
 ): Promise<MP4PData> {
   const mimeType = synthedBlob.type || "video/webm";
   const extension = mimeType.includes("mp4") ? "mp4" : "webm";
-  const synthedBase64 = await fileToBase64(
-    new File([synthedBlob], `synthed.${extension}`, { type: mimeType })
+  const synthedBase64 = await blobToBase64(
+    synthedBlob,
+    `synthed.${extension}`
   );
 
   const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/add-synthed`, {
@@ -142,6 +219,10 @@ export async function addSynthedVideo(
       mp4pData,
       synthedVideoBase64: synthedBase64,
       promptsUsed: prompts,
+      visualCipher,
+      encryptedMaskFrames,
+      maskFrameIndexMap,
+      maskPayloadCodec,
     }),
   });
 
@@ -155,6 +236,98 @@ export async function addSynthedVideo(
   }
 
   return result.data;
+}
+
+export async function addSynthedVideoBase64(
+  mp4pData: MP4PData,
+  synthedVideoBase64: string,
+  prompts: string[],
+  visualCipher?: MP4PMetadata["visualCipher"],
+  encryptedMaskFrames?: string[],
+  maskFrameIndexMap?: number[],
+  maskPayloadCodec?: string
+): Promise<MP4PData> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/add-synthed`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      mp4pData,
+      synthedVideoBase64,
+      promptsUsed: prompts,
+      visualCipher,
+      encryptedMaskFrames,
+      maskFrameIndexMap,
+      maskPayloadCodec,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to add synthed video: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error("Failed to add synthed video to MP4P");
+  }
+
+  return result.data;
+}
+
+export async function generateVisualCipherPayload(
+  mp4pData: MP4PData,
+  synthedVideoBase64: string,
+  synthedMimeType: string | undefined,
+  originalVideoBase64: string | undefined,
+  maskId: string,
+  prompt: string,
+  params: Record<string, unknown>,
+  seed: number,
+  pipelineId: string,
+  maskMode = "inside"
+): Promise<{
+  visualCipher: MP4PMetadata["visualCipher"];
+  encryptedMaskFrames: string[];
+  maskFrameIndexMap: number[];
+  maskPayloadCodec: string;
+  compositedVideoBase64?: string;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/visual-cipher`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      mp4pData,
+      synthedVideoBase64,
+      synthedMimeType,
+      originalVideoBase64,
+      maskId,
+      prompt,
+      params,
+      seed,
+      pipelineId,
+      maskMode,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate visual cipher: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || "Failed to generate visual cipher");
+  }
+
+  return {
+    visualCipher: result.visualCipher,
+    encryptedMaskFrames: result.encryptedMaskFrames,
+    maskFrameIndexMap: result.maskFrameIndexMap,
+    maskPayloadCodec: result.maskPayloadCodec,
+    compositedVideoBase64: result.compositedVideoBase64,
+  };
 }
 
 export async function decryptMP4P(

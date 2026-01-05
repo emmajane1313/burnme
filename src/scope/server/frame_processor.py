@@ -780,11 +780,14 @@ class FrameProcessor:
             if lora_scales is not None:
                 call_params["lora_scales"] = lora_scales
 
-            # Route video input based on VACE status
-            # We do not support combining normal V2V (denoising from noisy video latents) and VACE V2V editing
+            # Route video input based on VACE status.
+            # Only use VACE input frames when reference images are provided.
+            # Otherwise route to normal V2V so video_raw is available for masking.
             if video_input is not None:
                 vace_enabled = getattr(pipeline, "vace_enabled", False)
-                if vace_enabled:
+                vace_ref_images = self.parameters.get("vace_ref_images")
+                use_vace = bool(vace_enabled and vace_ref_images)
+                if use_vace:
                     # VACE V2V editing mode: route to vace_input_frames
                     call_params["vace_input_frames"] = video_input
                 else:

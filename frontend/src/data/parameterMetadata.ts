@@ -27,16 +27,6 @@ export const PARAMETER_METADATA: Record<string, ParameterMetadata> = {
     tooltip:
       "Random seed for reproducible generation. Using the same seed with the same settings will produce similar results.",
   },
-  manageCache: {
-    label: "Manage Cache:",
-    tooltip:
-      "Enables pipeline to automatically manage the cache which influences newly generated frames. Disable for manual control via Reset Cache.",
-  },
-  resetCache: {
-    label: "Reset Cache:",
-    tooltip:
-      "Clears previous frames from cache allowing new frames to be generated with fresh history. Only available when Manage Cache is disabled.",
-  },
   denoisingSteps: {
     label: "Denoising Step List",
     tooltip:

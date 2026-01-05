@@ -26,7 +26,6 @@ import {
   downloadPipelineModels,
   generateSam3Mask,
 } from "../lib/api";
-import { decryptMP4P, type MP4PData } from "../lib/mp4p-api";
 import { toast } from "sonner";
 import { sendLoRAScaleUpdates } from "../utils/loraHelpers";
 
@@ -143,9 +142,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
   const [burnedVideoUrl, setBurnedVideoUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"upload" | "play">("upload");
-  const [mp4pBurnData, setMp4pBurnData] = useState<MP4PData | null>(null);
-  const [mp4pBurnFile, setMp4pBurnFile] = useState<File | null>(null);
-  const [hideBurnSourcePreview, setHideBurnSourcePreview] = useState(false);
+  const hideBurnSourcePreview = false;
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [sam3MaskId, setSam3MaskId] = useState<string | null>(null);
   const sam3MaskMode: "inside" | "outside" = "inside";
@@ -164,12 +161,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
   };
 
-  useEffect(() => {
-    if (!mp4pBurnData) {
-      setHideBurnSourcePreview(false);
-      setMp4pBurnFile(null);
-    }
-  }, [mp4pBurnData]);
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -380,28 +371,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
   };
 
-  const handleCreateBurnFromMp4p = async (data: MP4PData) => {
-    setMp4pBurnData(data);
-    setViewMode("upload");
-    setHideBurnSourcePreview(true);
-
-    try {
-      const result = await decryptMP4P(data);
-      const videoBlob = new Blob(
-        [Uint8Array.from(atob(result.videoBase64), (c) => c.charCodeAt(0))],
-        { type: "video/mp4" }
-      );
-      const videoFile = new File([videoBlob], "burn-source.mp4", {
-        type: "video/mp4",
-      });
-      setMp4pBurnFile(videoFile);
-      setUploadedVideoFile(videoFile);
-      await handleUploadVideoFile(videoFile);
-    } catch (error) {
-      console.error("Failed to load MP4P burn source:", error);
-    }
-  };
-
   const handleTogglePause = () => {
     const nextPaused = !settings.paused;
     updateSettings({ paused: nextPaused });
@@ -564,14 +533,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     return handleVideoFileUpload(file);
   };
 
-  const handleManageCacheChange = (enabled: boolean) => {
-    updateSettings({ manageCache: enabled });
-    // Send manage cache update to backend
-    sendParameterUpdate({
-      manage_cache: enabled,
-    });
-  };
-
   const handleQuantizationChange = (quantization: "fp8_e4m3fn" | null) => {
     updateSettings({ quantization });
     // Note: This setting requires pipeline reload, so we don't send parameter update here
@@ -606,13 +567,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     // Note: Adding/removing LoRAs requires pipeline reload
   };
 
-
-  const handleResetCache = () => {
-    // Send reset cache command to backend
-    sendParameterUpdate({
-      reset_cache: true,
-    });
-  };
 
   const handleSpoutSenderChange = (
     spoutSender: { enabled: boolean; name: string } | undefined
@@ -1052,11 +1006,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.denoising_step_list = MAX_DENOISING_STEPS;
       }
 
-      // Cache management for pipelines that support it
-      if (pipelineInfo?.supportsCacheManagement) {
-        initialParameters.manage_cache = settings.manageCache ?? true;
-      }
-
       // KV cache bias for pipelines that support it
       if (pipelineInfo?.supportsKvCacheBias) {
         initialParameters.kv_cache_attention_bias =
@@ -1142,12 +1091,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   isConnecting={isConnecting}
                   isLoading={isLoading}
                   onVideoFileUpload={handleUploadVideoFile}
-                  baseMp4pData={mp4pBurnData}
-                  prefillVideoFile={mp4pBurnFile}
-                  fixedBurnDateTimestamp={mp4pBurnData?.metadata.expiresAt ?? null}
                   hideLocalPreview={hideBurnSourcePreview}
                   sourceVideoBlocked={sourceVideoBlocked}
                   pipelineId={settings.pipelineId}
+                  seed={settings.seed ?? 42}
                   prompts={promptItems}
                   onPromptsChange={setPromptItems}
                   onTransitionSubmit={handleTransitionSubmit}
@@ -1214,8 +1161,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   isLoading={isLoading}
                   seed={settings.seed ?? 42}
                   onSeedChange={handleSeedChange}
-                  manageCache={settings.manageCache ?? true}
-                  onManageCacheChange={handleManageCacheChange}
                   quantization={
                     settings.quantization !== undefined
                       ? settings.quantization
@@ -1224,7 +1169,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onQuantizationChange={handleQuantizationChange}
                   kvCacheAttentionBias={settings.kvCacheAttentionBias ?? 0.3}
                   onKvCacheAttentionBiasChange={handleKvCacheAttentionBiasChange}
-                  onResetCache={handleResetCache}
                   loras={settings.loras || []}
                   onLorasChange={handleLorasChange}
                   loraMergeStrategy={settings.loraMergeStrategy ?? "permanent_merge"}
@@ -1240,7 +1184,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       ) : (
         <div className="flex-1 flex px-4 pb-4 min-h-0 overflow-hidden justify-center items-start">
           <div className="w-full max-w-[720px] h-full">
-            <PlayPanel className="h-full" onCreateBurnVersion={handleCreateBurnFromMp4p} />
+            <PlayPanel className="h-full" />
           </div>
         </div>
       )}

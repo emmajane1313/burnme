@@ -142,7 +142,6 @@ export function useStreamState() {
     denoisingSteps: initialDefaults.denoisingSteps,
     noiseScale: initialDefaults.noiseScale,
     noiseController: initialDefaults.noiseController,
-    manageCache: true,
     quantization: null,
     kvCacheAttentionBias: 0.3,
     paused: false,

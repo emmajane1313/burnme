@@ -1,7 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 import httpx
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -13,6 +13,19 @@ from datetime import datetime
 from pydantic import BaseModel
 
 APP_SECRET = b'burnmewhileimhot_y2k_secret_2026_sparkles'
+
+class VisualCipherMetadata(BaseModel):
+    version: int
+    pipelineId: str
+    pipelineVersionHash: Optional[str] = None
+    prompt: str
+    params: dict[str, Any]
+    seed: int
+    maskMode: str
+    maskResolution: dict[str, int]
+    frameCount: int
+    fps: float
+
 
 class MP4PMetadata(BaseModel):
     id: str
@@ -29,12 +42,16 @@ class MP4PMetadata(BaseModel):
     synthedAuthTag: Optional[str] = None
     promptsUsed: Optional[list] = None
     synthedVersions: Optional[list] = None
+    visualCipher: Optional[VisualCipherMetadata] = None
 
 class MP4PData(BaseModel):
     metadata: MP4PMetadata
     encryptedVideo: str
     encryptedSynthedVideo: Optional[str] = None
     encryptedSynthedVideos: Optional[list[str]] = None
+    encryptedMaskFrames: Optional[list[str]] = None
+    maskFrameIndexMap: Optional[list[int]] = None
+    maskPayloadCodec: Optional[str] = None
     signature: str
 
 def derive_key(salt: str) -> bytes:
@@ -82,7 +99,7 @@ async def encrypt_video(video_data: bytes, expires_at: int, video_id: str) -> MP
         burned=False
     )
 
-    metadata_dict = metadata.model_dump()
+    metadata_dict = metadata.model_dump(exclude_none=True)
     signature = create_signature(metadata_dict)
 
     return MP4PData(
@@ -91,8 +108,33 @@ async def encrypt_video(video_data: bytes, expires_at: int, video_id: str) -> MP
         signature=signature
     )
 
+
+def create_public_mp4p(video_id: str) -> MP4PData:
+    salt = os.urandom(16).hex()
+    iv = os.urandom(16)
+    auth_tag = os.urandom(16)
+
+    metadata = MP4PMetadata(
+        id=video_id,
+        expiresAt=0,
+        salt=salt,
+        iv=iv.hex(),
+        authTag=auth_tag.hex(),
+        createdAt=int(datetime.now().timestamp() * 1000),
+        burned=True,
+    )
+
+    metadata_dict = metadata.model_dump(exclude_none=True)
+    signature = create_signature(metadata_dict)
+
+    return MP4PData(
+        metadata=metadata,
+        encryptedVideo=base64.b64encode(b"").decode(),
+        signature=signature,
+    )
+
 async def decrypt_video(mp4p_data: MP4PData) -> bytes:
-    metadata_dict = mp4p_data.metadata.model_dump()
+    metadata_dict = mp4p_data.metadata.model_dump(exclude_none=True)
 
     if not verify_signature(metadata_dict, mp4p_data.signature):
         raise ValueError("Invalid signature - file may be corrupted or tampered")
@@ -115,7 +157,11 @@ async def decrypt_video(mp4p_data: MP4PData) -> bytes:
 async def add_synthed_video(
     mp4p_data: MP4PData,
     synthed_video_data: bytes,
-    prompts_used: list
+    prompts_used: list,
+    visual_cipher: VisualCipherMetadata | None = None,
+    encrypted_mask_frames: list[str] | None = None,
+    mask_frame_index_map: list[int] | None = None,
+    mask_payload_codec: str | None = None,
 ) -> MP4PData:
     salt = os.urandom(16).hex()
     iv = os.urandom(16)
@@ -155,7 +201,16 @@ async def add_synthed_video(
     mp4p_data.metadata.promptsUsed = prompts_used
     mp4p_data.encryptedSynthedVideo = encrypted_versions[-1]
 
-    metadata_dict = mp4p_data.metadata.model_dump()
+    if visual_cipher is not None:
+        mp4p_data.metadata.visualCipher = visual_cipher
+    if encrypted_mask_frames is not None:
+        mp4p_data.encryptedMaskFrames = encrypted_mask_frames
+    if mask_frame_index_map is not None:
+        mp4p_data.maskFrameIndexMap = mask_frame_index_map
+    if mask_payload_codec is not None:
+        mp4p_data.maskPayloadCodec = mask_payload_codec
+
+    metadata_dict = mp4p_data.metadata.model_dump(exclude_none=True)
     mp4p_data.signature = create_signature(metadata_dict)
 
     return mp4p_data
@@ -184,7 +239,7 @@ async def decrypt_synthed_video(
         iv = mp4p_data.metadata.synthedIv
         auth_tag = mp4p_data.metadata.synthedAuthTag
 
-    metadata_dict = mp4p_data.metadata.model_dump()
+    metadata_dict = mp4p_data.metadata.model_dump(exclude_none=True)
     if not verify_signature(metadata_dict, mp4p_data.signature):
         raise ValueError("Invalid signature - file may be corrupted or tampered")
 
@@ -253,7 +308,7 @@ async def burn_video(
     mp4p_data.metadata.authTag = auth_tag.hex()
     mp4p_data.encryptedVideo = base64.b64encode(encrypted_video).decode()
 
-    metadata_dict = mp4p_data.metadata.model_dump()
+    metadata_dict = mp4p_data.metadata.model_dump(exclude_none=True)
     mp4p_data.signature = create_signature(metadata_dict)
 
     return mp4p_data

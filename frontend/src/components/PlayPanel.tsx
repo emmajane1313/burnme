@@ -4,6 +4,7 @@ import { Spinner } from "./ui/spinner";
 import {
   downloadMP4P,
   loadMP4P,
+  restoreMP4P,
   type MP4PData,
   type MP4PMetadata,
 } from "../lib/mp4p-api";
@@ -26,10 +27,8 @@ function base64ToUrl(base64: string): string {
 
 export function PlayPanel({
   className = "",
-  onCreateBurnVersion,
 }: {
   className?: string;
-  onCreateBurnVersion?: (mp4pData: MP4PData) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mp4pFile, setMp4pFile] = useState<File | null>(null);
@@ -45,10 +44,15 @@ export function PlayPanel({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [countdownText, setCountdownText] = useState<string | null>(null);
-  const [showBurnedOverlay, setShowBurnedOverlay] = useState(false);
-
-  const isExpired = metadata ? Date.now() >= metadata.expiresAt : false;
+  const [keyFile, setKeyFile] = useState<File | null>(null);
+  const [keyData, setKeyData] = useState<MP4PMetadata["visualCipher"] | null>(null);
+  const [keyBurnIndex, setKeyBurnIndex] = useState<number | null>(null);
+  const [manualPrompt, setManualPrompt] = useState("");
+  const [manualSeed, setManualSeed] = useState("42");
+  const [manualParams, setManualParams] = useState("{}");
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  
 
   const burnOptions = useMemo<BurnVersionOption[]>(() => {
     if (!metadata) return [];
@@ -71,57 +75,6 @@ export function PlayPanel({
   }, [volume, isMuted]);
 
   useEffect(() => {
-    if (!metadata || !mp4pFile) return;
-    if (metadata.expiresAt <= Date.now()) return;
-
-    const timeUntilExpire = metadata.expiresAt - Date.now();
-    const timer = window.setTimeout(() => {
-      handleLoad(mp4pFile, selectedBurnIndex);
-      setShowBurnedOverlay(true);
-    }, timeUntilExpire);
-
-    return () => window.clearTimeout(timer);
-  }, [metadata, mp4pFile, selectedBurnIndex]);
-
-  useEffect(() => {
-    if (!showBurnedOverlay) return;
-    const timer = window.setTimeout(() => {
-      setShowBurnedOverlay(false);
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, [showBurnedOverlay]);
-
-  useEffect(() => {
-    if (!metadata) {
-      setCountdownText(null);
-      return;
-    }
-
-    const updateCountdown = () => {
-      const now = Date.now();
-      const diffMs = metadata.expiresAt - now;
-      if (diffMs <= 0) {
-        setCountdownText("Burn date passed");
-        return;
-      }
-
-      const totalSeconds = Math.floor(diffMs / 1000);
-      const days = Math.floor(totalSeconds / 86400);
-      const hours = Math.floor((totalSeconds % 86400) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-
-      setCountdownText(
-        `Burns in: ${days}d ${hours}h ${minutes}m ${seconds}s`
-      );
-    };
-
-    updateCountdown();
-    const timer = window.setInterval(updateCountdown, 1000);
-    return () => window.clearInterval(timer);
-  }, [metadata]);
-
-  useEffect(() => {
     return () => {
       if (videoUrl) {
         URL.revokeObjectURL(videoUrl);
@@ -139,39 +92,22 @@ export function PlayPanel({
 
       const result = await loadMP4P(file, burnIndex);
       setMetadata(result.metadata);
-      const expired = Date.now() >= result.metadata.expiresAt;
-      const hasMultipleBurns = (result.metadata.synthedVersions?.length || 0) > 0;
-
-      if (expired && result.showSynthed && burnIndex == null && hasMultipleBurns) {
-        await handleLoad(file, 0);
-        return;
-      }
-
-      if (result.showSynthed || !expired) {
-        if (result.videoBase64) {
-          const url = base64ToUrl(result.videoBase64);
-          setVideoUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return url;
-          });
-        } else {
-          setVideoUrl(null);
-        }
+      if (result.videoBase64) {
+        const url = base64ToUrl(result.videoBase64);
+        setVideoUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
       } else {
-        // Expired but no synthed video: never show original.
         setVideoUrl(null);
       }
 
-      if (result.showSynthed && (burnIndex != null || hasMultipleBurns)) {
-        setSelectedBurnIndex(
-          typeof result.selectedBurnIndex === "number"
-            ? result.selectedBurnIndex
-            : burnIndex ?? 0
-        );
+      if (typeof result.selectedBurnIndex === "number") {
+        setSelectedBurnIndex(result.selectedBurnIndex);
+      } else if (burnIndex != null) {
+        setSelectedBurnIndex(burnIndex);
       } else {
-        setSelectedBurnIndex(
-          typeof result.selectedBurnIndex === "number" ? result.selectedBurnIndex : null
-        );
+        setSelectedBurnIndex(null);
       }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Failed to load MP4P");
@@ -185,6 +121,76 @@ export function PlayPanel({
     if (!file) return;
     setMp4pFile(file);
     await handleLoad(file);
+  };
+
+  const handleKeyFileChange = async (file: File | null) => {
+    if (!file) return;
+    setKeyFile(file);
+    setRestoreError(null);
+    try {
+      const fileText = await file.text();
+      const parsed = JSON.parse(fileText);
+      const visualCipher = parsed.visualCipher ?? parsed;
+      if (!visualCipher?.prompt || !visualCipher?.params || visualCipher.seed === undefined) {
+        throw new Error("Invalid key file");
+      }
+      setKeyData(visualCipher);
+      setManualPrompt(String(visualCipher.prompt ?? ""));
+      setManualSeed(String(visualCipher.seed ?? ""));
+      setManualParams(JSON.stringify(visualCipher.params ?? {}, null, 2));
+      setKeyBurnIndex(
+        typeof parsed.burnIndex === "number" ? parsed.burnIndex : null
+      );
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : "Invalid key file");
+      setKeyData(null);
+      setKeyBurnIndex(null);
+    }
+  };
+
+  const handleManualKeyApply = () => {
+    try {
+      const parsedParams = JSON.parse(manualParams || "{}");
+      const seed = Number(manualSeed);
+      if (!Number.isFinite(seed)) {
+        throw new Error("Seed must be a number");
+      }
+      if (!manualPrompt.trim()) {
+        throw new Error("Prompt is required");
+      }
+      setKeyData({
+        version: 1,
+        pipelineId: metadata?.visualCipher?.pipelineId || "memflow",
+        prompt: manualPrompt.trim(),
+        params: parsedParams,
+        seed,
+        maskMode: metadata?.visualCipher?.maskMode || "inside",
+        maskResolution: metadata?.visualCipher?.maskResolution || { width: 0, height: 0 },
+        frameCount: metadata?.visualCipher?.frameCount || 0,
+        fps: metadata?.visualCipher?.fps || 0,
+      });
+      setRestoreError(null);
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : "Invalid manual key");
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!mp4pData || !keyData) return;
+    setIsRestoring(true);
+    setRestoreError(null);
+    try {
+      const result = await restoreMP4P(mp4pData, keyData, keyBurnIndex);
+      const url = base64ToUrl(result.videoBase64);
+      setVideoUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : "Restore failed");
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   const handleSelectBurn = async (index: number) => {
@@ -260,14 +266,6 @@ export function PlayPanel({
           )}
         </div>
 
-        {countdownText && (
-          <div className="text-xs">
-            <div className="mac-translucent-ruby px-3 py-1 inline-flex items-center">
-              {countdownText}
-            </div>
-          </div>
-        )}
-
         <div className="w-full aspect-video bg-black/40 rounded flex items-center justify-center overflow-hidden relative">
           {isLoading ? (
             <div className="text-center text-xs text-muted-foreground">
@@ -291,14 +289,7 @@ export function PlayPanel({
             />
           ) : (
             <div className="text-xs text-muted-foreground">
-              {isExpired && metadata ? "No burned video available." : "No video loaded."}
-            </div>
-          )}
-          {showBurnedOverlay && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="mac-translucent-ruby px-4 py-2 text-xs shadow-lg">
-                Burned version unlocked
-              </div>
+              No video loaded.
             </div>
           )}
         </div>
@@ -358,7 +349,83 @@ export function PlayPanel({
           </div>
         </div>
 
-        {isExpired && burnOptions.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium">Unlock (Key File / Manual)</div>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <input
+              type="file"
+              accept=".json"
+              onChange={(event) =>
+                handleKeyFileChange(event.target.files?.[0] ?? null)
+              }
+              className="hidden"
+              id="mp4p-key-upload"
+            />
+            <label
+              htmlFor="mp4p-key-upload"
+              className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
+            >
+              Load Key File
+            </label>
+            {keyFile && (
+              <span className="text-[11px] text-muted-foreground">
+                {keyFile.name}
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <label className="flex flex-col gap-1">
+              Prompt
+              <textarea
+                value={manualPrompt}
+                onChange={(event) => setManualPrompt(event.target.value)}
+                className="mac-translucent-input h-16 resize-none"
+              />
+            </label>
+            <div className="flex items-center gap-2">
+              <label className="flex flex-col gap-1">
+                Seed
+                <input
+                  type="number"
+                  value={manualSeed}
+                  onChange={(event) => setManualSeed(event.target.value)}
+                  className="mac-translucent-input w-28"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleManualKeyApply}
+                className="mac-frosted-button px-3 py-1 text-xs"
+              >
+                Use Manual Key
+              </button>
+            </div>
+            <label className="flex flex-col gap-1">
+              Params (JSON)
+              <textarea
+                value={manualParams}
+                onChange={(event) => setManualParams(event.target.value)}
+                className="mac-translucent-input h-24 resize-none font-mono text-[11px]"
+              />
+            </label>
+          </div>
+
+          {restoreError && (
+            <div className="text-xs text-red-500">{restoreError}</div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleRestore}
+            disabled={!mp4pData || !keyData || isRestoring}
+            className="mac-frosted-button w-full px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {isRestoring ? "Restoring..." : "Restore with Key"}
+          </button>
+        </div>
+
+        {burnOptions.length > 0 && (
           <div className="space-y-2">
             <div className="text-xs font-medium">Burn versions</div>
             <div className="flex flex-wrap gap-2">
@@ -375,20 +442,6 @@ export function PlayPanel({
                 </button>
               ))}
             </div>
-          </div>
-        )}
-
-        {isExpired && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium">Create burn version</div>
-            <button
-              type="button"
-              className="mac-frosted-button px-3 py-1 text-xs"
-              onClick={() => mp4pData && onCreateBurnVersion?.(mp4pData)}
-              disabled={!mp4pData}
-            >
-              Create Burn
-            </button>
           </div>
         )}
 

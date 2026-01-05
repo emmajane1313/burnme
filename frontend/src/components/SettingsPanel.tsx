@@ -12,7 +12,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
 import { SliderWithInput } from "./ui/slider-with-input";
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { PARAMETER_METADATA } from "../data/parameterMetadata";
 import { useLocalSliderValue } from "../hooks/useLocalSliderValue";
 import type {
@@ -34,13 +34,10 @@ interface SettingsPanelProps {
   isLoading?: boolean;
   seed?: number;
   onSeedChange?: (seed: number) => void;
-  manageCache?: boolean;
-  onManageCacheChange?: (enabled: boolean) => void;
   quantization?: "fp8_e4m3fn" | null;
   onQuantizationChange?: (quantization: "fp8_e4m3fn" | null) => void;
   kvCacheAttentionBias?: number;
   onKvCacheAttentionBiasChange?: (bias: number) => void;
-  onResetCache?: () => void;
   loras?: LoRAConfig[];
   onLorasChange: (loras: LoRAConfig[]) => void;
   loraMergeStrategy?: LoraMergeStrategy;
@@ -61,13 +58,10 @@ export function SettingsPanel({
   isLoading = false,
   seed = 42,
   onSeedChange,
-  manageCache = true,
-  onManageCacheChange,
   quantization = "fp8_e4m3fn",
   onQuantizationChange,
   kvCacheAttentionBias = 0.3,
   onKvCacheAttentionBiasChange,
-  onResetCache,
   loras = [],
   onLorasChange,
   loraMergeStrategy = "permanent_merge",
@@ -238,40 +232,6 @@ export function SettingsPanel({
                   />
                 )}
 
-                <div className="flex items-center justify-between gap-2">
-                  <LabelWithTooltip
-                    label={PARAMETER_METADATA.manageCache.label}
-                    tooltip={PARAMETER_METADATA.manageCache.tooltip}
-                    className="text-sm text-foreground"
-                  />
-                  <Toggle
-                    pressed={manageCache}
-                    onPressedChange={onManageCacheChange || (() => {})}
-                    variant="outline"
-                    size="sm"
-                    className="h-7"
-                  >
-                    {manageCache ? "ON" : "OFF"}
-                  </Toggle>
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <LabelWithTooltip
-                    label={PARAMETER_METADATA.resetCache.label}
-                    tooltip={PARAMETER_METADATA.resetCache.tooltip}
-                    className="text-sm text-foreground"
-                  />
-                  <Button
-                    type="button"
-                    onClick={onResetCache || (() => {})}
-                    disabled={manageCache}
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
