@@ -33,6 +33,7 @@ except Exception:  # pragma: no cover - optional dependency
 class Sam3MaskSession:
     session_id: str
     mask_dir: Path
+    video_path: Path
     height: int
     width: int
     frame_count: int
@@ -246,6 +247,7 @@ class Sam3MaskManager:
         session = Sam3MaskSession(
             session_id=session_id,
             mask_dir=session_dir,
+            video_path=video_path,
             height=height,
             width=width,
             frame_count=frame_count,
@@ -309,6 +311,9 @@ class Sam3MaskManager:
                 last_idx,
             )
         return frames
+
+    def get_session(self, session_id: str) -> Sam3MaskSession | None:
+        return self._sessions.get(session_id)
 
     def get_masks_for_times(
         self,

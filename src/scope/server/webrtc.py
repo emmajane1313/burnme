@@ -187,6 +187,17 @@ class WebRTCManager:
                 if track.kind == "video":
                     video_track.initialize_input_processing(track)
 
+            server_video_source = initial_parameters.get("server_video_source")
+            server_video_mask_id = initial_parameters.get("server_video_mask_id")
+            if server_video_source == "sam3" and server_video_mask_id:
+                try:
+                    video_track.initialize_server_video(
+                        server_video_mask_id,
+                        loop=bool(initial_parameters.get("server_video_loop", True)),
+                    )
+                except Exception as exc:
+                    logger.error("Failed to start server video input: %s", exc)
+
             @pc.on("connectionstatechange")
             async def on_connectionstatechange():
                 logger.info(
@@ -250,6 +261,16 @@ class WebRTCManager:
                             return
 
                         logger.info(f"Received parameter update: {data}")
+
+                        if session.video_track:
+                            if "server_video_reset" in data and data.get(
+                                "server_video_reset"
+                            ):
+                                session.video_track.reset_server_video()
+                            if "server_video_loop" in data:
+                                session.video_track.set_server_video_loop(
+                                    bool(data["server_video_loop"])
+                                )
 
                         # Check for paused parameter and call pause() method on video track
                         if "paused" in data and session.video_track:

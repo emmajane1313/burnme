@@ -121,6 +121,22 @@ class Parameters(BaseModel):
         default="inside",
         description="Apply synth inside or outside the SAM3 mask.",
     )
+    server_video_source: Literal["sam3"] | None = Field(
+        default=None,
+        description="Use server-side video source instead of WebRTC input.",
+    )
+    server_video_mask_id: str | None = Field(
+        default=None,
+        description="SAM3 mask ID to bind server-side video source.",
+    )
+    server_video_loop: bool | None = Field(
+        default=None,
+        description="Loop server-side video input.",
+    )
+    server_video_reset: bool | None = Field(
+        default=None,
+        description="Reset server-side video to the first frame.",
+    )
 
 
 class SpoutConfig(BaseModel):

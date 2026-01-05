@@ -202,7 +202,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     updateVideoTrack,
     sendParameterUpdate,
     sendFrameMeta,
-  } = useWebRTC();
+  } = useWebRTC({
+    onServerVideoEnded: () => {
+      stopRecording();
+      stopStream();
+      setSynthEndPending(true);
+    },
+  });
   const {
     isRecording: isRecordingSynthed,
     recordedBlob: recordedSynthedBlob,
@@ -812,24 +818,29 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
 
     debugLog("Burn: start", { prompt: promptText });
+    const serverVideoEnabled = Boolean(sam3MaskId);
     setSynthLockedPrompt(promptText);
     setIsSynthCapturing(true);
     setSynthEndPending(false);
     setConfirmedSynthedBlob(null);
     resetRecording();
 
-    const restartedStream = await restartVideoStream({
-      loop: false,
-      onEnded: () => {
-        stopRecording();
-        stopStream();
-        setSynthEndPending(true);
-      },
-    });
-
-    if (!restartedStream) {
-      setIsSynthCapturing(false);
-      return;
+    let restartedStream: MediaStream | null = null;
+    if (serverVideoEnabled) {
+      sendParameterUpdate({ server_video_reset: true, server_video_loop: false });
+    } else {
+      restartedStream = await restartVideoStream({
+        loop: false,
+        onEnded: () => {
+          stopRecording();
+          stopStream();
+          setSynthEndPending(true);
+        },
+      });
+      if (!restartedStream) {
+        setIsSynthCapturing(false);
+        return;
+      }
     }
 
     onVideoPlayingCallbackRef.current = () => {
@@ -845,7 +856,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       const synthStarted = await handleStartStream(
         settings.pipelineId,
         [{ text: promptText, weight: 100 }],
-        restartedStream,
+        serverVideoEnabled ? null : restartedStream,
         false
       );
 
@@ -859,24 +870,26 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       return;
     }
 
-    // Keep current session alive and just replace the input track
-    const trackReplaced = await updateVideoTrack(restartedStream);
-    if (!trackReplaced) {
-      const synthStarted = await handleStartStream(
-        settings.pipelineId,
-        [{ text: promptText, weight: 100 }],
-        restartedStream,
-        false
-      );
+    if (!serverVideoEnabled && restartedStream) {
+      // Keep current session alive and just replace the input track
+      const trackReplaced = await updateVideoTrack(restartedStream);
+      if (!trackReplaced) {
+        const synthStarted = await handleStartStream(
+          settings.pipelineId,
+          [{ text: promptText, weight: 100 }],
+          restartedStream,
+          false
+        );
 
-      if (!synthStarted && restartedStream) {
-        pendingSynthRef.current = {
-          stream: restartedStream,
-          prompt: promptText,
-          pipelineId: settings.pipelineId,
-        };
+        if (!synthStarted && restartedStream) {
+          pendingSynthRef.current = {
+            stream: restartedStream,
+            prompt: promptText,
+            pipelineId: settings.pipelineId,
+          };
+        }
+        return;
       }
-      return;
     }
 
     // Send current prompt + parameters without resetting the session
@@ -896,7 +909,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     setIsWaitingForFrames(false);
     stopRecording();
     stopStream();
-    await restartVideoStream({ loop: true });
+    if (sam3MaskId) {
+      sendParameterUpdate({ server_video_reset: true, server_video_loop: true });
+    } else {
+      await restartVideoStream({ loop: true });
+    }
   };
 
   const handleDeleteBurn = async () => {
@@ -1061,7 +1078,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       });
 
       // Check video requirements based on input mode
-      const needsVideoInput = true;
+      const serverVideoEnabled = Boolean(sam3MaskId);
+      const needsVideoInput = !serverVideoEnabled;
       const isSpoutMode = false;
 
       // Only send video stream for pipelines that need video input (not in Spout mode)
@@ -1094,6 +1112,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         vace_context_scale?: number;
         sam3_mask_id?: string | null;
         sam3_mask_mode?: "inside" | "outside";
+        server_video_source?: "sam3";
+        server_video_mask_id?: string;
+        server_video_loop?: boolean;
       } = {
         // Signal the intended input mode to the backend so it doesn't
         // briefly fall back to text mode before video frames arrive
@@ -1147,6 +1168,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       if (sam3MaskId) {
         initialParameters.sam3_mask_id = sam3MaskId;
         initialParameters.sam3_mask_mode = sam3MaskMode;
+        initialParameters.server_video_source = "sam3";
+        initialParameters.server_video_mask_id = sam3MaskId;
+        initialParameters.server_video_loop = true;
       }
 
       // Control paused state when starting a fresh stream

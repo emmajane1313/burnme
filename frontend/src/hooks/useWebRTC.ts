@@ -19,11 +19,15 @@ interface InitialParameters {
   kv_cache_attention_bias?: number;
   vace_ref_images?: string[];
   vace_context_scale?: number;
+  server_video_source?: "sam3";
+  server_video_mask_id?: string;
+  server_video_loop?: boolean;
 }
 
 interface UseWebRTCOptions {
   /** Callback function called when the stream stops on the backend */
   onStreamStop?: () => void;
+  onServerVideoEnded?: () => void;
 }
 
 /**
@@ -120,6 +124,11 @@ export function useWebRTC(options?: UseWebRTCOptions) {
               // Notify parent component
               if (options?.onStreamStop) {
                 options.onStreamStop();
+              }
+            }
+            if (data.type === "server_video_ended") {
+              if (options?.onServerVideoEnded) {
+                options.onServerVideoEnded();
               }
             }
           } catch (error) {
@@ -342,6 +351,10 @@ export function useWebRTC(options?: UseWebRTCOptions) {
       vace_context_scale?: number;
       sam3_mask_id?: string | null;
       sam3_mask_mode?: "inside" | "outside";
+      server_video_source?: "sam3";
+      server_video_mask_id?: string;
+      server_video_loop?: boolean;
+      server_video_reset?: boolean;
     }) => {
       if (
         dataChannelRef.current &&
