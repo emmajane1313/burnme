@@ -1229,14 +1229,14 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
         if session is None:
             raise RuntimeError(f"SAM3 session {request.maskId} not found")
 
-            logger.info(
-                "VisualCipher start: mp4p_id=%s mask_id=%s pipeline=%s seed=%s prompt_len=%s",
-                request.mp4pData.metadata.id,
-                request.maskId,
-                request.pipelineId,
-                request.seed,
-                len(request.prompt or ""),
-            )
+        logger.info(
+            "VisualCipher start: mp4p_id=%s mask_id=%s pipeline=%s seed=%s prompt_len=%s",
+            request.mp4pData.metadata.id,
+            request.maskId,
+            request.pipelineId,
+            request.seed,
+            len(request.prompt or ""),
+        )
 
         if request.originalVideoBase64:
             original_video = base64.b64decode(request.originalVideoBase64)
@@ -1293,9 +1293,15 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                     synth_fps = float(request.synthedFps)
                     frame_count = 0
                 else:
-                    synth_meta = synth_reader.get_meta_data()
-                    synth_fps = float(synth_meta.get("fps") or 0.0)
-                    frame_count = int(synth_meta.get("nframes") or 0)
+                    synth_meta = {}
+                    try:
+                        synth_meta = synth_reader.get_meta_data()
+                        synth_fps = float(synth_meta.get("fps") or 0.0)
+                        frame_count = int(synth_meta.get("nframes") or 0)
+                    except Exception as meta_exc:
+                        logger.error("VisualCipher synth meta failed: %s", meta_exc)
+                        synth_fps = 0.0
+                        frame_count = 0
             else:
                 synth_fps = float(cap_synth.get(cv2.CAP_PROP_FPS) or 0.0)
                 frame_count = int(cap_synth.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
@@ -1326,19 +1332,18 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 "imageio" if use_imageio_synth else "opencv",
             )
 
-            if iio is None:
-                raise RuntimeError("imageio is required for burn video encoding.")
-            out_path = Path(tmpdir) / "burn_composite.webm"
-            writer = iio.get_writer(
-                str(out_path),
-                fps=fps,
-                codec="libvpx",
-                quality=8,
-                macro_block_size=None,
-            )
+            payload_frames: list[str] = []
+            index_map: list[int] = []
+
+            prompt_bytes = request.prompt.encode()
+            params_bytes = json.dumps(request.params, sort_keys=True).encode()
+            seed_bytes = str(request.seed).encode()
+            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
+            base_key.update(base_key_material)
+            base_key_bytes = base_key.finalize()
 
             frame_index = 0
-            frame_map: list[tuple[int, int]] = []
             last_orig_index = -1
             last_orig_frame = None
             synth_iter = (
@@ -1396,90 +1401,9 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
 
                 orig_rgb = cv2.cvtColor(last_orig_frame, cv2.COLOR_BGR2RGB)
                 if use_imageio_synth:
-                    synth_rgb = frame_synth
+                    burn_rgb = frame_synth
                 else:
-                    synth_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
-                if orig_rgb.shape[:2] != (mask_height, mask_width):
-                    orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
-                if synth_rgb.shape[:2] != (mask_height, mask_width):
-                    synth_rgb = cv2.resize(synth_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
-
-                mask_bool = mask > 0
-                if request.maskMode == "outside":
-                    mask_bool = ~mask_bool
-
-                composite_frame = orig_rgb.copy()
-                composite_frame[mask_bool] = synth_rgb[mask_bool]
-
-                if (mask_height, mask_width) != (out_height, out_width):
-                    composite_frame = cv2.resize(
-                        composite_frame,
-                        (out_width, out_height),
-                        interpolation=cv2.INTER_LINEAR,
-                    )
-                writer.append_data(composite_frame)
-                frame_map.append((orig_index, mask_index))
-                frame_index += 1
-
-            cap_orig.release()
-            if cap_synth is not None:
-                cap_synth.release()
-            if synth_reader is not None:
-                synth_reader.close()
-            writer.close()
-
-            if frame_index == 0:
-                raise RuntimeError("No synth frames decoded; burn video not created.")
-            if not out_path.exists():
-                raise RuntimeError("Burn composite was not created.")
-
-            payload_frames: list[str] = []
-            index_map: list[int] = []
-
-            prompt_bytes = request.prompt.encode()
-            params_bytes = json.dumps(request.params, sort_keys=True).encode()
-            seed_bytes = str(request.seed).encode()
-            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
-            base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
-            base_key.update(base_key_material)
-            base_key_bytes = base_key.finalize()
-
-            cap_orig = cv2.VideoCapture(str(original_path))
-            if not cap_orig.isOpened():
-                raise RuntimeError("Failed to open original video stream for payload.")
-
-            burn_reader = None
-            if iio is None:
-                raise RuntimeError("imageio is required for burn decoding.")
-            burn_reader = iio.get_reader(str(out_path), format="pyav")
-
-            last_orig_index = -1
-            last_orig_frame = None
-            for frame_index, burn_frame in enumerate(burn_reader):
-                if frame_index >= len(frame_map):
-                    break
-                orig_index, mask_index = frame_map[frame_index]
-                if orig_index != last_orig_index:
-                    cap_orig.set(cv2.CAP_PROP_POS_FRAMES, orig_index)
-                    ret_orig, frame_orig = cap_orig.read()
-                    if not ret_orig:
-                        break
-                    last_orig_index = orig_index
-                    last_orig_frame = frame_orig
-                if last_orig_frame is None:
-                    break
-
-                mask_path = mask_dir / f"{mask_index:06d}.png"
-                if mask_path.exists():
-                    mask = np.array(Image.open(mask_path).convert("L"))
-                else:
-                    mask = np.zeros((mask_height, mask_width), dtype=np.uint8)
-
-                if mask.shape[0] != mask_height or mask.shape[1] != mask_width:
-                    mask = cv2.resize(mask, (mask_width, mask_height), interpolation=cv2.INTER_NEAREST)
-
-                orig_rgb = cv2.cvtColor(last_orig_frame, cv2.COLOR_BGR2RGB)
-                burn_rgb = burn_frame
+                    burn_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
                 if orig_rgb.shape[:2] != (mask_height, mask_width):
                     orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
                 if burn_rgb.shape[:2] != (mask_height, mask_width):
@@ -1519,9 +1443,13 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 payload_frames.append(base64.b64encode(buf.getvalue()).decode())
                 index_map.append(frame_index)
 
+                frame_index += 1
+
             cap_orig.release()
-            if burn_reader is not None:
-                burn_reader.close()
+            if cap_synth is not None:
+                cap_synth.release()
+            if synth_reader is not None:
+                synth_reader.close()
 
             logger.info(
                 "VisualCipher done: frames=%s mask_res=%sx%s fps=%s",
@@ -1530,8 +1458,6 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 mask_height,
                 fps,
             )
-
-            composite_bytes = out_path.read_bytes()
 
         visual_cipher = VisualCipherMetadata(
             version=1,
@@ -1552,7 +1478,7 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             "encryptedMaskFrames": payload_frames,
             "maskFrameIndexMap": index_map,
             "maskPayloadCodec": "png-rgba",
-            "compositedVideoBase64": base64.b64encode(composite_bytes).decode(),
+            "compositedVideoBase64": None,
         }
     except Exception as e:
         logger.error(f"Error generating visual cipher: {e}")
