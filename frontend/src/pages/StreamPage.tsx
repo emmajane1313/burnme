@@ -239,6 +239,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const awaitingServerStartRef = useRef(false);
   const pendingRecordStartRef = useRef(false);
   const captureResetInFlightRef = useRef(false);
+  const serverStartUnpauseSentRef = useRef(false);
 
   const isLoading = isDownloading || isPipelineLoading || isConnecting;
 
@@ -662,7 +663,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       return;
     }
     if (awaitingServerStartRef.current) {
-      debugLog("Burn: waiting on server video start");
+      if (!serverStartUnpauseSentRef.current) {
+        serverStartUnpauseSentRef.current = true;
+        sendParameterUpdate({ server_video_pause: false });
+        debugLog("Burn: unpausing server video");
+      } else {
+        debugLog("Burn: waiting on server video start");
+      }
       return;
     }
     const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
@@ -814,6 +821,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = null;
       captureResetInFlightRef.current = true;
+      serverStartUnpauseSentRef.current = false;
+      sendParameterUpdate({ server_video_pause: true });
       sendParameterUpdate({
         capture_mask_reset: true,
         capture_mask_indices: true,
@@ -845,6 +854,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = remoteStreamRef.current;
       captureResetInFlightRef.current = true;
+      serverStartUnpauseSentRef.current = false;
       sendParameterUpdate({
         capture_mask_reset: true,
         capture_mask_indices: true,
@@ -912,6 +922,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
     awaitingServerStartRef.current = false;
+    serverStartUnpauseSentRef.current = false;
     pendingSynthRef.current = null;
     setIsWaitingForFrames(false);
     stopRecording();
@@ -933,6 +944,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
     awaitingServerStartRef.current = false;
+    serverStartUnpauseSentRef.current = false;
     sendParameterUpdate({ capture_mask_indices: false });
     await restartVideoStream({ loop: true });
     await handleStartStream();

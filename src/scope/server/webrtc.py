@@ -261,6 +261,10 @@ class WebRTCManager:
                                 session.video_track.set_server_video_loop(
                                     bool(data["server_video_loop"])
                                 )
+                            if "server_video_pause" in data:
+                                session.video_track.pause_server_video(
+                                    bool(data["server_video_pause"])
+                                )
 
                         # Check for paused parameter and call pause() method on video track
                         if "paused" in data and session.video_track:

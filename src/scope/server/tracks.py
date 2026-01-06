@@ -48,6 +48,7 @@ class VideoProcessingTrack(MediaStreamTrack):
         self._server_video_loop = True
         self._server_video_reset = threading.Event()
         self._server_video_stop = threading.Event()
+        self._server_video_paused = threading.Event()
         self._server_video_thread: threading.Thread | None = None
         self._server_video_fps = None
         self._server_video_path: Path | None = None
@@ -140,6 +141,7 @@ class VideoProcessingTrack(MediaStreamTrack):
         self.input_task_running = True
         self.initialize_output_processing()
         self._server_video_stop.clear()
+        self._server_video_paused.clear()
         self._server_video_reset.clear()
         self._server_video_thread = threading.Thread(
             target=self._server_video_loop_fn,
@@ -156,6 +158,13 @@ class VideoProcessingTrack(MediaStreamTrack):
 
     def set_server_video_loop(self, loop: bool):
         self._server_video_loop = loop
+
+    def pause_server_video(self, paused: bool):
+        if paused:
+            self._server_video_paused.set()
+        else:
+            self._server_video_paused.clear()
+        logger.info("Server video %s", "paused" if paused else "resumed")
 
     def reset_server_video(self):
         logger.info("Server video reset requested")
@@ -185,6 +194,10 @@ class VideoProcessingTrack(MediaStreamTrack):
         next_time = time.time()
 
         while not self._server_video_stop.is_set():
+            if self._server_video_paused.is_set():
+                next_time = time.time()
+                time.sleep(0.01)
+                continue
             if self._server_video_reset.is_set():
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 frame_idx = 0
