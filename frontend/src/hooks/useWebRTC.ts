@@ -382,6 +382,7 @@ export function useWebRTC(options?: UseWebRTCOptions) {
       server_video_mask_id?: string;
       server_video_loop?: boolean;
       server_video_reset?: boolean;
+      server_video_pause?: boolean;
       capture_mask_indices?: boolean;
       capture_mask_reset?: boolean;
     }) => {
