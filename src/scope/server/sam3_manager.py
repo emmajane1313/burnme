@@ -87,6 +87,8 @@ class Sam3MaskManager:
 
     def _disable_sam3_autocast(self) -> None:
         patched = []
+        def _sam3_no_autocast(*args, **kwargs):  # type: ignore[no-untyped-def]
+            return contextlib.nullcontext()
         for module_name in (
             "sam3.model.sam3_video_inference",
             "sam3.model.sam3_video_base",
@@ -98,7 +100,7 @@ class Sam3MaskManager:
                 continue
             if hasattr(module, "autocast"):
                 try:
-                    setattr(module, "autocast", contextlib.nullcontext)
+                    setattr(module, "autocast", _sam3_no_autocast)
                     patched.append(module_name)
                 except Exception:
                     logger.exception("Failed to patch SAM3 autocast in %s", module_name)
@@ -263,9 +265,8 @@ class Sam3MaskManager:
             video_path, resampled_path, effective_fps
         )
 
-        autocast_ctx = self._disable_autocast()
         response = None
-        with autocast_ctx:
+        with self._disable_autocast():
             response = predictor.handle_request(
                 {"type": "start_session", "resource_path": str(video_path)}
             )
@@ -309,7 +310,7 @@ class Sam3MaskManager:
         width = 0
 
         try:
-            with autocast_ctx:
+            with self._disable_autocast():
                 for result in predictor.handle_stream_request(
                     {
                         "type": "propagate_in_video",
@@ -356,7 +357,7 @@ class Sam3MaskManager:
         finally:
             torch.set_default_dtype(prev_dtype)
 
-        with autocast_ctx:
+        with self._disable_autocast():
             predictor.handle_request({"type": "close_session", "session_id": sam3_session_id})
 
         if frame_count == 0:
