@@ -214,10 +214,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     },
     onCaptureStartReady: maskId => {
       debugLog("Capture start ready", { maskId });
-      awaitingCaptureStartRef.current = false;
-      if (captureResetInFlightRef.current) {
-        maybeStartRecording();
-      }
     },
   });
   const {
@@ -233,10 +229,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const pendingRecordStreamRef = useRef<MediaStream | null>(null);
   const awaitingCaptureResetRef = useRef(false);
   const awaitingServerResetRef = useRef(false);
-  const awaitingCaptureStartRef = useRef(false);
   const pendingRecordStartRef = useRef(false);
   const captureResetInFlightRef = useRef(false);
-  const captureEnableSentRef = useRef(false);
 
   const isLoading = isDownloading || isPipelineLoading || isConnecting;
 
@@ -659,27 +653,15 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       });
       return;
     }
-    if (awaitingCaptureStartRef.current) {
-      if (!captureEnableSentRef.current) {
-        captureEnableSentRef.current = true;
-        sendParameterUpdate({ capture_mask_indices: true });
-        debugLog("Burn: capture enabled, waiting for start ready");
-      } else {
-        debugLog("Burn: waiting on capture start ready");
-      }
-      return;
-    }
     const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
     if (!streamToRecord) {
       return;
     }
     pendingRecordStartRef.current = false;
     pendingRecordStreamRef.current = null;
-    sendParameterUpdate({ capture_mask_indices: true });
     captureResetInFlightRef.current = false;
-    captureEnableSentRef.current = false;
     startRecording(streamToRecord);
-  }, [sendParameterUpdate, startRecording]);
+  }, [startRecording]);
 
   useEffect(() => {
     remoteStreamRef.current = remoteStream;
@@ -811,14 +793,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     if (serverVideoEnabled) {
       awaitingCaptureResetRef.current = true;
       awaitingServerResetRef.current = true;
-      awaitingCaptureStartRef.current = true;
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = null;
       captureResetInFlightRef.current = true;
-      captureEnableSentRef.current = false;
       sendParameterUpdate({
         capture_mask_reset: true,
-        capture_mask_indices: false,
+        capture_mask_indices: true,
       });
       sendParameterUpdate({ server_video_reset: true, server_video_loop: false });
     } else {
@@ -843,14 +823,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
       awaitingCaptureResetRef.current = true;
       awaitingServerResetRef.current = false;
-      awaitingCaptureStartRef.current = true;
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = remoteStreamRef.current;
       captureResetInFlightRef.current = true;
-      captureEnableSentRef.current = false;
       sendParameterUpdate({
         capture_mask_reset: true,
-        capture_mask_indices: false,
+        capture_mask_indices: true,
       });
       maybeStartRecording();
     };
@@ -914,8 +892,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingRecordStartRef.current = false;
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
-    awaitingCaptureStartRef.current = false;
-    captureEnableSentRef.current = false;
     pendingSynthRef.current = null;
     setIsWaitingForFrames(false);
     stopRecording();
@@ -936,8 +912,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingRecordStartRef.current = false;
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
-    awaitingCaptureStartRef.current = false;
-    captureEnableSentRef.current = false;
     sendParameterUpdate({ capture_mask_indices: false });
     await restartVideoStream({ loop: true });
     await handleStartStream();
