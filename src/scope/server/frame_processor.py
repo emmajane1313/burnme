@@ -910,6 +910,18 @@ class FrameProcessor:
                     self.parameters.pop("transition", None)
 
             processing_time = time.time() - start_time
+            if (
+                self._capture_mask_indices
+                and mask_indices_used is not None
+                and output is not None
+                and output.shape[0] > len(mask_indices_used)
+            ):
+                logger.info(
+                    "Trimming output frames to match mask indices: output=%s mask=%s",
+                    output.shape[0],
+                    len(mask_indices_used),
+                )
+                output = output[: len(mask_indices_used)]
             num_frames = output.shape[0]
             logger.debug(
                 f"Processed pipeline in {processing_time:.4f}s, {num_frames} frames"

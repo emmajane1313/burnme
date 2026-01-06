@@ -194,7 +194,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   } = useWebRTC({
     onServerVideoEnded: () => {
       stopRecording();
-      sendParameterUpdate({ capture_mask_indices: false });
       stopStream();
       setSynthEndPending(true);
     },
@@ -754,7 +753,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         loop: false,
         onEnded: () => {
           stopRecording();
-          sendParameterUpdate({ capture_mask_indices: false });
           stopStream();
           setSynthEndPending(true);
         },
