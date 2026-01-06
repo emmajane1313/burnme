@@ -2,6 +2,7 @@ import base64
 import contextlib
 import logging
 import os
+import sys
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -101,21 +102,16 @@ class Sam3MaskManager:
         patched = []
         def _sam3_no_autocast(*args, **kwargs):  # type: ignore[no-untyped-def]
             return contextlib.nullcontext()
-        for module_name in (
-            "sam3.model.sam3_video_inference",
-            "sam3.model.sam3_video_base",
-            "sam3.model.sam3_video_predictor",
-        ):
-            try:
-                module = __import__(module_name, fromlist=["*"])
-            except Exception:
+        for module_name, module in list(sys.modules.items()):
+            if not module_name.startswith("sam3"):
                 continue
-            if hasattr(module, "autocast"):
-                try:
-                    setattr(module, "autocast", _sam3_no_autocast)
-                    patched.append(module_name)
-                except Exception:
-                    logger.exception("Failed to patch SAM3 autocast in %s", module_name)
+            if not hasattr(module, "autocast"):
+                continue
+            try:
+                setattr(module, "autocast", _sam3_no_autocast)
+                patched.append(module_name)
+            except Exception:
+                logger.exception("Failed to patch SAM3 autocast in %s", module_name)
         if patched:
             logger.info("SAM3 autocast disabled in modules: %s", ", ".join(patched))
 
@@ -140,6 +136,24 @@ class Sam3MaskManager:
                 torch.autocast = orig_autocast  # type: ignore[assignment]
             if orig_cuda_autocast is not None:
                 torch.cuda.amp.autocast = orig_cuda_autocast  # type: ignore[assignment]
+
+    @contextlib.contextmanager
+    def _force_fp32(self):
+        prev_dtype = torch.get_default_dtype()
+        matmul = getattr(torch.backends, "cuda", None)
+        prev_allow_bf16 = None
+        if matmul is not None and hasattr(torch.backends.cuda, "matmul"):
+            matmul_mod = torch.backends.cuda.matmul
+            if hasattr(matmul_mod, "allow_bf16"):
+                prev_allow_bf16 = matmul_mod.allow_bf16
+                matmul_mod.allow_bf16 = False
+        torch.set_default_dtype(torch.float32)
+        try:
+            yield
+        finally:
+            torch.set_default_dtype(prev_dtype)
+            if prev_allow_bf16 is not None:
+                torch.backends.cuda.matmul.allow_bf16 = prev_allow_bf16
 
     def _get_predictor(self, desired_dtype: torch.dtype | None = None):
         if self._predictor is not None:
@@ -244,9 +258,9 @@ class Sam3MaskManager:
         box: list[int] | None = None,
         input_fps: float | None = None,
     ) -> Sam3MaskSession:
-        prompt = SAM3_PERSON_PROMPT
-        prev_dtype = torch.get_default_dtype()
-        torch.set_default_dtype(torch.float32)
+        prompt = (prompt or "").strip()
+        if not prompt:
+            prompt = SAM3_PERSON_PROMPT
 
         predictor = self._get_predictor(desired_dtype=torch.float32)
         try:
@@ -286,10 +300,11 @@ class Sam3MaskManager:
         )
 
         response = None
-        with self._disable_autocast():
-            response = predictor.handle_request(
-                {"type": "start_session", "resource_path": str(video_path)}
-            )
+        with self._force_fp32():
+            with self._disable_autocast():
+                response = predictor.handle_request(
+                    {"type": "start_session", "resource_path": str(video_path)}
+                )
         if not isinstance(response, dict) or "session_id" not in response:
             logger.exception("SAM3 start_session returned invalid response: %s", response)
             raise RuntimeError(
@@ -317,7 +332,9 @@ class Sam3MaskManager:
                 "frame_index": frame_index,
             }
             prompt_payload["text"] = prompt
-            predictor.handle_request(prompt_payload)
+            with self._force_fp32():
+                with self._disable_autocast():
+                    predictor.handle_request(prompt_payload)
 
         if frame_count_guess:
             for frame_index in range(0, frame_count_guess, SAM3_PROMPT_STRIDE):
@@ -330,55 +347,59 @@ class Sam3MaskManager:
         width = 0
 
         try:
-            with self._disable_autocast():
-                for result in predictor.handle_stream_request(
-                    {
-                        "type": "propagate_in_video",
-                        "session_id": sam3_session_id,
-                        "propagation_direction": "forward",
-                        "start_frame_index": 0,
-                        "max_frame_num_to_track": None,
-                    }
-                ):
-                    frame_idx = result["frame_index"]
-                    masks = result["outputs"].get("out_binary_masks")
-                    if masks is None:
-                        continue
-                    if isinstance(masks, np.ndarray):
-                        if masks.size == 0:
+            with self._force_fp32():
+                with self._disable_autocast():
+                    for result in predictor.handle_stream_request(
+                        {
+                            "type": "propagate_in_video",
+                            "session_id": sam3_session_id,
+                            "propagation_direction": "forward",
+                            "start_frame_index": 0,
+                            "max_frame_num_to_track": None,
+                        }
+                    ):
+                        frame_idx = result["frame_index"]
+                        masks = result["outputs"].get("out_binary_masks")
+                        if masks is None:
                             continue
-                        merged = np.any(masks, axis=0).astype(np.uint8) * 255
-                    else:
-                        if masks.numel() == 0:
-                            continue
-                        merged = masks.any(dim=0).cpu().numpy().astype(np.uint8) * 255
-                    if cv2 is not None:
-                        mask = merged
-                        if SAM3_MASK_DILATE > 0:
-                            kernel = np.ones(
-                                (SAM3_MASK_DILATE, SAM3_MASK_DILATE), dtype=np.uint8
-                            )
-                            mask = cv2.dilate(mask, kernel, iterations=SAM3_MASK_DILATE_ITERS)
-                        if SAM3_MASK_BLUR > 0:
-                            blur_size = SAM3_MASK_BLUR
-                            if blur_size % 2 == 0:
-                                blur_size += 1
-                            mask = cv2.GaussianBlur(mask, (blur_size, blur_size), 0)
-                        if SAM3_MASK_INTENSITY != 1.0:
-                            mask = np.clip(mask.astype(np.float32) * SAM3_MASK_INTENSITY, 0, 255)
-                            mask = mask.astype(np.uint8)
-                        merged = mask
-                    height, width = merged.shape
-                    frame_count = max(frame_count, frame_idx + 1)
-                    Image.fromarray(merged, mode="L").save(self._mask_path(session_dir, frame_idx))
+                        if isinstance(masks, np.ndarray):
+                            if masks.size == 0:
+                                continue
+                            merged = np.any(masks, axis=0).astype(np.uint8) * 255
+                        else:
+                            if masks.numel() == 0:
+                                continue
+                            merged = masks.any(dim=0).cpu().numpy().astype(np.uint8) * 255
+                        if cv2 is not None:
+                            mask = merged
+                            if SAM3_MASK_DILATE > 0:
+                                kernel = np.ones(
+                                    (SAM3_MASK_DILATE, SAM3_MASK_DILATE), dtype=np.uint8
+                                )
+                                mask = cv2.dilate(mask, kernel, iterations=SAM3_MASK_DILATE_ITERS)
+                            if SAM3_MASK_BLUR > 0:
+                                blur_size = SAM3_MASK_BLUR
+                                if blur_size % 2 == 0:
+                                    blur_size += 1
+                                mask = cv2.GaussianBlur(mask, (blur_size, blur_size), 0)
+                            if SAM3_MASK_INTENSITY != 1.0:
+                                mask = np.clip(
+                                    mask.astype(np.float32) * SAM3_MASK_INTENSITY, 0, 255
+                                )
+                                mask = mask.astype(np.uint8)
+                            merged = mask
+                        height, width = merged.shape
+                        frame_count = max(frame_count, frame_idx + 1)
+                        Image.fromarray(merged, mode="L").save(
+                            self._mask_path(session_dir, frame_idx)
+                        )
         except Exception:
             logger.exception("SAM3 propagate_in_video failed")
             raise
-        finally:
-            torch.set_default_dtype(prev_dtype)
 
-        with self._disable_autocast():
-            predictor.handle_request({"type": "close_session", "session_id": sam3_session_id})
+        with self._force_fp32():
+            with self._disable_autocast():
+                predictor.handle_request({"type": "close_session", "session_id": sam3_session_id})
 
         if frame_count == 0:
             raise RuntimeError("SAM3 returned no masks for the provided prompt.")

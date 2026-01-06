@@ -52,6 +52,7 @@ class VideoProcessingTrack(MediaStreamTrack):
         self._server_video_thread: threading.Thread | None = None
         self._server_video_fps = None
         self._server_video_path: Path | None = None
+        self._server_video_ended = False
 
         # Spout input mode - when enabled, frames come from Spout instead of WebRTC
         self._spout_receiver_enabled = False
@@ -164,6 +165,8 @@ class VideoProcessingTrack(MediaStreamTrack):
             self._server_video_paused.set()
         else:
             self._server_video_paused.clear()
+            if not self._server_video_ended:
+                self.pause(False)
         logger.info("Server video %s", "paused" if paused else "resumed")
 
     def reset_server_video(self):
@@ -193,6 +196,7 @@ class VideoProcessingTrack(MediaStreamTrack):
         frame_period = 1.0 / fps if fps > 0 else 1.0 / 15.0
         frame_idx = 0
         reset_pending = False
+        sent_end_notification = False
         next_time = time.time()
 
         while not self._server_video_stop.is_set():
@@ -200,12 +204,27 @@ class VideoProcessingTrack(MediaStreamTrack):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 frame_idx = 0
                 self._server_video_reset.clear()
+                self._server_video_ended = False
+                sent_end_notification = False
+                if not self._server_video_paused.is_set():
+                    self.pause(False)
                 next_time = time.time()
                 reset_pending = True
                 if self.notification_callback:
                     self.notification_callback({"type": "server_video_reset_done"})
             if self._server_video_paused.is_set():
                 next_time = time.time()
+                time.sleep(0.01)
+                continue
+            if self._server_video_ended:
+                if self._server_video_loop:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    frame_idx = 0
+                    self._server_video_ended = False
+                    sent_end_notification = False
+                    self.pause(False)
+                    logger.info("Server video loop restart")
+                    continue
                 time.sleep(0.01)
                 continue
 
@@ -216,11 +235,14 @@ class VideoProcessingTrack(MediaStreamTrack):
                     frame_idx = 0
                     logger.info("Server video loop restart")
                     continue
-                if self.notification_callback:
-                    self.notification_callback({"type": "server_video_ended"})
+                if not sent_end_notification:
+                    if self.notification_callback:
+                        self.notification_callback({"type": "server_video_ended"})
                     logger.info("Server video ended at frame=%s", frame_idx)
-                self.input_task_running = False
-                break
+                    sent_end_notification = True
+                self.pause(True)
+                self._server_video_ended = True
+                continue
 
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             video_frame = VideoFrame.from_ndarray(frame_rgb, format="rgb24")
