@@ -1311,6 +1311,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             if out_width <= 0 or out_height <= 0:
                 out_width = mask_width
                 out_height = mask_height
+            mask_fps = session.sam3_fps or session.input_fps or fps or 15.0
+            mask_frame_count = session.frame_count or 0
             logger.info(
                 "VisualCipher timing: orig_fps=%.3f synth_fps=%.3f out_fps=%.3f frames=%s mask=%sx%s out=%sx%s reader=%s",
                 orig_fps,
@@ -1371,6 +1373,11 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 orig_index = int(round(target_time * orig_fps))
                 if orig_index < 0:
                     orig_index = 0
+                mask_index = int(round(target_time * mask_fps)) if mask_fps > 0 else orig_index
+                if mask_frame_count > 0:
+                    mask_index = mask_index % mask_frame_count
+                if mask_index < 0:
+                    mask_index = 0
                 if orig_index != last_orig_index:
                     cap_orig.set(cv2.CAP_PROP_POS_FRAMES, orig_index)
                     ret_orig, frame_orig = cap_orig.read()
@@ -1388,7 +1395,7 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                         target_time,
                     )
 
-                mask_path = mask_dir / f"{orig_index:06d}.png"
+                mask_path = mask_dir / f"{mask_index:06d}.png"
                 if mask_path.exists():
                     mask = np.array(Image.open(mask_path).convert("L"))
                 else:

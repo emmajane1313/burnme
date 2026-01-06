@@ -261,29 +261,16 @@ export function InputAndControlsPanel({
           maskFrameIndexMap = payload.maskFrameIndexMap;
           maskPayloadCodec = payload.maskPayloadCodec;
 
-          if (payload.compositedVideoBase64) {
-            mp4pData = await addSynthedVideoBase64(
-              mp4pData,
-              payload.compositedVideoBase64,
-              publicLabels,
-              "video/webm",
-              undefined,
-              encryptedMaskFrames,
-              maskFrameIndexMap,
-              maskPayloadCodec
-            );
-          } else {
-            mp4pData = await addSynthedVideoBase64(
-              mp4pData,
-              synthedBase64,
-              publicLabels,
-              mimeType,
-              undefined,
-              encryptedMaskFrames,
-              maskFrameIndexMap,
-              maskPayloadCodec
-            );
-          }
+          mp4pData = await addSynthedVideoBase64(
+            mp4pData,
+            synthedBase64,
+            publicLabels,
+            mimeType,
+            visualCipher,
+            encryptedMaskFrames,
+            maskFrameIndexMap,
+            maskPayloadCodec
+          );
         }
 
         if (!sam3MaskId || !promptTexts[0]) {
@@ -292,7 +279,7 @@ export function InputAndControlsPanel({
             synthedBase64,
             publicLabels,
             mimeType,
-            undefined,
+            visualCipher,
             encryptedMaskFrames,
             maskFrameIndexMap,
             maskPayloadCodec
