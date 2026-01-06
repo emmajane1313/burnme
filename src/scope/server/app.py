@@ -1238,15 +1238,23 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             len(request.prompt or ""),
         )
 
-        if request.originalVideoBase64:
-            original_video = base64.b64decode(request.originalVideoBase64)
-        else:
-            original_video = await decrypt_video(request.mp4pData)
+        use_session_source = session.video_path.exists()
+        original_video = b""
+        if not use_session_source:
+            if request.originalVideoBase64:
+                original_video = base64.b64decode(request.originalVideoBase64)
+            else:
+                original_video = await decrypt_video(request.mp4pData)
         synthed_video = base64.b64decode(request.synthedVideoBase64)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            original_path = Path(tmpdir) / "original.mp4"
-            original_path.write_bytes(original_video)
+            if use_session_source:
+                original_path = session.video_path
+                if request.originalVideoBase64:
+                    logger.info("VisualCipher ignoring originalVideoBase64 in favor of SAM3 source")
+            else:
+                original_path = Path(tmpdir) / "original.mp4"
+                original_path.write_bytes(original_video)
             resampled_original_path = original_path
             synth_ext = "mp4"
             if request.synthedMimeType:
@@ -1256,16 +1264,24 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                     synth_ext = "mp4"
             synth_path = Path(tmpdir) / f"synth.{synth_ext}"
             synth_path.write_bytes(synthed_video)
+            original_size = None
+            if use_session_source:
+                try:
+                    original_size = original_path.stat().st_size
+                except OSError:
+                    original_size = None
             logger.info(
-                "VisualCipher videos: original_bytes=%s synth_bytes=%s synth_ext=%s",
-                len(original_video),
+                "VisualCipher videos: original_bytes=%s synth_bytes=%s synth_ext=%s source=%s",
+                len(original_video) if not use_session_source else original_size,
                 len(synthed_video),
                 synth_ext,
+                "sam3_source" if use_session_source else "original",
             )
 
             cap_orig = cv2.VideoCapture(str(resampled_original_path))
             if not cap_orig.isOpened():
                 raise RuntimeError("Failed to open original video stream for visual cipher.")
+            orig_frame_count = int(cap_orig.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
 
             use_imageio_synth = bool(
                 request.synthedMimeType
@@ -1286,6 +1302,14 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             mask_dir = session.mask_dir
             mask_width = session.width
             mask_height = session.height
+            mask_frame_count = session.frame_count or 0
+            if use_session_source:
+                logger.info(
+                    "VisualCipher original source path=%s orig_frames=%s mask_frames=%s",
+                    resampled_original_path,
+                    orig_frame_count,
+                    mask_frame_count,
+                )
             applied_indices = sam3_mask_manager.get_applied_indices(
                 request.maskId
             )
@@ -1321,7 +1345,7 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             if orig_fps <= 0:
                 orig_fps = session.input_fps or session.sam3_fps or synth_fps or 15.0
             fps = synth_fps
-            if cv2 is not None and abs(orig_fps - fps) > 0.01:
+            if not use_session_source and cv2 is not None and abs(orig_fps - fps) > 0.01:
                 resampled_original_path = Path(tmpdir) / "original_resampled.mp4"
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
                 cap_tmp = cv2.VideoCapture(str(original_path))
@@ -1357,7 +1381,6 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 out_width = mask_width
                 out_height = mask_height
             mask_fps = session.sam3_fps or session.input_fps or fps or 15.0
-            mask_frame_count = session.frame_count or 0
             logger.info(
                 "VisualCipher timing: orig_fps=%.3f synth_fps=%.3f out_fps=%.3f frames=%s mask=%sx%s out=%sx%s reader=%s",
                 orig_fps,
@@ -1390,6 +1413,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 if use_imageio_synth and synth_reader is not None
                 else None
             )
+            if use_session_source:
+                logger.info("VisualCipher using SAM3 source frames for original payload alignment")
             while True:
                 if synth_iter is not None:
                     try:
@@ -1407,7 +1432,9 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 orig_index = int(round(target_time * orig_fps))
                 if orig_index < 0:
                     orig_index = 0
-                mask_index = int(round(target_time * mask_fps)) if mask_fps > 0 else orig_index
+                mask_index = (
+                    int(round(target_time * mask_fps)) if mask_fps > 0 else orig_index
+                )
                 if applied_indices and frame_index < len(applied_indices):
                     mask_index = applied_indices[frame_index]
                 else:
@@ -1415,6 +1442,16 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                         mask_index = mask_index % mask_frame_count
                     if mask_index < 0:
                         mask_index = 0
+                if use_session_source:
+                    orig_index = mask_index
+                if frame_index < 5:
+                    logger.info(
+                        "VisualCipher index map: synth=%s mask=%s orig=%s t=%.3f",
+                        frame_index,
+                        mask_index,
+                        orig_index,
+                        target_time,
+                    )
                 if orig_index != last_orig_index:
                     cap_orig.set(cv2.CAP_PROP_POS_FRAMES, orig_index)
                     ret_orig, frame_orig = cap_orig.read()
