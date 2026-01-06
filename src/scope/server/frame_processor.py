@@ -785,6 +785,8 @@ class FrameProcessor:
         try:
             # Pass parameters (excluding prepare-only parameters)
             call_params = dict(self.parameters.items())
+            mask_id = None
+            mask_indices_used = None
 
             # Pass reset_cache as init_cache to pipeline
             call_params["init_cache"] = not self.is_prepared
@@ -810,6 +812,7 @@ class FrameProcessor:
                     call_params["video"] = video_input
 
                 mask_id = self.parameters.get("sam3_mask_id")
+                mask_indices_used = None
                 if mask_id and frame_indices is not None:
                     try:
                         use_server_video = (
@@ -820,7 +823,7 @@ class FrameProcessor:
                             and frame_times is not None
                             and any(time_val is not None for time_val in frame_times)
                         )
-                        mask_indices = sam3_mask_manager.get_mask_indices(
+                        mask_indices_used = sam3_mask_manager.get_mask_indices(
                             mask_id,
                             frame_indices,
                             frame_times,
@@ -861,10 +864,6 @@ class FrameProcessor:
                         mask_mode = self.parameters.get("sam3_mask_mode")
                         if mask_mode:
                             call_params["sam3_mask_mode"] = mask_mode
-                        if self._capture_mask_indices:
-                            sam3_mask_manager.append_applied_indices(
-                                mask_id, mask_indices
-                            )
                     except KeyError:
                         logger.warning(
                             "SAM3 mask session %s not found; ignoring masks.",
@@ -925,9 +924,18 @@ class FrameProcessor:
                     except queue.Empty:
                         break
 
-            for frame in output:
+            for idx, frame in enumerate(output):
                 try:
                     self.output_queue.put_nowait(frame)
+                    if (
+                        self._capture_mask_indices
+                        and mask_id
+                        and mask_indices_used is not None
+                    ):
+                        if idx < len(mask_indices_used):
+                            sam3_mask_manager.append_applied_indices(
+                                mask_id, [mask_indices_used[idx]]
+                            )
                 except queue.Full:
                     logger.warning("Output queue full, dropping processed frame")
                     # Update FPS calculation based on processing time and frame count

@@ -766,6 +766,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     onVideoPlayingCallbackRef.current = () => {
       const streamToRecord = remoteStreamRef.current;
       if (streamToRecord) {
+        sendParameterUpdate({
+          capture_mask_indices: true,
+          capture_mask_reset: true,
+        });
         startRecording(streamToRecord);
       }
     };
