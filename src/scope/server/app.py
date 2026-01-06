@@ -1263,10 +1263,16 @@ async def render_server_burn_endpoint(
     params.setdefault("sam3_mask_mode", "inside")
 
     output_mime = request.outputMimeType or "video/mp4"
-    if "mp4" not in output_mime:
+    use_webm = "webm" in output_mime.lower()
+    if use_webm and iio is None:
+        raise HTTPException(
+            status_code=500,
+            detail="imageio is required for WebM server burn rendering.",
+        )
+    if not use_webm and "mp4" not in output_mime:
         raise HTTPException(
             status_code=400,
-            detail="Server burn currently supports only video/mp4 output.",
+            detail="Server burn supports only video/mp4 or video/webm output.",
         )
 
     video_path = session.video_path
@@ -1319,19 +1325,33 @@ async def render_server_burn_endpoint(
             frame_np = output_tensor[idx].numpy()
             if writer is None:
                 height, width = frame_np.shape[:2]
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                suffix = "webm" if use_webm else "mp4"
                 output_path = Path(tempfile.gettempdir()) / (
-                    f"burn-render-{uuid4().hex}.mp4"
+                    f"burn-render-{uuid4().hex}.{suffix}"
                 )
-                writer = cv2.VideoWriter(
-                    str(output_path),
-                    fourcc,
-                    float(output_fps),
-                    (width, height),
-                )
-                if not writer.isOpened():
-                    raise RuntimeError("Failed to open output writer for server burn.")
-            writer.write(frame_np[:, :, ::-1])
+                if use_webm:
+                    writer = iio.get_writer(
+                        str(output_path),
+                        fps=float(output_fps),
+                        codec="libvpx",
+                        quality=8,
+                    )
+                else:
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    writer = cv2.VideoWriter(
+                        str(output_path),
+                        fourcc,
+                        float(output_fps),
+                        (width, height),
+                    )
+                    if not writer.isOpened():
+                        raise RuntimeError(
+                            "Failed to open output writer for server burn."
+                        )
+            if use_webm:
+                writer.append_data(frame_np)
+            else:
+                writer.write(frame_np[:, :, ::-1])
             if mask_indices:
                 sam3_mask_manager.append_applied_indices(
                     request.maskId, [mask_indices[idx]]
@@ -1419,7 +1439,10 @@ async def render_server_burn_endpoint(
     finally:
         cap.release()
         if writer is not None:
-            writer.release()
+            if use_webm:
+                writer.close()
+            else:
+                writer.release()
 
     if output_path is None or not output_path.exists():
         raise HTTPException(
@@ -1440,7 +1463,7 @@ async def render_server_burn_endpoint(
     return {
         "success": True,
         "videoBase64": output_b64,
-        "mimeType": "video/mp4",
+        "mimeType": "video/webm" if use_webm else "video/mp4",
         "fps": output_fps,
         "frameCount": output_frames,
     }

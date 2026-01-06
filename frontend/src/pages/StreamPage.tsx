@@ -835,7 +835,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           pipelineId: settings.pipelineId,
           maskId: sam3MaskId,
           params: renderParams,
-          outputMimeType: "video/mp4",
+          outputMimeType: "video/webm",
           capture_mask_reset: true,
         });
         if (serverRenderAbortRef.current) {
