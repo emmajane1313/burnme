@@ -57,12 +57,75 @@ class Sam3MaskManager:
         self._masks_dir.mkdir(parents=True, exist_ok=True)
 
     def _force_predictor_float32(self, predictor) -> None:
+        def _coerce_module(module: torch.nn.Module) -> None:
+            for name, param in module.named_parameters(recurse=False):
+                if param is not None and param.data.dtype != torch.float32:
+                    param.data = param.data.float()
+            for name, buf in module.named_buffers(recurse=False):
+                if buf is not None and buf.data.dtype != torch.float32:
+                    module._buffers[name] = buf.float()
+            for child in module.children():
+                _coerce_module(child)
+            if hasattr(module, "dtype") and isinstance(getattr(module, "dtype"), torch.dtype):
+                setattr(module, "dtype", torch.float32)
+
         for attr in ("model", "sam_model", "sam3_model", "module"):
             obj = getattr(predictor, attr, None)
-            if obj is not None and hasattr(obj, "float"):
+            if isinstance(obj, torch.nn.Module):
+                _coerce_module(obj)
+            elif obj is not None and hasattr(obj, "float"):
                 obj.float()
-        if hasattr(predictor, "float"):
+                if hasattr(obj, "dtype") and isinstance(getattr(obj, "dtype"), torch.dtype):
+                    setattr(obj, "dtype", torch.float32)
+
+        if isinstance(predictor, torch.nn.Module):
+            _coerce_module(predictor)
+        elif hasattr(predictor, "float"):
             predictor.float()
+            if hasattr(predictor, "dtype") and isinstance(getattr(predictor, "dtype"), torch.dtype):
+                setattr(predictor, "dtype", torch.float32)
+
+    def _disable_sam3_autocast(self) -> None:
+        patched = []
+        for module_name in (
+            "sam3.model.sam3_video_inference",
+            "sam3.model.sam3_video_base",
+            "sam3.model.sam3_video_predictor",
+        ):
+            try:
+                module = __import__(module_name, fromlist=["*"])
+            except Exception:
+                continue
+            if hasattr(module, "autocast"):
+                try:
+                    setattr(module, "autocast", contextlib.nullcontext)
+                    patched.append(module_name)
+                except Exception:
+                    logger.exception("Failed to patch SAM3 autocast in %s", module_name)
+        if patched:
+            logger.info("SAM3 autocast disabled in modules: %s", ", ".join(patched))
+
+    @contextlib.contextmanager
+    def _disable_autocast(self):
+        orig_autocast = getattr(torch, "autocast", None)
+        orig_cuda_autocast = None
+        if hasattr(torch, "cuda") and hasattr(torch.cuda, "amp"):
+            orig_cuda_autocast = getattr(torch.cuda.amp, "autocast", None)
+
+        def _no_autocast(*args, **kwargs):  # type: ignore[no-untyped-def]
+            return contextlib.nullcontext()
+
+        if orig_autocast is not None:
+            torch.autocast = _no_autocast  # type: ignore[assignment]
+        if orig_cuda_autocast is not None:
+            torch.cuda.amp.autocast = _no_autocast  # type: ignore[assignment]
+        try:
+            yield
+        finally:
+            if orig_autocast is not None:
+                torch.autocast = orig_autocast  # type: ignore[assignment]
+            if orig_cuda_autocast is not None:
+                torch.cuda.amp.autocast = orig_cuda_autocast  # type: ignore[assignment]
 
     def _get_predictor(self, desired_dtype: torch.dtype | None = None):
         if self._predictor is not None:
@@ -98,6 +161,10 @@ class Sam3MaskManager:
             self._predictor = build_sam3_video_predictor()
             self._predictor_dtype = desired_dtype or prev_dtype
             torch.set_default_dtype(prev_dtype)
+            try:
+                self._disable_sam3_autocast()
+            except Exception:  # pragma: no cover - best effort
+                logger.exception("SAM3 autocast patch failed")
             return self._predictor
 
     def _mask_path(self, session_dir: Path, frame_index: int) -> Path:
@@ -196,11 +263,7 @@ class Sam3MaskManager:
             video_path, resampled_path, effective_fps
         )
 
-        autocast_ctx = (
-            torch.autocast("cuda", enabled=False)
-            if torch.cuda.is_available()
-            else contextlib.nullcontext()
-        )
+        autocast_ctx = self._disable_autocast()
         response = None
         with autocast_ctx:
             response = predictor.handle_request(
