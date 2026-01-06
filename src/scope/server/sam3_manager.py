@@ -48,6 +48,7 @@ class Sam3MaskManager:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._predictor = None
+        self._predictor_dtype: torch.dtype | None = None
         self._sessions: dict[str, Sam3MaskSession] = {}
         self._applied_lock = threading.Lock()
 
@@ -63,11 +64,24 @@ class Sam3MaskManager:
         if hasattr(predictor, "float"):
             predictor.float()
 
-    def _get_predictor(self):
+    def _get_predictor(self, desired_dtype: torch.dtype | None = None):
+        if self._predictor is not None:
+            if desired_dtype is not None and self._predictor_dtype != desired_dtype:
+                self._predictor = None
+                self._predictor_dtype = None
+            else:
+                return self._predictor
+
         if self._predictor is not None:
             return self._predictor
 
         with self._lock:
+            if self._predictor is not None:
+                if desired_dtype is not None and self._predictor_dtype != desired_dtype:
+                    self._predictor = None
+                    self._predictor_dtype = None
+                else:
+                    return self._predictor
             if self._predictor is not None:
                 return self._predictor
 
@@ -78,7 +92,12 @@ class Sam3MaskManager:
                     f"SAM3 import failed: {exc}. Ensure sam3 and its dependencies are installed."
                 ) from exc
 
+            prev_dtype = torch.get_default_dtype()
+            if desired_dtype is not None:
+                torch.set_default_dtype(desired_dtype)
             self._predictor = build_sam3_video_predictor()
+            self._predictor_dtype = desired_dtype or prev_dtype
+            torch.set_default_dtype(prev_dtype)
             return self._predictor
 
     def _mask_path(self, session_dir: Path, frame_index: int) -> Path:
@@ -147,7 +166,7 @@ class Sam3MaskManager:
         prev_dtype = torch.get_default_dtype()
         torch.set_default_dtype(torch.float32)
 
-        predictor = self._get_predictor()
+        predictor = self._get_predictor(desired_dtype=torch.float32)
         try:
             self._force_predictor_float32(predictor)
         except Exception:  # pragma: no cover - best effort
