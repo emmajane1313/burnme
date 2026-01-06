@@ -116,6 +116,7 @@ class FrameProcessor:
         # This determines whether we wait for video frames or generate immediately.
         self._video_mode = (initial_parameters or {}).get("input_mode") == "video"
         self._last_frame_meta_log = 0.0
+        self._capture_mask_indices = False
 
     def start(self):
         if self.running:
@@ -707,6 +708,20 @@ class FrameProcessor:
 
                 # Merge new parameters with existing ones to preserve any missing keys
                 self.parameters = {**self.parameters, **new_parameters}
+
+                if "capture_mask_indices" in new_parameters:
+                    self._capture_mask_indices = bool(
+                        new_parameters.get("capture_mask_indices")
+                    )
+                if new_parameters.get("capture_mask_reset"):
+                    mask_id = self.parameters.get("sam3_mask_id")
+                    if mask_id:
+                        sam3_mask_manager.reset_applied_indices(mask_id)
+                        if SAM3_DEBUG or DEBUG_ALL:
+                            logger.info(
+                                "SAM3 mask index capture reset: session=%s",
+                                mask_id,
+                            )
         except queue.Empty:
             pass
 
@@ -805,6 +820,13 @@ class FrameProcessor:
                             and frame_times is not None
                             and any(time_val is not None for time_val in frame_times)
                         )
+                        mask_indices = sam3_mask_manager.get_mask_indices(
+                            mask_id,
+                            frame_indices,
+                            frame_times,
+                            use_server_video,
+                            use_time_mapping,
+                        )
                         if use_server_video:
                             mask_frames = sam3_mask_manager.get_masks_for_indices(
                                 mask_id, frame_indices
@@ -839,6 +861,10 @@ class FrameProcessor:
                         mask_mode = self.parameters.get("sam3_mask_mode")
                         if mask_mode:
                             call_params["sam3_mask_mode"] = mask_mode
+                        if self._capture_mask_indices:
+                            sam3_mask_manager.append_applied_indices(
+                                mask_id, mask_indices
+                            )
                     except KeyError:
                         logger.warning(
                             "SAM3 mask session %s not found; ignoring masks.",

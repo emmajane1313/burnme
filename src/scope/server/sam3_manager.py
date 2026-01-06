@@ -3,7 +3,7 @@ import logging
 import os
 import threading
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
@@ -40,6 +40,7 @@ class Sam3MaskSession:
     prompt: str
     input_fps: float | None
     sam3_fps: float | None
+    applied_mask_indices: list[int] = field(default_factory=list)
 
 
 class Sam3MaskManager:
@@ -47,6 +48,7 @@ class Sam3MaskManager:
         self._lock = threading.Lock()
         self._predictor = None
         self._sessions: dict[str, Sam3MaskSession] = {}
+        self._applied_lock = threading.Lock()
 
         assets_dir = get_assets_dir()
         self._masks_dir = assets_dir / "sam3_masks"
@@ -359,6 +361,86 @@ class Sam3MaskManager:
 
     def get_session(self, session_id: str) -> Sam3MaskSession | None:
         return self._sessions.get(session_id)
+
+    def reset_applied_indices(self, session_id: str) -> None:
+        session = self._sessions.get(session_id)
+        if not session:
+            return
+        with self._applied_lock:
+            session.applied_mask_indices.clear()
+
+    def append_applied_indices(self, session_id: str, indices: list[int]) -> None:
+        session = self._sessions.get(session_id)
+        if not session:
+            return
+        with self._applied_lock:
+            session.applied_mask_indices.extend(indices)
+
+    def get_applied_indices(self, session_id: str) -> list[int]:
+        session = self._sessions.get(session_id)
+        if not session:
+            return []
+        with self._applied_lock:
+            return list(session.applied_mask_indices)
+
+    def get_mask_indices(
+        self,
+        session_id: str,
+        frame_indices: list[int],
+        frame_times: list[float | None] | None,
+        use_server_video: bool,
+        use_time_mapping: bool,
+    ) -> list[int]:
+        session = self._sessions.get(session_id)
+        if not session:
+            raise KeyError(f"Mask session {session_id} not found")
+
+        if use_server_video:
+            if session.frame_count > 0:
+                return [idx % session.frame_count for idx in frame_indices]
+            return list(frame_indices)
+
+        input_fps = session.input_fps or 15.0
+        sam3_fps = session.sam3_fps or input_fps
+        if sam3_fps <= 0:
+            sam3_fps = input_fps if input_fps > 0 else 15.0
+
+        if use_time_mapping and frame_times is not None and any(
+            time_val is not None for time_val in frame_times
+        ):
+            time_origin = None
+            for time_val in frame_times:
+                if time_val is not None:
+                    time_origin = time_val
+                    break
+            indices: list[int] = []
+            for idx, time_val in enumerate(frame_times):
+                fallback_idx = frame_indices[idx] if idx < len(frame_indices) else idx
+                if time_val is None:
+                    mask_idx = fallback_idx
+                else:
+                    normalized_time = time_val - (time_origin or 0.0)
+                    if normalized_time < 0:
+                        normalized_time = 0.0
+                    mask_idx = int(round(normalized_time * sam3_fps))
+                if session.frame_count > 0:
+                    mask_idx = mask_idx % session.frame_count
+                indices.append(mask_idx)
+            return indices
+
+        if input_fps > 0 and sam3_fps > 0 and abs(input_fps - sam3_fps) < 0.01:
+            if session.frame_count > 0:
+                return [idx % session.frame_count for idx in frame_indices]
+            return list(frame_indices)
+
+        indices = []
+        for idx in frame_indices:
+            time_sec = idx / input_fps if input_fps > 0 else 0.0
+            mask_idx = int(round(time_sec * sam3_fps))
+            if session.frame_count > 0:
+                mask_idx = mask_idx % session.frame_count
+            indices.append(mask_idx)
+        return indices
 
     def get_masks_for_times(
         self,

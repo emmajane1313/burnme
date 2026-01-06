@@ -194,6 +194,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   } = useWebRTC({
     onServerVideoEnded: () => {
       stopRecording();
+      sendParameterUpdate({ capture_mask_indices: false });
       stopStream();
       setSynthEndPending(true);
     },
@@ -741,6 +742,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     setSynthEndPending(false);
     setConfirmedSynthedBlob(null);
     resetRecording();
+    sendParameterUpdate({ capture_mask_indices: true, capture_mask_reset: true });
 
     let restartedStream: MediaStream | null = null;
     if (serverVideoEnabled) {
@@ -750,6 +752,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         loop: false,
         onEnded: () => {
           stopRecording();
+          sendParameterUpdate({ capture_mask_indices: false });
           stopStream();
           setSynthEndPending(true);
         },
@@ -825,6 +828,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingSynthRef.current = null;
     setIsWaitingForFrames(false);
     stopRecording();
+    sendParameterUpdate({ capture_mask_indices: false });
     stopStream();
     if (sam3MaskId) {
       sendParameterUpdate({ server_video_reset: true, server_video_loop: true });
@@ -837,6 +841,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     setConfirmedSynthedBlob(null);
     resetRecording();
     setSynthLockedPrompt("");
+    sendParameterUpdate({ capture_mask_indices: false });
     await restartVideoStream({ loop: true });
     await handleStartStream();
   };

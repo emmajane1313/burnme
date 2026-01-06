@@ -136,6 +136,14 @@ class Parameters(BaseModel):
         default=None,
         description="Reset server-side video to the first frame.",
     )
+    capture_mask_indices: bool | None = Field(
+        default=None,
+        description="Capture SAM3 mask indices during burn for exact restore alignment.",
+    )
+    capture_mask_reset: bool | None = Field(
+        default=None,
+        description="Reset captured SAM3 mask indices.",
+    )
 
 
 class SpoutConfig(BaseModel):

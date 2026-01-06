@@ -1286,6 +1286,14 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             mask_dir = session.mask_dir
             mask_width = session.width
             mask_height = session.height
+            applied_indices = sam3_mask_manager.get_applied_indices(
+                request.maskId
+            )
+            if applied_indices:
+                logger.info(
+                    "VisualCipher using applied mask indices: count=%s",
+                    len(applied_indices),
+                )
             orig_fps = float(cap_orig.get(cv2.CAP_PROP_FPS) or 0.0)
             synth_fps = 0.0
             frame_count = 0
@@ -1400,10 +1408,13 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 if orig_index < 0:
                     orig_index = 0
                 mask_index = int(round(target_time * mask_fps)) if mask_fps > 0 else orig_index
-                if mask_frame_count > 0:
-                    mask_index = mask_index % mask_frame_count
-                if mask_index < 0:
-                    mask_index = 0
+                if applied_indices and frame_index < len(applied_indices):
+                    mask_index = applied_indices[frame_index]
+                else:
+                    if mask_frame_count > 0:
+                        mask_index = mask_index % mask_frame_count
+                    if mask_index < 0:
+                        mask_index = 0
                 if orig_index != last_orig_index:
                     cap_orig.set(cv2.CAP_PROP_POS_FRAMES, orig_index)
                     ret_orig, frame_orig = cap_orig.read()

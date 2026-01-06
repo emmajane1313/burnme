@@ -31,6 +31,8 @@ export interface WebRTCOfferRequest {
     vace_context_scale?: number;
     sam3_mask_id?: string | null;
     sam3_mask_mode?: "inside" | "outside";
+    capture_mask_indices?: boolean;
+    capture_mask_reset?: boolean;
   };
 }
 
