@@ -55,6 +55,14 @@ class Sam3MaskManager:
         self._masks_dir = assets_dir / "sam3_masks"
         self._masks_dir.mkdir(parents=True, exist_ok=True)
 
+    def _force_predictor_float32(self, predictor) -> None:
+        for attr in ("model", "sam_model", "sam3_model", "module"):
+            obj = getattr(predictor, attr, None)
+            if obj is not None and hasattr(obj, "float"):
+                obj.float()
+        if hasattr(predictor, "float"):
+            predictor.float()
+
     def _get_predictor(self):
         if self._predictor is not None:
             return self._predictor
@@ -140,6 +148,10 @@ class Sam3MaskManager:
         torch.set_default_dtype(torch.float32)
 
         predictor = self._get_predictor()
+        try:
+            self._force_predictor_float32(predictor)
+        except Exception:  # pragma: no cover - best effort
+            logger.exception("SAM3 float32 cast failed")
         session_id = str(uuid.uuid4())
         session_dir = self._masks_dir / session_id
         session_dir.mkdir(parents=True, exist_ok=True)
