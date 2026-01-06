@@ -194,10 +194,6 @@ class VideoProcessingTrack(MediaStreamTrack):
         next_time = time.time()
 
         while not self._server_video_stop.is_set():
-            if self._server_video_paused.is_set():
-                next_time = time.time()
-                time.sleep(0.01)
-                continue
             if self._server_video_reset.is_set():
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 frame_idx = 0
@@ -206,6 +202,10 @@ class VideoProcessingTrack(MediaStreamTrack):
                 reset_pending = True
                 if self.notification_callback:
                     self.notification_callback({"type": "server_video_reset_done"})
+            if self._server_video_paused.is_set():
+                next_time = time.time()
+                time.sleep(0.01)
+                continue
 
             ret, frame = cap.read()
             if not ret:

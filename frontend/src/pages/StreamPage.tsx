@@ -215,9 +215,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     onServerVideoStartReady: frameIndex => {
       debugLog("Server video start ready", { frameIndex });
       awaitingServerStartRef.current = false;
-      if (captureResetInFlightRef.current) {
-        maybeStartRecording();
-      }
     },
     onCaptureStartReady: maskId => {
       debugLog("Capture start ready", { maskId });
@@ -652,7 +649,15 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
 
   const maybeStartRecording = useCallback(() => {
+    debugLog("Burn: maybeStartRecording called", {
+      pendingRecordStart: pendingRecordStartRef.current,
+      awaitingCaptureReset: awaitingCaptureResetRef.current,
+      awaitingServerReset: awaitingServerResetRef.current,
+      awaitingServerStart: awaitingServerStartRef.current,
+      captureResetInFlight: captureResetInFlightRef.current,
+    });
     if (!pendingRecordStartRef.current) {
+      debugLog("Burn: maybeStartRecording exit - not pending");
       return;
     }
     if (awaitingCaptureResetRef.current || awaitingServerResetRef.current) {
@@ -662,30 +667,26 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       });
       return;
     }
-    if (awaitingServerStartRef.current) {
-      if (!serverStartUnpauseSentRef.current) {
-        serverStartUnpauseSentRef.current = true;
-        sendParameterUpdate({ server_video_pause: false });
-        debugLog("Burn: unpausing server video");
-      } else {
-        debugLog("Burn: waiting on server video start");
-      }
-      return;
-    }
     const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
     if (!streamToRecord) {
+      debugLog("Burn: maybeStartRecording exit - no stream");
       return;
     }
     pendingRecordStartRef.current = false;
     pendingRecordStreamRef.current = null;
     captureResetInFlightRef.current = false;
-    debugLog("Burn: start recording", {
+    debugLog("Burn: start recording NOW", {
       hasRemoteStream: Boolean(remoteStreamRef.current),
       hasPendingStream: Boolean(pendingRecordStreamRef.current),
       isStreaming,
     });
     startRecording(streamToRecord);
-  }, [startRecording]);
+    if (awaitingServerStartRef.current && !serverStartUnpauseSentRef.current) {
+      serverStartUnpauseSentRef.current = true;
+      sendParameterUpdate({ server_video_pause: false });
+      debugLog("Burn: unpausing server video after recording started");
+    }
+  }, [startRecording, sendParameterUpdate, isStreaming]);
 
   useEffect(() => {
     remoteStreamRef.current = remoteStream;
