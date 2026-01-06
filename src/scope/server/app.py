@@ -1246,6 +1246,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             original_path = Path(tmpdir) / "original.mp4"
+            original_path.write_bytes(original_video)
+            resampled_original_path = original_path
             synth_ext = "mp4"
             if request.synthedMimeType:
                 if "webm" in request.synthedMimeType:
@@ -1253,7 +1255,6 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 elif "mp4" in request.synthedMimeType:
                     synth_ext = "mp4"
             synth_path = Path(tmpdir) / f"synth.{synth_ext}"
-            original_path.write_bytes(original_video)
             synth_path.write_bytes(synthed_video)
             logger.info(
                 "VisualCipher videos: original_bytes=%s synth_bytes=%s synth_ext=%s",
@@ -1262,7 +1263,7 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 synth_ext,
             )
 
-            cap_orig = cv2.VideoCapture(str(original_path))
+            cap_orig = cv2.VideoCapture(str(resampled_original_path))
             if not cap_orig.isOpened():
                 raise RuntimeError("Failed to open original video stream for visual cipher.")
 
@@ -1312,6 +1313,36 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             if orig_fps <= 0:
                 orig_fps = session.input_fps or session.sam3_fps or synth_fps or 15.0
             fps = synth_fps
+            if cv2 is not None and abs(orig_fps - fps) > 0.01:
+                resampled_original_path = Path(tmpdir) / "original_resampled.mp4"
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                cap_tmp = cv2.VideoCapture(str(original_path))
+                if cap_tmp.isOpened():
+                    width = int(cap_tmp.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+                    height = int(cap_tmp.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+                    if width > 0 and height > 0:
+                        writer_tmp = cv2.VideoWriter(
+                            str(resampled_original_path),
+                            fourcc,
+                            fps,
+                            (width, height),
+                        )
+                        while True:
+                            ret_tmp, frame_tmp = cap_tmp.read()
+                            if not ret_tmp:
+                                break
+                            writer_tmp.write(frame_tmp)
+                        writer_tmp.release()
+                        cap_tmp.release()
+                        cap_orig.release()
+                        cap_orig = cv2.VideoCapture(str(resampled_original_path))
+                        if not cap_orig.isOpened():
+                            raise RuntimeError("Failed to open resampled original video.")
+                        orig_fps = fps
+                    else:
+                        cap_tmp.release()
+                else:
+                    cap_tmp.release()
             out_width = int(cap_orig.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
             out_height = int(cap_orig.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
             if out_width <= 0 or out_height <= 0:
