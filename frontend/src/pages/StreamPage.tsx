@@ -236,6 +236,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const awaitingCaptureStartRef = useRef(false);
   const pendingRecordStartRef = useRef(false);
   const captureResetInFlightRef = useRef(false);
+  const captureEnableSentRef = useRef(false);
 
   const isLoading = isDownloading || isPipelineLoading || isConnecting;
 
@@ -659,7 +660,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       return;
     }
     if (awaitingCaptureStartRef.current) {
-      debugLog("Burn: waiting on capture start ready");
+      if (!captureEnableSentRef.current) {
+        captureEnableSentRef.current = true;
+        sendParameterUpdate({ capture_mask_indices: true });
+        debugLog("Burn: capture enabled, waiting for start ready");
+      } else {
+        debugLog("Burn: waiting on capture start ready");
+      }
       return;
     }
     const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
@@ -670,6 +677,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingRecordStreamRef.current = null;
     sendParameterUpdate({ capture_mask_indices: true });
     captureResetInFlightRef.current = false;
+    captureEnableSentRef.current = false;
     startRecording(streamToRecord);
   }, [sendParameterUpdate, startRecording]);
 
@@ -807,6 +815,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = null;
       captureResetInFlightRef.current = true;
+      captureEnableSentRef.current = false;
       sendParameterUpdate({
         capture_mask_reset: true,
         capture_mask_indices: false,
@@ -838,6 +847,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = remoteStreamRef.current;
       captureResetInFlightRef.current = true;
+      captureEnableSentRef.current = false;
       sendParameterUpdate({
         capture_mask_reset: true,
         capture_mask_indices: false,
@@ -905,6 +915,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
     awaitingCaptureStartRef.current = false;
+    captureEnableSentRef.current = false;
     pendingSynthRef.current = null;
     setIsWaitingForFrames(false);
     stopRecording();
@@ -926,6 +937,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
     awaitingCaptureStartRef.current = false;
+    captureEnableSentRef.current = false;
     sendParameterUpdate({ capture_mask_indices: false });
     await restartVideoStream({ loop: true });
     await handleStartStream();
