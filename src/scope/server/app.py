@@ -1111,14 +1111,16 @@ class LoadMP4PRequest(BaseModel):
 
 
 class Sam3MaskRequest(BaseModel):
-    videoBase64: str
+    videoBase64: str | None = None
+    assetPath: str | None = None
     prompt: str
     box: list[int] | None = None
     input_fps: float | None = None
 
 
 class Sam3MaskJobRequest(BaseModel):
-    videoBase64: str
+    videoBase64: str | None = None
+    assetPath: str | None = None
     prompt: str
     box: list[int] | None = None
     input_fps: float | None = None
@@ -1798,9 +1800,12 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
 @app.post("/api/v1/sam3/mask")
 async def generate_sam3_mask(request: Sam3MaskRequest):
     try:
+        if not request.videoBase64 and not request.assetPath:
+            return {"success": False, "error": "Missing video input."}
         session = await asyncio.to_thread(
             sam3_mask_manager.generate_masks,
             request.videoBase64,
+            request.assetPath,
             request.prompt,
             request.box,
             request.input_fps,
@@ -1829,9 +1834,12 @@ async def start_sam3_mask_job(request: Sam3MaskJobRequest):
         with sam3_jobs_lock:
             sam3_jobs[job_id]["status"] = "running"
         try:
+            if not request.videoBase64 and not request.assetPath:
+                raise RuntimeError("Missing video input.")
             session = await asyncio.to_thread(
                 sam3_mask_manager.generate_masks,
                 request.videoBase64,
+                request.assetPath,
                 request.prompt,
                 request.box,
                 request.input_fps,

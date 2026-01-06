@@ -56,6 +56,18 @@ class Sam3MaskManager:
         self._masks_dir = assets_dir / "sam3_masks"
         self._masks_dir.mkdir(parents=True, exist_ok=True)
 
+    def _resolve_asset_path(self, asset_path: str) -> Path:
+        assets_dir = get_assets_dir().resolve()
+        candidate = Path(asset_path)
+        if not candidate.is_absolute():
+            candidate = assets_dir / asset_path
+        candidate = candidate.resolve()
+        if assets_dir not in candidate.parents and candidate != assets_dir:
+            raise RuntimeError("Invalid asset path.")
+        if not candidate.exists():
+            raise RuntimeError("Asset not found.")
+        return candidate
+
     def _force_predictor_float32(self, predictor) -> None:
         def _coerce_module(module: torch.nn.Module) -> None:
             for name, param in module.named_parameters(recurse=False):
@@ -226,7 +238,8 @@ class Sam3MaskManager:
 
     def generate_masks(
         self,
-        video_base64: str,
+        video_base64: str | None,
+        asset_path: str | None,
         prompt: str,
         box: list[int] | None = None,
         input_fps: float | None = None,
@@ -245,7 +258,14 @@ class Sam3MaskManager:
         session_dir.mkdir(parents=True, exist_ok=True)
 
         video_path = session_dir / "source.mp4"
-        video_path.write_bytes(base64.b64decode(video_base64))
+        if asset_path:
+            resolved = self._resolve_asset_path(asset_path)
+            video_bytes = resolved.read_bytes()
+        elif video_base64:
+            video_bytes = base64.b64decode(video_base64)
+        else:
+            raise RuntimeError("SAM3 requires a video input.")
+        video_path.write_bytes(video_bytes)
 
         resampled_path = session_dir / "source_resampled.mp4"
         source_fps = None

@@ -224,7 +224,8 @@ export const downloadPipelineModels = async (
 };
 
 export const generateSam3Mask = async (
-  videoBase64: string,
+  videoBase64: string | null,
+  assetPath: string | null,
   prompt: string,
   box?: [number, number, number, number] | null,
   inputFps?: number | null
@@ -232,7 +233,13 @@ export const generateSam3Mask = async (
   const response = await fetch(apiUrl("/api/v1/sam3/mask"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ videoBase64, prompt, box, input_fps: inputFps }),
+    body: JSON.stringify({
+      videoBase64,
+      assetPath,
+      prompt,
+      box,
+      input_fps: inputFps,
+    }),
   });
 
   if (!response.ok) {
@@ -251,7 +258,8 @@ export const generateSam3Mask = async (
 };
 
 export const startSam3MaskJob = async (
-  videoBase64: string,
+  videoBase64: string | null,
+  assetPath: string | null,
   prompt: string,
   box?: [number, number, number, number] | null,
   inputFps?: number | null
@@ -259,7 +267,13 @@ export const startSam3MaskJob = async (
   const response = await fetch(apiUrl("/api/v1/sam3/mask/start"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ videoBase64, prompt, box, input_fps: inputFps }),
+    body: JSON.stringify({
+      videoBase64,
+      assetPath,
+      prompt,
+      box,
+      input_fps: inputFps,
+    }),
   });
 
   if (!response.ok) {
