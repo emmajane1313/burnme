@@ -194,7 +194,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   } = useWebRTC({
     onServerVideoEnded: () => {
       stopRecording();
-      sendParameterUpdate({ capture_mask_indices: false });
       stopStream();
       setSynthEndPending(true);
     },
@@ -629,8 +628,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       setConfirmedSynthedBlob(recordedSynthedBlob);
       setSynthEndPending(false);
       setIsSynthCapturing(false);
+      if (isStreaming) {
+        sendParameterUpdate({ capture_mask_indices: false });
+      }
     }
-  }, [synthEndPending, recordedSynthedBlob]);
+  }, [synthEndPending, recordedSynthedBlob, isStreaming, sendParameterUpdate]);
 
   useEffect(() => {
     if (!confirmedSynthedBlob) {
@@ -752,7 +754,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         loop: false,
         onEnded: () => {
           stopRecording();
-          sendParameterUpdate({ capture_mask_indices: false });
           stopStream();
           setSynthEndPending(true);
         },
