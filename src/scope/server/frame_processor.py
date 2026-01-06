@@ -117,6 +117,7 @@ class FrameProcessor:
         self._video_mode = (initial_parameters or {}).get("input_mode") == "video"
         self._last_frame_meta_log = 0.0
         self._capture_mask_indices = False
+        self._capture_started = False
 
     def start(self):
         if self.running:
@@ -736,6 +737,8 @@ class FrameProcessor:
                         "SAM3 mask capture toggled: enabled=%s",
                         self._capture_mask_indices,
                     )
+                    if not self._capture_mask_indices:
+                        self._capture_started = False
                 if new_parameters.get("capture_mask_reset"):
                     mask_id = self.parameters.get("sam3_mask_id")
                     if mask_id:
@@ -744,6 +747,7 @@ class FrameProcessor:
                             "SAM3 mask index capture reset: session=%s",
                             mask_id,
                         )
+                        self._capture_started = False
                         if self.notification_callback:
                             self.notification_callback(
                                 {"type": "capture_reset_done", "mask_id": mask_id}
@@ -970,6 +974,12 @@ class FrameProcessor:
                         and mask_id
                         and mask_indices_used is not None
                     ):
+                        if not self._capture_started:
+                            self._capture_started = True
+                            if self.notification_callback:
+                                self.notification_callback(
+                                    {"type": "capture_start_ready", "mask_id": mask_id}
+                                )
                         if idx < len(mask_indices_used):
                             sam3_mask_manager.append_applied_indices(
                                 mask_id, [mask_indices_used[idx]]
