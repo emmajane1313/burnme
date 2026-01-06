@@ -181,6 +181,7 @@ class VideoProcessingTrack(MediaStreamTrack):
         fps = self._server_video_fps or float(cap.get(cv2.CAP_PROP_FPS) or 15.0)
         frame_period = 1.0 / fps if fps > 0 else 1.0 / 15.0
         frame_idx = 0
+        reset_pending = False
         next_time = time.time()
 
         while not self._server_video_stop.is_set():
@@ -189,6 +190,7 @@ class VideoProcessingTrack(MediaStreamTrack):
                 frame_idx = 0
                 self._server_video_reset.clear()
                 next_time = time.time()
+                reset_pending = True
                 if self.notification_callback:
                     self.notification_callback({"type": "server_video_reset_done"})
 
@@ -197,9 +199,11 @@ class VideoProcessingTrack(MediaStreamTrack):
                 if self._server_video_loop:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     frame_idx = 0
+                    logger.info("Server video loop restart")
                     continue
                 if self.notification_callback:
                     self.notification_callback({"type": "server_video_ended"})
+                    logger.info("Server video ended at frame=%s", frame_idx)
                 self.input_task_running = False
                 break
 
@@ -210,6 +214,12 @@ class VideoProcessingTrack(MediaStreamTrack):
             video_frame.time_base = VIDEO_TIME_BASE
             if self.frame_processor:
                 self.frame_processor.put(video_frame)
+            if reset_pending and self.notification_callback:
+                self.notification_callback(
+                    {"type": "server_video_start_ready", "frame_index": frame_idx}
+                )
+                reset_pending = False
+                logger.info("Server video start ready at frame=%s", frame_idx)
 
             frame_idx += 1
             next_time += frame_period

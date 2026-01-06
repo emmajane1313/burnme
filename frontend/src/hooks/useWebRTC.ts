@@ -32,6 +32,7 @@ interface UseWebRTCOptions {
   onServerVideoEnded?: () => void;
   onCaptureResetDone?: (maskId?: string | null) => void;
   onServerVideoResetDone?: () => void;
+  onServerVideoStartReady?: (frameIndex?: number | null) => void;
   onCaptureStartReady?: (maskId?: string | null) => void;
 }
 
@@ -144,6 +145,11 @@ export function useWebRTC(options?: UseWebRTCOptions) {
             if (data.type === "server_video_reset_done") {
               if (options?.onServerVideoResetDone) {
                 options.onServerVideoResetDone();
+              }
+            }
+            if (data.type === "server_video_start_ready") {
+              if (options?.onServerVideoStartReady) {
+                options.onServerVideoStartReady(data.frame_index ?? null);
               }
             }
             if (data.type === "capture_start_ready") {

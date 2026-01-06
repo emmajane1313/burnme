@@ -212,6 +212,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         maybeStartRecording();
       }
     },
+    onServerVideoStartReady: frameIndex => {
+      debugLog("Server video start ready", { frameIndex });
+      awaitingServerStartRef.current = false;
+      if (captureResetInFlightRef.current) {
+        maybeStartRecording();
+      }
+    },
     onCaptureStartReady: maskId => {
       debugLog("Capture start ready", { maskId });
     },
@@ -229,6 +236,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const pendingRecordStreamRef = useRef<MediaStream | null>(null);
   const awaitingCaptureResetRef = useRef(false);
   const awaitingServerResetRef = useRef(false);
+  const awaitingServerStartRef = useRef(false);
   const pendingRecordStartRef = useRef(false);
   const captureResetInFlightRef = useRef(false);
 
@@ -653,6 +661,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       });
       return;
     }
+    if (awaitingServerStartRef.current) {
+      debugLog("Burn: waiting on server video start");
+      return;
+    }
     const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
     if (!streamToRecord) {
       return;
@@ -660,6 +672,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingRecordStartRef.current = false;
     pendingRecordStreamRef.current = null;
     captureResetInFlightRef.current = false;
+    debugLog("Burn: start recording", {
+      hasRemoteStream: Boolean(remoteStreamRef.current),
+      hasPendingStream: Boolean(pendingRecordStreamRef.current),
+      isStreaming,
+    });
     startRecording(streamToRecord);
   }, [startRecording]);
 
@@ -793,6 +810,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     if (serverVideoEnabled) {
       awaitingCaptureResetRef.current = true;
       awaitingServerResetRef.current = true;
+      awaitingServerStartRef.current = true;
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = null;
       captureResetInFlightRef.current = true;
@@ -823,6 +841,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
       awaitingCaptureResetRef.current = true;
       awaitingServerResetRef.current = false;
+      awaitingServerStartRef.current = false;
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = remoteStreamRef.current;
       captureResetInFlightRef.current = true;
@@ -892,6 +911,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingRecordStartRef.current = false;
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
+    awaitingServerStartRef.current = false;
     pendingSynthRef.current = null;
     setIsWaitingForFrames(false);
     stopRecording();
@@ -912,6 +932,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     pendingRecordStartRef.current = false;
     awaitingCaptureResetRef.current = false;
     awaitingServerResetRef.current = false;
+    awaitingServerStartRef.current = false;
     sendParameterUpdate({ capture_mask_indices: false });
     await restartVideoStream({ loop: true });
     await handleStartStream();

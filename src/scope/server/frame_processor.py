@@ -118,6 +118,8 @@ class FrameProcessor:
         self._last_frame_meta_log = 0.0
         self._capture_mask_indices = False
         self._capture_started = False
+        self._capture_chunk_logged = False
+        self._capture_chunk_count = 0
 
     def start(self):
         if self.running:
@@ -739,6 +741,8 @@ class FrameProcessor:
                     )
                     if not self._capture_mask_indices:
                         self._capture_started = False
+                        self._capture_chunk_logged = False
+                        self._capture_chunk_count = 0
                 if new_parameters.get("capture_mask_reset"):
                     mask_id = self.parameters.get("sam3_mask_id")
                     if mask_id:
@@ -748,6 +752,8 @@ class FrameProcessor:
                             mask_id,
                         )
                         self._capture_started = False
+                        self._capture_chunk_logged = False
+                        self._capture_chunk_count = 0
                         if self.notification_callback:
                             self.notification_callback(
                                 {"type": "capture_reset_done", "mask_id": mask_id}
@@ -935,6 +941,26 @@ class FrameProcessor:
                 )
                 output = output[: len(mask_indices_used)]
             num_frames = output.shape[0]
+            if self._capture_mask_indices and mask_indices_used is not None:
+                self._capture_chunk_count += 1
+                if not self._capture_chunk_logged:
+                    head = mask_indices_used[:5]
+                    tail = mask_indices_used[-5:] if len(mask_indices_used) > 5 else mask_indices_used
+                    logger.info(
+                        "SAM3 capture chunk start: frames=%s mask_len=%s head=%s tail=%s",
+                        num_frames,
+                        len(mask_indices_used),
+                        head,
+                        tail,
+                    )
+                    self._capture_chunk_logged = True
+                elif self._capture_chunk_count % 10 == 0:
+                    logger.info(
+                        "SAM3 capture chunk progress: chunk=%s frames=%s mask_len=%s",
+                        self._capture_chunk_count,
+                        num_frames,
+                        len(mask_indices_used),
+                    )
             logger.debug(
                 f"Processed pipeline in {processing_time:.4f}s, {num_frames} frames"
             )
@@ -980,6 +1006,11 @@ class FrameProcessor:
                                 self.notification_callback(
                                     {"type": "capture_start_ready", "mask_id": mask_id}
                                 )
+                            logger.info(
+                                "SAM3 capture start ready: mask_id=%s output_frames=%s",
+                                mask_id,
+                                num_frames,
+                            )
                         if idx < len(mask_indices_used):
                             sam3_mask_manager.append_applied_indices(
                                 mask_id, [mask_indices_used[idx]]
