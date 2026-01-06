@@ -1337,18 +1337,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 macro_block_size=None,
             )
 
-            payload_frames: list[str] = []
-            index_map: list[int] = []
-
-            prompt_bytes = request.prompt.encode()
-            params_bytes = json.dumps(request.params, sort_keys=True).encode()
-            seed_bytes = str(request.seed).encode()
-            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
-            base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
-            base_key.update(base_key_material)
-            base_key_bytes = base_key.finalize()
-
             frame_index = 0
+            frame_map: list[tuple[int, int]] = []
             last_orig_index = -1
             last_orig_frame = None
             synth_iter = (
@@ -1421,8 +1411,82 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 composite_frame = orig_rgb.copy()
                 composite_frame[mask_bool] = synth_rgb[mask_bool]
 
+                if (mask_height, mask_width) != (out_height, out_width):
+                    composite_frame = cv2.resize(
+                        composite_frame,
+                        (out_width, out_height),
+                        interpolation=cv2.INTER_LINEAR,
+                    )
+                writer.append_data(composite_frame)
+                frame_map.append((orig_index, mask_index))
+                frame_index += 1
+
+            cap_orig.release()
+            if cap_synth is not None:
+                cap_synth.release()
+            if synth_reader is not None:
+                synth_reader.close()
+            writer.close()
+
+            if frame_index == 0:
+                raise RuntimeError("No synth frames decoded; burn video not created.")
+            if not out_path.exists():
+                raise RuntimeError("Burn composite was not created.")
+
+            payload_frames: list[str] = []
+            index_map: list[int] = []
+
+            prompt_bytes = request.prompt.encode()
+            params_bytes = json.dumps(request.params, sort_keys=True).encode()
+            seed_bytes = str(request.seed).encode()
+            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
+            base_key.update(base_key_material)
+            base_key_bytes = base_key.finalize()
+
+            cap_orig = cv2.VideoCapture(str(original_path))
+            if not cap_orig.isOpened():
+                raise RuntimeError("Failed to open original video stream for payload.")
+
+            burn_reader = None
+            if iio is None:
+                raise RuntimeError("imageio is required for burn decoding.")
+            burn_reader = iio.get_reader(str(out_path), format="pyav")
+
+            last_orig_index = -1
+            last_orig_frame = None
+            for frame_index, burn_frame in enumerate(burn_reader):
+                if frame_index >= len(frame_map):
+                    break
+                orig_index, mask_index = frame_map[frame_index]
+                if orig_index != last_orig_index:
+                    cap_orig.set(cv2.CAP_PROP_POS_FRAMES, orig_index)
+                    ret_orig, frame_orig = cap_orig.read()
+                    if not ret_orig:
+                        break
+                    last_orig_index = orig_index
+                    last_orig_frame = frame_orig
+                if last_orig_frame is None:
+                    break
+
+                mask_path = mask_dir / f"{mask_index:06d}.png"
+                if mask_path.exists():
+                    mask = np.array(Image.open(mask_path).convert("L"))
+                else:
+                    mask = np.zeros((mask_height, mask_width), dtype=np.uint8)
+
+                if mask.shape[0] != mask_height or mask.shape[1] != mask_width:
+                    mask = cv2.resize(mask, (mask_width, mask_height), interpolation=cv2.INTER_NEAREST)
+
+                orig_rgb = cv2.cvtColor(last_orig_frame, cv2.COLOR_BGR2RGB)
+                burn_rgb = burn_frame
+                if orig_rgb.shape[:2] != (mask_height, mask_width):
+                    orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+                if burn_rgb.shape[:2] != (mask_height, mask_width):
+                    burn_rgb = cv2.resize(burn_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+
                 frame_hash = hashes.Hash(hashes.SHA256(), backend=default_backend())
-                frame_hash.update(composite_frame.tobytes())
+                frame_hash.update(burn_rgb.tobytes())
                 frame_hash_bytes = frame_hash.finalize()
 
                 h = hmac.HMAC(base_key_bytes, hashes.SHA256(), backend=default_backend())
@@ -1455,21 +1519,10 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 payload_frames.append(base64.b64encode(buf.getvalue()).decode())
                 index_map.append(frame_index)
 
-                if (mask_height, mask_width) != (out_height, out_width):
-                    composite_frame = cv2.resize(
-                        composite_frame,
-                        (out_width, out_height),
-                        interpolation=cv2.INTER_LINEAR,
-                    )
-                writer.append_data(composite_frame)
-                frame_index += 1
-
             cap_orig.release()
-            if cap_synth is not None:
-                cap_synth.release()
-            if synth_reader is not None:
-                synth_reader.close()
-            writer.close()
+            if burn_reader is not None:
+                burn_reader.close()
+
             logger.info(
                 "VisualCipher done: frames=%s mask_res=%sx%s fps=%s",
                 len(payload_frames),
@@ -1477,10 +1530,6 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 mask_height,
                 fps,
             )
-            if frame_index == 0:
-                raise RuntimeError("No synth frames decoded; burn video not created.")
-            if not out_path.exists():
-                raise RuntimeError("Burn composite was not created.")
 
             composite_bytes = out_path.read_bytes()
 
