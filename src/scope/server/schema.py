@@ -1,6 +1,7 @@
 """Pydantic schemas for FastAPI application."""
 
 from enum import Enum
+from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -139,6 +140,26 @@ class Parameters(BaseModel):
     capture_mask_indices: bool | None = Field(
         default=None,
         description="Capture SAM3 mask indices during burn for exact restore alignment.",
+    )
+
+
+class ServerBurnRenderRequest(BaseModel):
+    """Request schema for server-side burn rendering."""
+
+    pipelineId: str = Field(..., description="Pipeline ID to use for rendering.")
+    maskId: str = Field(..., description="SAM3 mask session ID to bind server video.")
+    params: Parameters = Field(..., description="Runtime parameters for the render.")
+    loadParams: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional pipeline load parameters if pipeline is not loaded.",
+    )
+    outputFps: float | None = Field(
+        default=None,
+        description="Override output FPS for the rendered video.",
+    )
+    outputMimeType: str | None = Field(
+        default="video/mp4",
+        description="Requested output MIME type for the rendered video.",
     )
     capture_mask_reset: bool | None = Field(
         default=None,

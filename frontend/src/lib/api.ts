@@ -36,6 +36,37 @@ export interface WebRTCOfferRequest {
   };
 }
 
+export interface ServerBurnRenderRequest {
+  pipelineId: string;
+  maskId: string;
+  params: {
+    prompts?: string[] | PromptItem[];
+    prompt_interpolation_method?: "linear" | "slerp";
+    transition?: PromptTransition;
+    denoising_step_list?: number[];
+    noise_scale?: number;
+    noise_controller?: boolean;
+    manage_cache?: boolean;
+    kv_cache_attention_bias?: number;
+    vace_ref_images?: string[];
+    vace_context_scale?: number;
+    sam3_mask_id?: string | null;
+    sam3_mask_mode?: "inside" | "outside";
+    input_mode?: "video";
+  };
+  loadParams?: Record<string, unknown> | null;
+  outputFps?: number | null;
+  outputMimeType?: string | null;
+  capture_mask_reset?: boolean | null;
+}
+
+export interface ServerBurnRenderResponse {
+  videoBase64: string;
+  mimeType: string;
+  fps: number;
+  frameCount: number;
+}
+
 export interface PipelineLoadParams {
   // Base interface for pipeline load parameters
   [key: string]: unknown;
@@ -110,6 +141,35 @@ export const sendWebRTCOffer = async (
 
   const result = await response.json();
   return result;
+};
+
+export const renderServerBurn = async (
+  data: ServerBurnRenderRequest
+): Promise<ServerBurnRenderResponse> => {
+  const response = await fetch(apiUrl("/api/v1/burn/render"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Server burn render failed: ${response.status} ${response.statusText}: ${errorText}`
+    );
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || "Server burn render failed");
+  }
+
+  return {
+    videoBase64: result.videoBase64,
+    mimeType: result.mimeType,
+    fps: result.fps,
+    frameCount: result.frameCount,
+  };
 };
 
 export const sendIceCandidates = async (

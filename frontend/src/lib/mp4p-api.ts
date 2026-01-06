@@ -79,7 +79,7 @@ export async function blobToBase64(
   return fileToBase64(file);
 }
 
-function base64ToBlob(base64: string, mimeType: string): Blob {
+export function base64ToBlob(base64: string, mimeType: string): Blob {
   const byteCharacters = atob(base64);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {

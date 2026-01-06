@@ -24,10 +24,12 @@ import type { PromptItem, PromptTransition } from "../lib/api";
 import {
   checkModelStatus,
   downloadPipelineModels,
+  renderServerBurn,
   startSam3MaskJob,
   getSam3MaskJob,
   uploadAsset,
 } from "../lib/api";
+import { base64ToBlob } from "../lib/mp4p-api";
 import { toast } from "sonner";
 import { sendLoRAScaleUpdates } from "../utils/loraHelpers";
 
@@ -158,6 +160,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const debugLog = (...args: unknown[]) => {
     console.log("[burn-debug]", ...args);
   };
+  const [serverSynthedFps, setServerSynthedFps] = useState<number | null>(null);
+  const serverRenderAbortRef = useRef(false);
 
 
   // Download state
@@ -803,23 +807,56 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     setIsSynthCapturing(true);
     setSynthEndPending(false);
     setConfirmedSynthedBlob(null);
+    setServerSynthedFps(null);
     resetRecording();
 
     let restartedStream: MediaStream | null = null;
     if (serverVideoEnabled) {
-      awaitingCaptureResetRef.current = true;
-      awaitingServerResetRef.current = true;
-      awaitingServerStartRef.current = true;
-      pendingRecordStartRef.current = true;
-      pendingRecordStreamRef.current = null;
-      captureResetInFlightRef.current = true;
-      serverStartUnpauseSentRef.current = false;
-      sendParameterUpdate({ server_video_pause: true });
-      sendParameterUpdate({
-        capture_mask_reset: true,
-        capture_mask_indices: true,
-      });
-      sendParameterUpdate({ server_video_reset: true, server_video_loop: false });
+      serverRenderAbortRef.current = false;
+      if (isStreaming) {
+        stopStream();
+      }
+      try {
+        if (!sam3MaskId) {
+          throw new Error("Missing SAM3 mask for server burn.");
+        }
+        const renderParams = {
+          prompts: [{ text: promptText, weight: 100 }],
+          prompt_interpolation_method: interpolationMethod,
+          denoising_step_list: MAX_DENOISING_STEPS,
+          noise_scale: settings.noiseScale,
+          noise_controller: settings.noiseController,
+          kv_cache_attention_bias: settings.kvCacheAttentionBias,
+          sam3_mask_id: sam3MaskId,
+          sam3_mask_mode: sam3MaskMode,
+          input_mode: "video" as const,
+        };
+        const renderResult = await renderServerBurn({
+          pipelineId: settings.pipelineId,
+          maskId: sam3MaskId,
+          params: renderParams,
+          outputMimeType: "video/mp4",
+          capture_mask_reset: true,
+        });
+        if (serverRenderAbortRef.current) {
+          return;
+        }
+        const outputBlob = base64ToBlob(
+          renderResult.videoBase64,
+          renderResult.mimeType || "video/mp4"
+        );
+        setConfirmedSynthedBlob(outputBlob);
+        setServerSynthedFps(renderResult.fps ?? null);
+      } catch (error) {
+        console.error("Server burn render failed:", error);
+        toast.error("Server burn failed", {
+          description:
+            error instanceof Error ? error.message : "Failed to render burn on server",
+        });
+      } finally {
+        setIsSynthCapturing(false);
+      }
+      return;
     } else {
       restartedStream = await restartVideoStream({
         loop: false,
@@ -906,9 +943,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
   const handleCancelSynth = async () => {
     debugLog("Burn: cancel");
+    serverRenderAbortRef.current = true;
     setSynthEndPending(false);
     setIsSynthCapturing(false);
     setSynthLockedPrompt("");
+    setServerSynthedFps(null);
     captureResetInFlightRef.current = false;
     pendingRecordStartRef.current = false;
     awaitingCaptureResetRef.current = false;
@@ -929,6 +968,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
   const handleDeleteBurn = async () => {
     setConfirmedSynthedBlob(null);
+    setServerSynthedFps(null);
     resetRecording();
     setSynthLockedPrompt("");
     captureResetInFlightRef.current = false;
@@ -1238,7 +1278,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onLivePromptSubmit={handleLivePromptSubmit}
                   isVideoPaused={settings.paused}
                   confirmedSynthedBlob={confirmedSynthedBlob}
-                  confirmedSynthedFps={recordedSynthedFps}
+                  confirmedSynthedFps={serverSynthedFps ?? recordedSynthedFps}
                   isRecordingSynthed={isRecordingSynthed}
                   isSynthCapturing={isSynthCapturing}
                   synthLockedPrompt={synthLockedPrompt}

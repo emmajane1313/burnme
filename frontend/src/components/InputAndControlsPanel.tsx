@@ -50,51 +50,36 @@ interface InputAndControlsPanelProps {
   sourceVideoBlocked?: boolean;
 }
 
-const makePresetSvg = (label: string, start: string, end: string) => {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>
-    <defs>
-      <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-        <stop offset='0%' stop-color='${start}'/>
-        <stop offset='100%' stop-color='${end}'/>
-      </linearGradient>
-    </defs>
-    <rect width='200' height='200' fill='url(%23g)'/>
-    <circle cx='100' cy='100' r='72' fill='rgba(255,255,255,0.28)'/>
-    <text x='100' y='112' text-anchor='middle' font-family='Handjet, Arial, sans-serif' font-size='40' fill='#2a0a18'>${label}</text>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-};
-
 const PROMPT_PRESETS = [
   {
-    id: "chrome-pop",
+    id: "Chrome Interface Fever",
     prompt:
-      "A luminous silhouette composed of swirling cosmic matter, filled with dense star fields, nebula clouds, flowing fire-like energy, and liquid rainbow colors that continuously move and circulate, emitting a soft yet intense glow; the colors shift smoothly from deep blues and violets to bright reds, greens, and golds, as if powered by an internal stellar engine, with particles drifting, igniting, and dissolving in slow motion; the edges shimmer and pulse with light, slightly translucent, energy crystals, high dynamic range, cinematic lighting, ethereal, otherworldly.",
-    image: makePresetSvg("CHR", "#ffd0e6", "#b7ecff"),
+      "y2k, A hyper-chrome digital surface where molten silver gradients collide with icy cyan, neon orange, and ultraviolet tones, flowing across the frame like reflections on polished metal; floating interface icons such as hearts, arrows, loading bars, and pixel stars drift through the composition, creating the feel of an early 2000s desktop fantasy. Tribal flame motifs and sharp techno curves appear and fade inside the glossy layers as if embedded in liquid chrome. The texture feels overtly synthetic and machine-perfect, echoing the futuristic optimism of turn-of-the-millennium design, with micro glitter flecks suspended throughout that shimmer under uniform studio lighting without shadows. The overall effect is sleek yet loud, projecting confident energy through its metallic sheen and saturated contrasts, where every surface looks engineered for maximum visual impact, abstract, digital art, chrome texture, metallic gradients, cyber icons, tribal flames, techno curves, glossy finish, synthetic surface, neon accents, high contrast, bold colors, y2k aesthetic, early 2000s style, futuristic retro, edgy, energetic, seamless background, repetitive pattern, reflective surface, prismatic highlights, artificial light, glamorous, maximalist, visually dense, eye-catching, vibrant hues, saturated colors, digital medium, decorative, fashionable, trendy, intricate details, luminous glow, bold aesthetic.",
+    image: "/assets/images/chrome.png",
   },
   {
-    id: "pixel-dream",
+    id: "Bubblegum Pop Collage",
     prompt:
-      "Y2K exploding chrome hearts made of swirling cosmic matter and liquid rainbow light, packed with dense star fields, nebula clouds, and fire‑like energy streams; the hearts crack open and burst with glittering particles, prismatic shards, and plasma ribbons that circulate and flare in slow motion, emitting a soft but intense glow; colors shift smoothly from deep blues and violets into hot pinks, reds, neon greens, and molten gold, as if powered by an internal stellar engine; edges shimmer and pulse with translucent crystal highlights, high dynamic range, cinematic lighting, ethereal, otherworldly, glossy early‑2000s pop aesthetic.",
-    image: makePresetSvg("PX", "#ffc7d9", "#c7d7ff"),
+      "y2k, A candy-coated pastel dreamscape where bubblegum pink, baby blue, butter yellow, and mint green ripple across the frame in soft, glossy waves like melted plastic toys under studio lights; oversized bubble typography, smiley faces, and butterfly stickers float through the scene, giving the impression of a playful early 2000s pop collage. Checkerboard grids and daisy motifs peek through the layers, dissolving into the shimmer as if seen through clear vinyl. The texture feels intentionally artificial and toy-like, channeling the sweet maximalism of Y2K pop culture, with fine sparkle dust embedded throughout that glints evenly without harsh shadows. The overall effect is cute yet bold, radiating upbeat energy through its saturated pastels and dense decoration, where every surface feels coated in glossy nostalgia, abstract, digital art, pastel gradients, bubble letters, smiley icons, butterfly motifs, checkerboard pattern, daisy print, glossy plastic texture, synthetic finish, soft glow, high saturation, y2k aesthetic, early 2000s pop style, playful, energetic, seamless background, repetitive pattern, smooth surface, artificial light, decorative, trendy, fashionable, maximalist design, intricate details, luminous highlights, eye-catching, vibrant pastels, digital medium, modern retro, cheerful, bold aesthetic.",
+    image: "/assets/images/bubble.png",
   },
   {
-    id: "angel-heat",
+    id: "Neon Cyber Rush",
     prompt:
-      "Y2K firecore hearts and flames in glossy chrome and molten glass, blazing with neon orange, magenta, and electric blue heat; liquid flame ribbons spiral and explode outward with sparkling particles and glitter dust, pulsing like a club‑era screensaver; the fire glows from within, shifting from deep ember reds to hot pink and golden highlights, with shimmering translucent edges, high dynamic range, cinematic lighting, early‑2000s pop futurism.",
-    image: makePresetSvg("ANG", "#ffe1f0", "#ffc6b0"),
+      "y2k, A dark neon cyber backdrop where jet black and deep indigo surfaces pulse with streaks of acid green, hot magenta, and laser blue, slicing across the frame like nightclub lights in a futuristic arcade; pixel grids and wireframe tunnels stretch into the distance, while chrome butterflies and glowing stars hover in layered depth. Matrix-style code textures and flame decals emerge briefly within the glow, then dissolve back into the digital haze. The texture feels deliberately artificial and high-tech, evoking the edgy side of early 2000s cyber culture, with tiny luminous particles scattered throughout that sparkle under consistent, shadow-free lighting. The overall effect is intense and electric, pushing aggressive contrast and visual overload, where every surface looks engineered to scream speed, energy, and digital rebellion, abstract, digital art, neon glow, dark background, wireframe graphics, pixel grid, chrome butterflies, star shapes, flame decals, cyber texture, synthetic surface, glossy finish, high contrast, bold neon colors, y2k aesthetic, early 2000s cyber style, edgy, dynamic, seamless background, repetitive pattern, reflective elements, prismatic highlights, artificial light, futuristic, glamorous, maximalist, visually striking, saturated colors, digital medium, decorative, trendy, intricate details, luminous effects, bold aesthetic.",
+    image: "/assets/images/neon.png",
   },
   {
-    id: "neon-glass",
+    id: "Denim Graffiti Dreams",
     prompt:
-      "Y2K candy‑burst hearts and bubbles made of liquid sugar glass, coated in glossy chrome and pastel neon icing; swirling rainbow syrup, star‑glitter, and gummy‑like particles float and pop in slow motion, glowing from within; colors shift through cotton‑candy pinks, turquoise, lemon yellow, and electric purple with a soft but intense glow; translucent edges shimmer like hard candy, high dynamic range, cinematic lighting, early‑2000s pop aesthetic.",
-    image: makePresetSvg("NEO", "#f7c2ff", "#c2ffe4"),
+      "y2k, A textured denim-blue canvas layered with spray-paint neon pink, acid yellow, and electric turquoise, splashed across the frame like street art on low-rise jeans; rhinestone hearts, safety pins, and graffiti tags scatter through the composition, giving the feel of an early 2000s fashion zine come to life. Bandana patterns and checker stripes fade in and out beneath the paint, as if stitched into the surface itself. The texture feels deliberately artificial yet tactile, echoing the DIY glamour of Y2K street style, with fine metallic dust embedded throughout that sparkles evenly under soft studio lighting. The overall effect is rebellious and playful, radiating bold confidence through its color clashes and layered chaos, where every surface feels styled for maximum attitude, abstract, digital art, denim texture, graffiti paint, rhinestone accents, safety pin motifs, bandana pattern, checker stripes, glossy finish, synthetic surface, neon splashes, high contrast, bold colors, y2k aesthetic, early 2000s street fashion style, edgy, energetic, seamless background, repetitive pattern, decorative, trendy, fashionable, maximalist design, intricate details, luminous highlights, eye-catching, saturated colors, digital medium, bold aesthetic.",
+    image: "/assets/images/denim.png",
   },
   {
-    id: "satin-fire",
+    id: "Plasma Disco Mirage",
     prompt:
-      "Y2K leopard‑to‑dalmation print hearts in glossy chrome and translucent vinyl, covered with high‑contrast black‑and‑white spots and hot‑pink accents; the pattern ripples and warps across the surface like liquid plastic, shimmering with micro‑glitter and metallic highlights; bold 2000s pop vibe, high dynamic range, cinematic lighting, playful, glossy, otherworldly.",
-    image: makePresetSvg("SAT", "#ffd2c2", "#f6b0e0"),
+      "y2k, A luminous disco-inspired surface where molten gold, champagne pink, and ultraviolet violet swirl together like liquid light on a mirrored dance floor; star cutouts, disco balls, and glowing crescents float through the scene, creating a glamorous early 2000s club fantasy. Zebra stripes and metallic polka dots surface briefly within the glow, then dissolve back into the shimmer as if seen through heat waves. The texture feels overtly synthetic and polished, channeling the flashy maximalism of Y2K nightlife visuals, with ultra-fine glitter particles suspended throughout that sparkle under even, shadow-free lighting. The overall effect is bold and seductive, radiating high-energy glamour through its reflective surfaces and dense decoration, where every inch gleams with unapologetic excess, abstract, digital art, metallic gradients, disco motifs, star shapes, zebra pattern, polka dots, glossy texture, synthetic finish, luminous glow, high contrast, bold colors, y2k aesthetic, early 2000s club style, glamorous, energetic, seamless background, repetitive pattern, reflective surface, prismatic highlights, artificial light, decorative, trendy, fashionable, maximalist design, intricate details, visually striking, saturated colors, digital medium, bold aesthetic.",
+    image: "/assets/images/disco.png",
   },
 ];
 
@@ -232,7 +217,9 @@ export function InputAndControlsPanel({
         let maskPayloadCodec;
         if (sam3MaskId && promptTexts[0]) {
           if (!uploadedVideoFile) {
-            throw new Error("Missing original video for visual cipher payload.");
+            throw new Error(
+              "Missing original video for visual cipher payload."
+            );
           }
           const originalVideoBase64 = uploadedVideoFile
             ? await blobToBase64(uploadedVideoFile, uploadedVideoFile.name)

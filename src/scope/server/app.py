@@ -49,7 +49,7 @@ from .models_config import (
     get_models_dir,
     models_are_downloaded,
 )
-from .pipeline_manager import PipelineManager
+from .pipeline_manager import PipelineManager, PipelineStatus
 from .sam3_manager import sam3_mask_manager
 from .schema import (
     AssetFileInfo,
@@ -62,6 +62,7 @@ from .schema import (
     PipelineLoadRequest,
     PipelineSchemasResponse,
     PipelineStatusResponse,
+    ServerBurnRenderRequest,
     WebRTCOfferRequest,
     WebRTCOfferResponse,
 )
@@ -1219,6 +1220,230 @@ async def add_synthed_video_endpoint(request: AddSynthedVideoRequest):
     except Exception as e:
         logger.error(f"Error adding synthed video: {e}")
         return {"success": False, "error": str(e)}
+
+
+@app.post("/api/v1/burn/render")
+async def render_server_burn_endpoint(
+    request: ServerBurnRenderRequest,
+    pipeline_manager: PipelineManager = Depends(get_pipeline_manager),
+):
+    if cv2 is None:
+        raise HTTPException(
+            status_code=500, detail="OpenCV is required for server burn rendering."
+        )
+
+    session = sam3_mask_manager.get_session(request.maskId)
+    if session is None:
+        raise HTTPException(status_code=404, detail="SAM3 mask session not found.")
+
+    if request.capture_mask_reset:
+        sam3_mask_manager.reset_applied_indices(request.maskId)
+
+    load_params = request.loadParams or None
+    pipeline_loaded = await pipeline_manager.load_pipeline(
+        request.pipelineId, load_params
+    )
+    if not pipeline_loaded and pipeline_manager.status != PipelineStatus.LOADED:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Pipeline {request.pipelineId} failed to load for server burn.",
+        )
+
+    try:
+        pipeline = pipeline_manager.get_pipeline()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Pipeline {request.pipelineId} not available: {exc}",
+        ) from exc
+
+    params = request.params.model_dump(exclude_none=True)
+    params["input_mode"] = "video"
+    params.setdefault("sam3_mask_id", request.maskId)
+    params.setdefault("sam3_mask_mode", "inside")
+
+    output_mime = request.outputMimeType or "video/mp4"
+    if "mp4" not in output_mime:
+        raise HTTPException(
+            status_code=400,
+            detail="Server burn currently supports only video/mp4 output.",
+        )
+
+    video_path = session.video_path
+    if not video_path.exists():
+        raise HTTPException(
+            status_code=400, detail="SAM3 source video is missing on the server."
+        )
+
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        raise HTTPException(
+            status_code=500, detail="Failed to open SAM3 source video."
+        )
+
+    input_fps = session.input_fps or session.sam3_fps or 0.0
+    if input_fps <= 0:
+        input_fps = float(cap.get(cv2.CAP_PROP_FPS) or 15.0)
+    output_fps = request.outputFps or input_fps or 15.0
+
+    prepare_params = dict(params)
+    prepare_params["video"] = True
+    requirements = (
+        pipeline.prepare(**prepare_params)
+        if hasattr(pipeline, "prepare")
+        else None
+    )
+    chunk_size = requirements.input_size if requirements is not None else 1
+
+    frame_index = 0
+    output_frames = 0
+    init_cache = True
+    writer = None
+    output_path = None
+
+    def write_frames(output_tensor, mask_indices, valid_count):
+        nonlocal output_frames, writer, output_path
+        if output_tensor is None:
+            return
+        if mask_indices and output_tensor.shape[0] > len(mask_indices):
+            output_tensor = output_tensor[: len(mask_indices)]
+        output_tensor = (
+            (output_tensor * 255.0)
+            .clamp(0, 255)
+            .to(dtype=torch.uint8)
+            .contiguous()
+            .detach()
+            .cpu()
+        )
+        for idx in range(min(valid_count, output_tensor.shape[0])):
+            frame_np = output_tensor[idx].numpy()
+            if writer is None:
+                height, width = frame_np.shape[:2]
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                output_path = Path(tempfile.gettempdir()) / (
+                    f"burn-render-{uuid4().hex}.mp4"
+                )
+                writer = cv2.VideoWriter(
+                    str(output_path),
+                    fourcc,
+                    float(output_fps),
+                    (width, height),
+                )
+                if not writer.isOpened():
+                    raise RuntimeError("Failed to open output writer for server burn.")
+            writer.write(frame_np[:, :, ::-1])
+            if mask_indices:
+                sam3_mask_manager.append_applied_indices(
+                    request.maskId, [mask_indices[idx]]
+                )
+            output_frames += 1
+
+    frames: list[torch.Tensor] = []
+    frame_indices: list[int] = []
+    try:
+        with torch.inference_mode():
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                tensor = torch.from_numpy(frame_rgb).float().unsqueeze(0)
+                frames.append(tensor)
+                frame_indices.append(frame_index)
+                frame_index += 1
+
+                if len(frames) < chunk_size:
+                    continue
+
+                call_params = dict(params)
+                call_params["init_cache"] = init_cache
+                init_cache = False
+
+                vace_enabled = getattr(pipeline, "vace_enabled", False)
+                vace_ref_images = params.get("vace_ref_images")
+                if vace_enabled and vace_ref_images:
+                    call_params["vace_input_frames"] = frames
+                else:
+                    call_params["video"] = frames
+
+                mask_indices = sam3_mask_manager.get_mask_indices(
+                    request.maskId, frame_indices, None, True, False
+                )
+                mask_frames = sam3_mask_manager.get_masks_for_indices(
+                    request.maskId, frame_indices
+                )
+                call_params["mask_frames"] = mask_frames
+                call_params["sam3_mask_mode"] = params.get("sam3_mask_mode", "inside")
+
+                output = pipeline(**call_params)
+                write_frames(output, mask_indices, len(frame_indices))
+                frames = []
+                frame_indices = []
+
+            if frames:
+                pad_count = chunk_size - len(frames)
+                if pad_count > 0:
+                    last_frame = frames[-1]
+                    last_index = frame_indices[-1]
+                    for _ in range(pad_count):
+                        frames.append(last_frame)
+                        frame_indices.append(last_index)
+
+                call_params = dict(params)
+                call_params["init_cache"] = init_cache
+                init_cache = False
+
+                vace_enabled = getattr(pipeline, "vace_enabled", False)
+                vace_ref_images = params.get("vace_ref_images")
+                if vace_enabled and vace_ref_images:
+                    call_params["vace_input_frames"] = frames
+                else:
+                    call_params["video"] = frames
+
+                mask_indices = sam3_mask_manager.get_mask_indices(
+                    request.maskId, frame_indices, None, True, False
+                )
+                mask_frames = sam3_mask_manager.get_masks_for_indices(
+                    request.maskId, frame_indices
+                )
+                call_params["mask_frames"] = mask_frames
+                call_params["sam3_mask_mode"] = params.get("sam3_mask_mode", "inside")
+
+                output = pipeline(**call_params)
+                write_frames(output, mask_indices, len(frame_indices) - pad_count)
+
+    except Exception as exc:
+        logger.error("Server burn render failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        cap.release()
+        if writer is not None:
+            writer.release()
+
+    if output_path is None or not output_path.exists():
+        raise HTTPException(
+            status_code=500, detail="Server burn produced no output video."
+        )
+
+    output_bytes = output_path.read_bytes()
+    output_b64 = base64.b64encode(output_bytes).decode()
+    output_path.unlink(missing_ok=True)
+
+    logger.info(
+        "Server burn render complete: mask_id=%s frames=%s fps=%.2f",
+        request.maskId,
+        output_frames,
+        output_fps,
+    )
+
+    return {
+        "success": True,
+        "videoBase64": output_b64,
+        "mimeType": "video/mp4",
+        "fps": output_fps,
+        "frameCount": output_frames,
+    }
 
 
 @app.post("/api/v1/mp4p/visual-cipher")
