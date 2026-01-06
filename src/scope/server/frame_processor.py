@@ -732,6 +732,10 @@ class FrameProcessor:
                     self._capture_mask_indices = bool(
                         new_parameters.get("capture_mask_indices")
                     )
+                    logger.info(
+                        "SAM3 mask capture toggled: enabled=%s",
+                        self._capture_mask_indices,
+                    )
                 if new_parameters.get("capture_mask_reset"):
                     mask_id = self.parameters.get("sam3_mask_id")
                     if mask_id:
@@ -740,6 +744,10 @@ class FrameProcessor:
                             "SAM3 mask index capture reset: session=%s",
                             mask_id,
                         )
+                        if self.notification_callback:
+                            self.notification_callback(
+                                {"type": "capture_reset_done", "mask_id": mask_id}
+                            )
         except queue.Empty:
             pass
 
@@ -965,6 +973,12 @@ class FrameProcessor:
                         if idx < len(mask_indices_used):
                             sam3_mask_manager.append_applied_indices(
                                 mask_id, [mask_indices_used[idx]]
+                            )
+                        else:
+                            logger.warning(
+                                "SAM3 mask index missing: output_idx=%s input_len=%s",
+                                idx,
+                                len(mask_indices_used),
                             )
                 except queue.Full:
                     logger.warning("Output queue full, dropping processed frame")

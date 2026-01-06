@@ -1315,8 +1315,10 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             )
             if applied_indices:
                 logger.info(
-                    "VisualCipher using applied mask indices: count=%s",
+                    "VisualCipher using applied mask indices: count=%s head=%s tail=%s",
                     len(applied_indices),
+                    applied_indices[:5],
+                    applied_indices[-5:],
                 )
             orig_fps = float(cap_orig.get(cv2.CAP_PROP_FPS) or 0.0)
             synth_fps = 0.0

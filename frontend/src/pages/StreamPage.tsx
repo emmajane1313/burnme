@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "../components/Header";
 import { InputAndControlsPanel } from "../components/InputAndControlsPanel";
 import { VideoOutput } from "../components/VideoOutput";
@@ -197,6 +197,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       stopStream();
       setSynthEndPending(true);
     },
+    onCaptureResetDone: maskId => {
+      debugLog("Capture reset done", { maskId });
+      awaitingCaptureResetRef.current = false;
+      maybeStartRecording();
+    },
+    onServerVideoResetDone: () => {
+      debugLog("Server video reset done");
+      awaitingServerResetRef.current = false;
+      maybeStartRecording();
+    },
   });
   const {
     isRecording: isRecordingSynthed,
@@ -208,6 +218,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   } = useVideoRecorder();
   const remoteStreamRef = useRef<MediaStream | null>(null);
   const autoUnpauseForSam3Ref = useRef(false);
+  const pendingRecordStreamRef = useRef<MediaStream | null>(null);
+  const awaitingCaptureResetRef = useRef(false);
+  const awaitingServerResetRef = useRef(false);
+  const pendingRecordStartRef = useRef(false);
 
   const isLoading = isDownloading || isPipelineLoading || isConnecting;
 
@@ -619,6 +633,27 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     });
   };
 
+  const maybeStartRecording = useCallback(() => {
+    if (!pendingRecordStartRef.current) {
+      return;
+    }
+    if (awaitingCaptureResetRef.current || awaitingServerResetRef.current) {
+      debugLog("Burn: waiting on reset", {
+        captureReset: awaitingCaptureResetRef.current,
+        serverReset: awaitingServerResetRef.current,
+      });
+      return;
+    }
+    const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
+    if (!streamToRecord) {
+      return;
+    }
+    pendingRecordStartRef.current = false;
+    pendingRecordStreamRef.current = null;
+    sendParameterUpdate({ capture_mask_indices: true });
+    startRecording(streamToRecord);
+  }, [sendParameterUpdate, startRecording]);
+
   useEffect(() => {
     remoteStreamRef.current = remoteStream;
   }, [remoteStream]);
@@ -747,6 +782,14 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
     let restartedStream: MediaStream | null = null;
     if (serverVideoEnabled) {
+      awaitingCaptureResetRef.current = true;
+      awaitingServerResetRef.current = true;
+      pendingRecordStartRef.current = true;
+      pendingRecordStreamRef.current = null;
+      sendParameterUpdate({
+        capture_mask_indices: true,
+        capture_mask_reset: true,
+      });
       sendParameterUpdate({ server_video_reset: true, server_video_loop: false });
     } else {
       restartedStream = await restartVideoStream({
@@ -764,14 +807,17 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
 
     onVideoPlayingCallbackRef.current = () => {
-      const streamToRecord = remoteStreamRef.current;
-      if (streamToRecord) {
-        sendParameterUpdate({
-          capture_mask_indices: true,
-          capture_mask_reset: true,
-        });
-        startRecording(streamToRecord);
+      awaitingCaptureResetRef.current = true;
+      if (!serverVideoEnabled) {
+        awaitingServerResetRef.current = false;
       }
+      pendingRecordStartRef.current = true;
+      pendingRecordStreamRef.current = remoteStreamRef.current;
+      sendParameterUpdate({
+        capture_mask_indices: true,
+        capture_mask_reset: true,
+      });
+      maybeStartRecording();
     };
 
     const canReuseStream = isStreaming && remoteStreamRef.current;

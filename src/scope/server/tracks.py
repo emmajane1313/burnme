@@ -189,6 +189,8 @@ class VideoProcessingTrack(MediaStreamTrack):
                 frame_idx = 0
                 self._server_video_reset.clear()
                 next_time = time.time()
+                if self.notification_callback:
+                    self.notification_callback({"type": "server_video_reset_done"})
 
             ret, frame = cap.read()
             if not ret:

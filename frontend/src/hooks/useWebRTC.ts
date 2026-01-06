@@ -30,6 +30,8 @@ interface UseWebRTCOptions {
   /** Callback function called when the stream stops on the backend */
   onStreamStop?: () => void;
   onServerVideoEnded?: () => void;
+  onCaptureResetDone?: (maskId?: string | null) => void;
+  onServerVideoResetDone?: () => void;
 }
 
 /**
@@ -131,6 +133,16 @@ export function useWebRTC(options?: UseWebRTCOptions) {
             if (data.type === "server_video_ended") {
               if (options?.onServerVideoEnded) {
                 options.onServerVideoEnded();
+              }
+            }
+            if (data.type === "capture_reset_done") {
+              if (options?.onCaptureResetDone) {
+                options.onCaptureResetDone(data.mask_id ?? null);
+              }
+            }
+            if (data.type === "server_video_reset_done") {
+              if (options?.onServerVideoResetDone) {
+                options.onServerVideoResetDone();
               }
             }
           } catch (error) {
