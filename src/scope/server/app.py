@@ -1637,18 +1637,24 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             out_path = Path(tmpdir) / "restored.webm"
             synth_path.write_bytes(synthed_video)
 
-            cap = cv2.VideoCapture(str(synth_path))
-            if not cap.isOpened():
-                raise RuntimeError("Failed to open burn video.")
-
-            fps = visual_cipher.fps or float(cap.get(cv2.CAP_PROP_FPS) or 15.0)
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+            if iio is None:
+                raise RuntimeError("imageio is required for restore.")
+            burn_reader = iio.get_reader(str(synth_path), format="pyav")
+            burn_meta = burn_reader.get_meta_data()
+            fps = visual_cipher.fps or float(burn_meta.get("fps") or 15.0)
+            width = int(burn_meta.get("size")[0]) if burn_meta.get("size") else 0
+            height = int(burn_meta.get("size")[1]) if burn_meta.get("size") else 0
             if width <= 0 or height <= 0:
                 raise RuntimeError("Invalid burn video resolution.")
+            logger.info(
+                "Restore burn decode: reader=pyav fps=%.3f size=%sx%s frames_meta=%s payload_frames=%s",
+                fps,
+                width,
+                height,
+                burn_meta.get("nframes"),
+                len(payload_by_index),
+            )
 
-            if iio is None:
-                raise RuntimeError("imageio is required for restore encoding.")
             writer = iio.get_writer(
                 str(out_path),
                 fps=fps,
@@ -1672,20 +1678,18 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             base_key_bytes = base_key.finalize()
 
             frame_index = 0
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                synth_frame = rgb_frame
+            payload_hits = 0
+            payload_misses = 0
+            for frame in burn_reader:
+                synth_frame = frame
                 if (mask_height, mask_width) != (height, width):
                     synth_frame = cv2.resize(
-                        rgb_frame, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR
+                        synth_frame, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR
                     )
 
                 payload_b64 = payload_by_index.get(frame_index)
                 if payload_b64:
+                    payload_hits += 1
                     payload_bytes = base64.b64decode(payload_b64)
                     payload_img = Image.open(io.BytesIO(payload_bytes)).convert("RGBA")
                     payload = np.array(payload_img)
@@ -1720,6 +1724,8 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
                         synth_frame[mask > 0] = decrypted[mask > 0]
                     else:
                         synth_frame[mask == 0] = decrypted[mask == 0]
+                else:
+                    payload_misses += 1
 
                 if (mask_height, mask_width) != (height, width):
                     synth_frame = cv2.resize(
@@ -1728,13 +1734,26 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
 
                 writer.append_data(synth_frame)
                 frame_index += 1
+                if frame_index % 60 == 0:
+                    logger.info(
+                        "Restore frame: index=%s hits=%s misses=%s",
+                        frame_index,
+                        payload_hits,
+                        payload_misses,
+                    )
 
-            cap.release()
+            burn_reader.close()
             writer.close()
 
             restored_bytes = out_path.read_bytes()
 
-        logger.info("Restore done: bytes=%s", len(restored_bytes))
+        logger.info(
+            "Restore done: bytes=%s frames=%s hits=%s misses=%s",
+            len(restored_bytes),
+            frame_index,
+            payload_hits,
+            payload_misses,
+        )
         return {
             "success": True,
             "videoBase64": base64.b64encode(restored_bytes).decode(),
