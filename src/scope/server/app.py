@@ -1633,25 +1633,43 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
         }
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            synth_path = Path(tmpdir) / "synth.mp4"
+            burn_mime = request.mp4pData.metadata.synthedMimeType or ""
+            burn_ext = "webm" if "webm" in burn_mime.lower() else "mp4"
+            synth_path = Path(tmpdir) / f"synth.{burn_ext}"
             out_path = Path(tmpdir) / "restored.webm"
             synth_path.write_bytes(synthed_video)
 
             if iio is None:
                 raise RuntimeError("imageio is required for restore.")
-            burn_reader = iio.get_reader(str(synth_path), format="pyav")
-            burn_meta = burn_reader.get_meta_data()
-            fps = visual_cipher.fps or float(burn_meta.get("fps") or 15.0)
-            width = int(burn_meta.get("size")[0]) if burn_meta.get("size") else 0
-            height = int(burn_meta.get("size")[1]) if burn_meta.get("size") else 0
-            if width <= 0 or height <= 0:
-                raise RuntimeError("Invalid burn video resolution.")
+            try:
+                burn_reader = iio.get_reader(str(synth_path), format="pyav")
+            except Exception as exc:
+                logger.error("Restore burn open failed: %s", exc)
+                raise
+            burn_iter = iter(burn_reader)
+            try:
+                first_frame = next(burn_iter)
+            except StopIteration:
+                raise RuntimeError("Burn video contains no frames.")
+            except Exception as exc:
+                logger.error("Restore burn decode failed: %s", exc)
+                raise
+            height, width = first_frame.shape[:2]
+            fps = visual_cipher.fps or 0.0
+            burn_meta = {}
+            if fps <= 0:
+                try:
+                    burn_meta = burn_reader.get_meta_data()
+                    fps = float(burn_meta.get("fps") or 15.0)
+                except Exception as meta_exc:
+                    logger.error("Restore burn meta failed: %s", meta_exc)
+                    fps = 15.0
             logger.info(
                 "Restore burn decode: reader=pyav fps=%.3f size=%sx%s frames_meta=%s payload_frames=%s",
                 fps,
                 width,
                 height,
-                burn_meta.get("nframes"),
+                burn_meta.get("nframes") if isinstance(burn_meta, dict) else None,
                 len(payload_by_index),
             )
 
@@ -1680,7 +1698,9 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             frame_index = 0
             payload_hits = 0
             payload_misses = 0
-            for frame in burn_reader:
+
+            def process_frame(frame: np.ndarray) -> None:
+                nonlocal frame_index, payload_hits, payload_misses, mask_height, mask_width
                 synth_frame = frame
                 if (mask_height, mask_width) != (height, width):
                     synth_frame = cv2.resize(
@@ -1741,6 +1761,10 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
                         payload_hits,
                         payload_misses,
                     )
+
+            process_frame(first_frame)
+            for frame in burn_iter:
+                process_frame(frame)
 
             burn_reader.close()
             writer.close()
