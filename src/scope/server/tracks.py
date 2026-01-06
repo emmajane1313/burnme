@@ -158,7 +158,10 @@ class VideoProcessingTrack(MediaStreamTrack):
         self._server_video_loop = loop
 
     def reset_server_video(self):
+        logger.info("Server video reset requested")
         self._server_video_reset.set()
+        if self.frame_processor:
+            self.frame_processor.reset_buffers("server_video_reset")
 
     def _server_video_loop_fn(self):
         try:

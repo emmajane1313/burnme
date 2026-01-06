@@ -254,6 +254,25 @@ class FrameProcessor:
                     len(self.frame_meta_queue),
                 )
 
+    def reset_buffers(self, reason: str | None = None) -> None:
+        with self.frame_buffer_lock:
+            self.frame_buffer.clear()
+            self._frame_index = 0
+        with self.frame_meta_lock:
+            self.frame_meta_queue.clear()
+        with self.input_fps_lock:
+            self.input_frame_times.clear()
+            self.current_input_fps = DEFAULT_FPS
+        while True:
+            try:
+                self.output_queue.get_nowait()
+            except queue.Empty:
+                break
+        logger.info(
+            "FrameProcessor buffers reset%s",
+            f" ({reason})" if reason else "",
+        )
+
     def get(self) -> torch.Tensor | None:
         if not self.running:
             return None
@@ -717,11 +736,10 @@ class FrameProcessor:
                     mask_id = self.parameters.get("sam3_mask_id")
                     if mask_id:
                         sam3_mask_manager.reset_applied_indices(mask_id)
-                        if SAM3_DEBUG or DEBUG_ALL:
-                            logger.info(
-                                "SAM3 mask index capture reset: session=%s",
-                                mask_id,
-                            )
+                        logger.info(
+                            "SAM3 mask index capture reset: session=%s",
+                            mask_id,
+                        )
         except queue.Empty:
             pass
 
