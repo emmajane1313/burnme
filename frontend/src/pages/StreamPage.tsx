@@ -1027,6 +1027,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         server_video_source?: "sam3";
         server_video_mask_id?: string;
         server_video_loop?: boolean;
+        capture_mask_indices?: boolean;
+        capture_mask_reset?: boolean;
       } = {
         // Signal the intended input mode to the backend so it doesn't
         // briefly fall back to text mode before video frames arrive
@@ -1076,6 +1078,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.server_video_source = "sam3";
         initialParameters.server_video_mask_id = sam3MaskId;
         initialParameters.server_video_loop = true;
+      }
+
+      if (isSynthCapturing) {
+        initialParameters.capture_mask_indices = true;
+        initialParameters.capture_mask_reset = true;
       }
 
       // Control paused state when starting a fresh stream
