@@ -50,17 +50,17 @@ interface InputAndControlsPanelProps {
   onCancelSynth: () => void;
   onDeleteBurn?: () => void;
   onTogglePause?: () => void;
-  sam3MaskId?: string | null;
-  onSam3Generate?: () => void;
-  sam3NoDetections?: boolean;
-  sam3BoxPromptEnabled?: boolean;
-  sam3Box?: [number, number, number, number] | null;
-  onSam3BoxChange?: (box: [number, number, number, number] | null) => void;
-  onSam3BoxPromptEnable?: () => void;
-  onSam3BoxPromptCancel?: () => void;
-  sam3Ready?: boolean;
-  sam3Status?: string | null;
-  isSam3Generating?: boolean;
+  idMascaraSam?: string | null;
+  onGenerarMascara?: () => void;
+  sam3SinDetecciones?: boolean;
+  cajaSamPromptActiva?: boolean;
+  cajaSam?: [number, number, number, number] | null;
+  onCajaSamChange?: (box: [number, number, number, number] | null) => void;
+  onCajaSamPromptActiva?: () => void;
+  onCajaSamPromptCancelar?: () => void;
+  sam3Listo?: boolean;
+  estadoMascaraSam?: string | null;
+  sam3Ta3mel?: boolean;
   sourceVideoBlocked?: boolean;
 }
 
@@ -129,17 +129,17 @@ export function InputAndControlsPanel({
   onCancelSynth,
   onDeleteBurn,
   onTogglePause,
-  sam3MaskId = null,
-  onSam3Generate,
-  sam3NoDetections = false,
-  sam3BoxPromptEnabled = false,
-  sam3Box = null,
-  onSam3BoxChange,
-  onSam3BoxPromptEnable,
-  onSam3BoxPromptCancel,
-  sam3Ready = false,
-  sam3Status = null,
-  isSam3Generating = false,
+  idMascaraSam = null,
+  onGenerarMascara,
+  sam3SinDetecciones = false,
+  cajaSamPromptActiva = false,
+  cajaSam = null,
+  onCajaSamChange,
+  onCajaSamPromptActiva,
+  onCajaSamPromptCancelar,
+  sam3Listo = false,
+  estadoMascaraSam = null,
+  sam3Ta3mel = false,
   sourceVideoBlocked = false,
 }: InputAndControlsPanelProps) {
   const handlePresetSelect = (preset: (typeof PROMPT_PRESETS)[number]) => {
@@ -192,16 +192,16 @@ export function InputAndControlsPanel({
   }, [isSynthCapturing]);
 
   useEffect(() => {
-    if (!sam3BoxPromptEnabled) {
+    if (!cajaSamPromptActiva) {
       setBoxDisplay(null);
     }
-  }, [sam3BoxPromptEnabled]);
+  }, [cajaSamPromptActiva]);
 
   useEffect(() => {
-    if (!sam3Box) {
+    if (!cajaSam) {
       setBoxDisplay(null);
     }
-  }, [sam3Box]);
+  }, [cajaSam]);
 
   useEffect(() => {
     if (prefillVideoFile) {
@@ -210,7 +210,7 @@ export function InputAndControlsPanel({
   }, [prefillVideoFile]);
 
   const handleBoxPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!sam3BoxPromptEnabled || !videoRef.current) {
+    if (!cajaSamPromptActiva || !videoRef.current) {
       return;
     }
     const rect = videoRef.current.getBoundingClientRect();
@@ -219,7 +219,7 @@ export function InputAndControlsPanel({
     isDrawingBoxRef.current = true;
     boxStartRef.current = { x, y };
     setBoxDisplay({ x, y, width: 0, height: 0 });
-    onSam3BoxChange?.(null);
+    onCajaSamChange?.(null);
   };
 
   const handleBoxPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -253,7 +253,7 @@ export function InputAndControlsPanel({
     const height = Math.abs(endY - start.y);
     if (width < 4 || height < 4) {
       setBoxDisplay(null);
-      onSam3BoxChange?.(null);
+      onCajaSamChange?.(null);
       return;
     }
     setBoxDisplay({ x: left, y: top, width, height });
@@ -265,7 +265,7 @@ export function InputAndControlsPanel({
     const y1 = Math.round(top * scaleY);
     const x2 = Math.round((left + width) * scaleX);
     const y2 = Math.round((top + height) * scaleY);
-    onSam3BoxChange?.([x1, y1, x2, y2]);
+    onCajaSamChange?.([x1, y1, x2, y2]);
   };
 
   const handleFileUpload = async (
@@ -323,7 +323,7 @@ export function InputAndControlsPanel({
         let maskFrameIndexMap;
         let maskPayloadCodec;
         let keyMaterial: string | null = null;
-        if (sam3MaskId && promptTexts[0]) {
+        if (idMascaraSam && promptTexts[0]) {
           if (!uploadedVideoFile) {
             throw new Error(
               "Missing original video for visual cipher payload."
@@ -351,7 +351,7 @@ export function InputAndControlsPanel({
             synthedBase64,
             mimeType,
             originalVideoBase64,
-            sam3MaskId,
+            idMascaraSam,
             promptTexts[0],
             params,
             seed ?? 42,
@@ -377,7 +377,7 @@ export function InputAndControlsPanel({
           );
         }
 
-        if (!sam3MaskId || !promptTexts[0]) {
+        if (!idMascaraSam || !promptTexts[0]) {
           mp4pData = await addSynthedVideoBase64(
             mp4pData,
             synthedBase64,
@@ -442,7 +442,7 @@ export function InputAndControlsPanel({
     !!prompts[0]?.text?.trim() &&
     isStreaming &&
     !isLoading &&
-    sam3Ready;
+    sam3Listo;
 
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
@@ -484,7 +484,7 @@ export function InputAndControlsPanel({
                   muted
                   playsInline
                 />
-                {sam3BoxPromptEnabled ? (
+                {cajaSamPromptActiva ? (
                   <div
                     className="absolute inset-0 cursor-crosshair"
                     onPointerDown={handleBoxPointerDown}
@@ -606,7 +606,7 @@ export function InputAndControlsPanel({
           )}
         </div>
 
-        {onSam3Generate && (
+        {onGenerarMascara && (
           <div className="space-y-2">
             <h3 className="text-sm font-medium">SAM3 Mask</h3>
             <div className="text-xs text-muted-foreground">
@@ -624,53 +624,53 @@ export function InputAndControlsPanel({
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Button
                 size="xs"
-                onClick={onSam3Generate}
+                onClick={onGenerarMascara}
                 disabled={
-                  isSam3Generating ||
+                  sam3Ta3mel ||
                   isConnecting ||
                   isLoading ||
-                  (sam3BoxPromptEnabled && !sam3Box)
+                  (cajaSamPromptActiva && !cajaSam)
                 }
               >
-                {isSam3Generating
+                {sam3Ta3mel
                   ? "Generating..."
-                  : sam3BoxPromptEnabled
+                  : cajaSamPromptActiva
                     ? "Regenerate with Box"
                     : "Regenerate Mask"}
               </Button>
-              {!sam3BoxPromptEnabled ? (
+              {!cajaSamPromptActiva ? (
                 <Button
                   size="xs"
                   variant="secondary"
-                  onClick={onSam3BoxPromptEnable}
-                  disabled={isSam3Generating || isConnecting || isLoading}
+                  onClick={onCajaSamPromptActiva}
+                  disabled={sam3Ta3mel || isConnecting || isLoading}
                 >
                   Use Box Prompt
                 </Button>
               ) : null}
-              {sam3BoxPromptEnabled ? (
+              {cajaSamPromptActiva ? (
                 <Button
                   size="xs"
                   variant="ghost"
-                  onClick={onSam3BoxPromptCancel}
-                  disabled={isSam3Generating}
+                  onClick={onCajaSamPromptCancelar}
+                  disabled={sam3Ta3mel}
                 >
                   Cancel Box
                 </Button>
               ) : null}
             </div>
-            {sam3NoDetections && !sam3BoxPromptEnabled ? (
+            {sam3SinDetecciones && !cajaSamPromptActiva ? (
               <div className="text-xs text-muted-foreground">
                 No mask detected. Try box prompt for better focus.
               </div>
             ) : null}
-            {sam3BoxPromptEnabled ? (
+            {cajaSamPromptActiva ? (
               <div className="text-xs text-muted-foreground">
                 Draw a box on the preview, then regenerate.
               </div>
             ) : null}
-            {sam3Status && (
-              <div className="text-xs text-muted-foreground">{sam3Status}</div>
+            {estadoMascaraSam && (
+              <div className="text-xs text-muted-foreground">{estadoMascaraSam}</div>
             )}
           </div>
         )}

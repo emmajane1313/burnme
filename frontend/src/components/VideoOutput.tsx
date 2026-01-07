@@ -18,9 +18,9 @@ interface VideoOutputProps {
   isWaitingForFrames?: boolean;
   sourceVideoBlocked?: boolean;
   onResumeSourceVideo?: () => void;
-  isSam3Generating?: boolean;
-  sam3AutoPending?: boolean;
-  sam3Status?: string | null;
+  sam3Ta3mel?: boolean;
+  sam3AutoPendiente?: boolean;
+  estadoMascaraSam?: string | null;
   onVideoPlaying?: () => void;
   isBurning?: boolean;
 }
@@ -40,16 +40,16 @@ export function VideoOutput({
   isWaitingForFrames = false,
   sourceVideoBlocked = false,
   onResumeSourceVideo,
-  isSam3Generating = false,
-  sam3AutoPending = false,
-  sam3Status = null,
+  sam3Ta3mel = false,
+  sam3AutoPendiente = false,
+  estadoMascaraSam = null,
   onVideoPlaying,
   isBurning = false,
 }: VideoOutputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [needsUserPlay, setNeedsUserPlay] = useState(false);
-  const isMaskLoading = isSam3Generating || sam3AutoPending;
+  const isMaskLoading = sam3Ta3mel || sam3AutoPendiente;
 
   const attemptPlay = () => {
     const video = videoRef.current;
@@ -219,14 +219,14 @@ export function VideoOutput({
                   <p>Warming up pipeline...</p>
                 </div>
               </div>
-          ) : isSam3Generating || sam3AutoPending ? (
+          ) : sam3Ta3mel || sam3AutoPendiente ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <div className="text-center text-muted-foreground text-lg">
                 <Spinner size={24} className="mx-auto mb-3" />
                 <p>Generating SAM3 mask...</p>
-                {sam3Status ? (
+                {estadoMascaraSam ? (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {sam3Status}
+                    {estadoMascaraSam}
                   </p>
                 ) : null}
               </div>
