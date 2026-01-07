@@ -11,11 +11,9 @@ if [ -d ".git" ]; then
   echo "Pulling latest changes from $BRANCH..."
   git fetch origin
   git reset --hard origin/$BRANCH
-  git checkout 60c96de664391123a8b78e23256ae8f852657a47
 else
   echo "Cloning repository from $REPO_URL..."
   git clone --branch $BRANCH $REPO_URL .
-  git checkout 60c96de664391123a8b78e23256ae8f852657a47
 fi
 
 # Install Python dependencies
