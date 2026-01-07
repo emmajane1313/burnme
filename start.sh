@@ -22,6 +22,11 @@ uv sync --frozen
 
 # Build frontend
 echo "Building frontend..."
+if ! command -v npm >/dev/null 2>&1; then
+  echo "npm not found. Installing nodejs and npm..."
+  apt-get update
+  apt-get install -y nodejs npm
+fi
 cd /app/frontend
 npm install
 npm run build
