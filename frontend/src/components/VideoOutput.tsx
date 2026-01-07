@@ -120,8 +120,7 @@ export function VideoOutput({
   // Listen for video readiness to notify parent
   useEffect(() => {
     const video = videoRef.current;
-    const hasActiveVideo = Boolean(remoteStream || fallbackStream || burnedVideoUrl);
-    if (!video || !hasActiveVideo) return;
+    if (!video || !remoteStream) return;
 
     const handlePlaying = () => {
       onVideoPlaying?.();
@@ -152,7 +151,7 @@ export function VideoOutput({
       video.removeEventListener("loadeddata", handleLoadedData);
       video.removeEventListener("pause", handlePause);
     };
-  }, [onVideoPlaying, remoteStream, fallbackStream, burnedVideoUrl]);
+  }, [onVideoPlaying, remoteStream]);
 
   // No manual play/pause handling in auto-loop mode.
 
@@ -219,7 +218,7 @@ export function VideoOutput({
                   ) : null}
                 </div>
               </div>
-            ) : isWaitingForFrames ? (
+            ) : isWaitingForFrames && !burnedVideoUrl ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                 <div className="text-center text-muted-foreground text-lg">
                   <Spinner size={24} className="mx-auto mb-3" />
