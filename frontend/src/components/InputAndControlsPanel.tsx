@@ -598,7 +598,7 @@ export function InputAndControlsPanel({
                     ? "Regenerate with Box"
                     : "Regenerate Mask"}
               </Button>
-              {sam3NoDetections && !sam3BoxPromptEnabled ? (
+              {!sam3BoxPromptEnabled ? (
                 <Button
                   size="xs"
                   variant="secondary"

@@ -1237,6 +1237,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onSam3BoxPromptEnable={() => {
                     setSam3BoxPromptEnabled(true);
                     setSam3Box(null);
+                    void resumeSourceVideo();
                   }}
                   onSam3BoxPromptCancel={() => {
                     setSam3BoxPromptEnabled(false);
