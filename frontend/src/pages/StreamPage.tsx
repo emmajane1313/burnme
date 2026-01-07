@@ -13,13 +13,7 @@ import { usePipelines } from "../hooks/usePipelines";
 import { useVideoRecorder } from "../hooks/useVideoRecorder";
 import { getDefaultPromptForMode } from "../data/pipelines";
 import { adjustResolutionForPipeline } from "../lib/utils";
-import type {
-  InputMode,
-  PipelineId,
-  LoRAConfig,
-  LoraMergeStrategy,
-  DownloadProgress,
-} from "../types";
+import type { InputMode, PipelineId, DownloadProgress } from "../types";
 import type { PromptItem, PromptTransition } from "../lib/api";
 import {
   checkModelStatus,
@@ -31,7 +25,6 @@ import {
 } from "../lib/api";
 import { base64ToBlob } from "../lib/mp4p-api";
 import { toast } from "sonner";
-import { sendLoRAScaleUpdates } from "../utils/loraHelpers";
 
 // Delay before resetting video reinitialization flag (ms)
 // This allows useVideoSource to detect the flag change and trigger reinitialization
@@ -59,23 +52,6 @@ function fitResolutionToBounds(
   if (height < RESOLUTION_STEP) height = RESOLUTION_STEP;
 
   return { width, height };
-}
-
-function buildLoRAParams(
-  loras?: LoRAConfig[],
-  strategy?: LoraMergeStrategy
-): {
-  loras?: { path: string; scale: number; merge_mode?: string }[];
-  lora_merge_mode: string;
-} {
-  return {
-    loras: loras?.map(({ path, scale, mergeMode }) => ({
-      path,
-      scale,
-      ...(mergeMode && { merge_mode: mergeMode }),
-    })),
-    lora_merge_mode: strategy ?? "permanent_merge",
-  };
 }
 
 function getVaceParams(
@@ -477,7 +453,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       resolution,
       noiseScale: defaults.noiseScale,
       noiseController: defaults.noiseController,
-      loras: [], // Clear LoRA controls when switching pipelines
     });
   };
 
@@ -597,27 +572,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendParameterUpdate({
       kv_cache_attention_bias: bias,
     });
-  };
-
-  const handleLorasChange = (loras: LoRAConfig[]) => {
-    updateSettings({ loras });
-
-    // If streaming, send scale updates to backend for runtime adjustment
-    if (isStreaming) {
-      sendLoRAScaleUpdates(
-        loras,
-        pipelineInfo?.loaded_lora_adapters,
-        ({ lora_scales }) => {
-          // Forward only the lora_scales field over the data channel.
-          sendParameterUpdate({
-            // TypeScript doesn't know about lora_scales on this payload yet.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ...({ lora_scales } as any),
-          });
-        }
-      );
-    }
-    // Note: Adding/removing LoRAs requires pipeline reload
   };
 
 
@@ -1082,15 +1036,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           loadParams.quantization = settings.quantization ?? null;
         }
 
-        // Add LoRA parameters if pipeline supports LoRA
-        if (currentPipeline?.supportsLoRA && settings.loras) {
-          const loraParams = buildLoRAParams(
-            settings.loras,
-            settings.loraMergeStrategy
-          );
-          loadParams = { ...loadParams, ...loraParams };
-        }
-
         // Add VACE parameters if pipeline supports VACE
         if (currentPipeline?.supportsVACE) {
           const vaceEnabled = settings.vaceEnabled ?? currentMode !== "video";
@@ -1346,9 +1291,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onQuantizationChange={handleQuantizationChange}
                   kvCacheAttentionBias={settings.kvCacheAttentionBias ?? 0.3}
                   onKvCacheAttentionBiasChange={handleKvCacheAttentionBiasChange}
-                  loras={settings.loras || []}
-                  onLorasChange={handleLorasChange}
-                  loraMergeStrategy={settings.loraMergeStrategy ?? "permanent_merge"}
                   spoutSender={settings.spoutSender}
                   onSpoutSenderChange={handleSpoutSenderChange}
                   spoutAvailable={spoutAvailable}

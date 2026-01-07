@@ -194,7 +194,7 @@ class PipelineManager:
             return True
 
         except Exception as e:
-            from .models_config import get_models_dir
+from .models_config import get_default_lora_path, get_models_dir
 
             models_dir = get_models_dir()
             error_msg = f"Failed to load pipeline {pipeline_id}: {e}"
@@ -283,6 +283,17 @@ class PipelineManager:
             seed = load_params.get("seed", default_seed)
             loras = load_params.get("loras", None)
             lora_merge_mode = load_params.get("lora_merge_mode", lora_merge_mode)
+
+        default_lora_path = get_default_lora_path()
+        if default_lora_path.exists():
+            loras = [
+                {
+                    "path": str(default_lora_path),
+                    "scale": 1.0,
+                    "merge_mode": "permanent_merge",
+                }
+            ]
+            lora_merge_mode = "permanent_merge"
 
         config["height"] = height
         config["width"] = width

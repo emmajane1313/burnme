@@ -55,8 +55,6 @@ export interface SettingsState {
   quantization?: "fp8_e4m3fn" | null;
   kvCacheAttentionBias?: number;
   paused?: boolean;
-  loras?: LoRAConfig[];
-  loraMergeStrategy?: LoraMergeStrategy;
   // Track current input mode (text vs video)
   inputMode?: InputMode;
   // Spout settings

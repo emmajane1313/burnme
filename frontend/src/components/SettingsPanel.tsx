@@ -15,14 +15,7 @@ import { SliderWithInput } from "./ui/slider-with-input";
 import { Minus, Plus } from "lucide-react";
 import { PARAMETER_METADATA } from "../data/parameterMetadata";
 import { useLocalSliderValue } from "../hooks/useLocalSliderValue";
-import type {
-  PipelineId,
-  LoRAConfig,
-  LoraMergeStrategy,
-  SettingsState,
-  PipelineInfo,
-} from "../types";
-import { LoRAManager } from "./LoRAManager";
+import type { PipelineId, SettingsState, PipelineInfo } from "../types";
 
 
 interface SettingsPanelProps {
@@ -38,9 +31,6 @@ interface SettingsPanelProps {
   onQuantizationChange?: (quantization: "fp8_e4m3fn" | null) => void;
   kvCacheAttentionBias?: number;
   onKvCacheAttentionBiasChange?: (bias: number) => void;
-  loras?: LoRAConfig[];
-  onLorasChange: (loras: LoRAConfig[]) => void;
-  loraMergeStrategy?: LoraMergeStrategy;
   // Spout settings
   spoutSender?: SettingsState["spoutSender"];
   onSpoutSenderChange?: (spoutSender: SettingsState["spoutSender"]) => void;
@@ -62,9 +52,6 @@ export function SettingsPanel({
   onQuantizationChange,
   kvCacheAttentionBias = 0.3,
   onKvCacheAttentionBiasChange,
-  loras = [],
-  onLorasChange,
-  loraMergeStrategy = "permanent_merge",
   spoutSender,
   onSpoutSenderChange,
   spoutAvailable = false,
@@ -144,18 +131,6 @@ export function SettingsPanel({
           </Select>
         </div>
 
-
-        {currentPipeline?.supportsLoRA && (
-          <div className="space-y-4">
-            <LoRAManager
-              loras={loras}
-              onLorasChange={onLorasChange}
-              disabled={isControlsLocked}
-              isStreaming={isStreaming && !isVideoPaused}
-              loraMergeStrategy={loraMergeStrategy}
-            />
-          </div>
-        )}
 
         {pipelines?.[pipelineId]?.supportsQuantization && (
           <div className="space-y-4">

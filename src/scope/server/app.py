@@ -22,6 +22,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import click
+import httpx
 import numpy as np
 import torch
 import uvicorn
@@ -46,6 +47,8 @@ from .logs_config import (
 from .models_config import (
     ensure_models_dir,
     get_assets_dir,
+    get_default_lora_path,
+    get_default_lora_url,
     get_models_dir,
     models_are_downloaded,
 )
@@ -76,6 +79,32 @@ try:
     import imageio.v2 as iio  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     iio = None
+
+
+async def ensure_default_lora_download() -> None:
+    """Download the default LoRA if it is missing."""
+    lora_path = get_default_lora_path()
+    if lora_path.exists():
+        return
+
+    url = get_default_lora_url()
+    lora_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = lora_path.with_suffix(lora_path.suffix + ".part")
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=60.0) as client:
+            async with client.stream("GET", url) as response:
+                response.raise_for_status()
+                with tmp_path.open("wb") as handle:
+                    async for chunk in response.aiter_bytes():
+                        if chunk:
+                            handle.write(chunk)
+        tmp_path.replace(lora_path)
+        size_mb = lora_path.stat().st_size / (1024 * 1024)
+        logger.info("Default LoRA downloaded: %s (%.2f MB)", lora_path, size_mb)
+    except Exception as exc:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+        logger.error("Default LoRA download failed: %s", exc)
 
 
 class STUNErrorFilter(logging.Filter):
@@ -267,6 +296,8 @@ async def lifespan(app: FastAPI):
     assets_dir = get_assets_dir()
     assets_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Assets directory: {assets_dir}")
+
+    await ensure_default_lora_download()
 
     # Initialize pipeline manager (but don't load pipeline yet)
     pipeline_manager = PipelineManager()
@@ -519,6 +550,13 @@ class LoRAFilesResponse(BaseModel):
     lora_files: list[LoRAFileInfo]
 
 
+class LoRADownloadRequest(BaseModel):
+    """Request payload for downloading a LoRA file from a URL."""
+
+    url: str
+    filename: str | None = None
+
+
 @app.get("/api/v1/lora/list", response_model=LoRAFilesResponse)
 async def list_lora_files():
     """List available LoRA files in the models/lora directory and its subdirectories."""
@@ -553,6 +591,58 @@ async def list_lora_files():
     except Exception as e:  # pragma: no cover - defensive logging
         logger.error(f"list_lora_files: Error listing LoRA files: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/v1/lora/download")
+async def download_lora(request: LoRADownloadRequest):
+    """Download a LoRA file into the models/lora directory."""
+    url = request.url.strip()
+    if not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="Invalid URL scheme.")
+
+    lora_dir = get_models_dir() / "lora"
+    lora_dir.mkdir(parents=True, exist_ok=True)
+
+    name = (request.filename or Path(url).name).strip()
+    name = Path(name).name
+    if not name:
+        raise HTTPException(status_code=400, detail="Missing filename for LoRA.")
+
+    if not any(name.endswith(ext) for ext in (".safetensors", ".bin", ".pt")):
+        raise HTTPException(
+            status_code=400,
+            detail="LoRA filename must end with .safetensors, .bin, or .pt.",
+        )
+
+    dest_path = lora_dir / name
+    tmp_path = dest_path.with_suffix(dest_path.suffix + ".part")
+
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=60.0) as client:
+            async with client.stream("GET", url) as response:
+                response.raise_for_status()
+                with tmp_path.open("wb") as handle:
+                    async for chunk in response.aiter_bytes():
+                        if chunk:
+                            handle.write(chunk)
+    except httpx.HTTPError as exc:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=502, detail=f"Download failed: {exc}") from exc
+    except Exception as exc:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=f"Download failed: {exc}") from exc
+
+    tmp_path.replace(dest_path)
+    size_mb = dest_path.stat().st_size / (1024 * 1024)
+    logger.info("LoRA downloaded: %s (%.2f MB)", dest_path, size_mb)
+
+    return {
+        "success": True,
+        "path": str(dest_path),
+        "size_mb": round(size_mb, 2),
+    }
 
 
 @app.get("/api/v1/assets", response_model=AssetsResponse)
