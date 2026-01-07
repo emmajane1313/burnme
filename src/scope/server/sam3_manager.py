@@ -57,6 +57,11 @@ class Sam3MaskManager:
         self._masks_dir = assets_dir / "sam3_masks"
         self._masks_dir.mkdir(parents=True, exist_ok=True)
 
+    def reset_predictor(self) -> None:
+        with self._lock:
+            self._predictor = None
+            self._predictor_dtype = None
+
     def _resolve_asset_path(self, asset_path: str) -> Path:
         assets_dir = get_assets_dir().resolve()
         candidate = Path(asset_path)
@@ -258,6 +263,7 @@ class Sam3MaskManager:
         box: list[int] | None = None,
         input_fps: float | None = None,
     ) -> Sam3MaskSession:
+        self.reset_predictor()
         prompt = SAM3_PERSON_PROMPT
 
         predictor = self._get_predictor(desired_dtype=torch.float32)
