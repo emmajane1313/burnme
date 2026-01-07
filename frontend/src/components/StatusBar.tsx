@@ -5,7 +5,12 @@ interface StatusBarProps {
   videoControls?: React.ReactNode;
 }
 
-export function StatusBar({ className = "", fps, bitrate, videoControls }: StatusBarProps) {
+export function StatusBar({
+  className = "",
+  fps,
+  bitrate,
+  videoControls,
+}: StatusBarProps) {
   const MetricItem = ({
     label,
     value,
@@ -41,8 +46,26 @@ export function StatusBar({ className = "", fps, bitrate, videoControls }: Statu
     <div
       className={`border-t bg-muted/30 px-6 py-2 flex-wrap gap-5 flex items-center justify-center sm:justify-between flex-shrink-0 ${className}`}
     >
-      <div className="flex items-center">
-        {videoControls}
+      <div className="flex items-center">{videoControls}</div>
+      <div className="flex flex-wrap items-center justify-center gap-2 text-lg break-all text-white">
+        <span>FREE Y2K LORA 4 U!!! CLICK &amp; DOWNLOAD</span>
+        <a
+          href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k-1.3b.safetensors"
+          target="_blank"
+          rel="noreferrer"
+          className="underline cursor-pointer"
+        >
+          1.3B
+        </a>
+        <span>&amp;</span>
+        <a
+          href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k.safetensors"
+          target="_blank"
+          rel="noreferrer"
+          className="underline cursor-pointer"
+        >
+          14B
+        </a>
       </div>
       <div className="flex items-center gap-6">
         <MetricItem label="FPS" value={fpsValue} />

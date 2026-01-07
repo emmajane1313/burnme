@@ -28,10 +28,8 @@ interface SettingsPanelProps {
   onKvCacheAttentionBiasChange?: (bias: number) => void;
   defaultLoraEnabled?: boolean;
   onDefaultLoraEnabledChange?: (enabled: boolean) => void;
-  // Spout settings
   spoutSender?: SettingsState["spoutSender"];
   onSpoutSenderChange?: (spoutSender: SettingsState["spoutSender"]) => void;
-  // Whether Spout is available (server-side detection for native Windows, not WSL)
   spoutAvailable?: boolean;
   isVideoPaused?: boolean;
 }
@@ -54,7 +52,6 @@ export function SettingsPanel({
   spoutAvailable = false,
   isVideoPaused = false,
 }: SettingsPanelProps) {
-  // Local slider state management hooks
   const kvCacheAttentionBiasSlider = useLocalSliderValue(
     kvCacheAttentionBias,
     onKvCacheAttentionBiasChange

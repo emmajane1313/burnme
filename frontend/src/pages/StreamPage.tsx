@@ -3,6 +3,7 @@ import { Header } from "../components/Header";
 import { InputAndControlsPanel } from "../components/InputAndControlsPanel";
 import { VideoOutput } from "../components/VideoOutput";
 import { PlayPanel } from "../components/PlayPanel";
+import { AboutPanel } from "../components/AboutPanel";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useVideoSource } from "../hooks/useVideoSource";
 import { useWebRTCStats } from "../hooks/useWebRTCStats";
@@ -25,8 +26,6 @@ import {
 import { base64ToBlob } from "../lib/mp4p-api";
 import { toast } from "sonner";
 
-// Delay before resetting video reinitialization flag (ms)
-// This allows useVideoSource to detect the flag change and trigger reinitialization
 const VIDEO_REINITIALIZE_DELAY_MS = 100;
 const MAX_VIDEO_WIDTH = 496;
 const MAX_VIDEO_HEIGHT = 384;
@@ -74,22 +73,18 @@ interface StreamPageProps {
 }
 
 export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
-  // Fetch available pipelines dynamically
   const { pipelines } = usePipelines();
 
-  // Helper to get default mode for a pipeline
   const getPipelineDefaultMode = (_pipelineId: string): InputMode => {
     return "video";
   };
 
-  // Use the stream state hook for settings management
   const {
     settings,
     updateSettings,
     getDefaults,
   } = useStreamState();
 
-  // Prompt state - use unified default prompts based on mode
   const initialMode =
     settings.inputMode || getPipelineDefaultMode(settings.pipelineId);
   const [promptItems, setPromptItems] = useState<PromptItem[]>([
@@ -97,10 +92,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   ]);
   const [interpolationMethod] = useState<"linear" | "slerp">("linear");
 
-  // Track when we need to reinitialize video source
   const [shouldReinitializeVideo, setShouldReinitializeVideo] = useState(false);
 
-  // Store custom video resolution from user uploads - persists across mode/pipeline changes
   const [customVideoResolution, setCustomVideoResolution] = useState<{
     width: number;
     height: number;
@@ -120,7 +113,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   } | null>(null);
   const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
   const [burnedVideoUrl, setBurnedVideoUrl] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"upload" | "play">("upload");
+  const [viewMode, setViewMode] = useState<"upload" | "play" | "about">("upload");
   const hideBurnSourcePreview = false;
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [sam3MaskId, setSam3MaskId] = useState<string | null>(null);
@@ -142,7 +135,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
   const [serverSynthedFps, setServerSynthedFps] = useState<number | null>(null);
   const serverRenderAbortRef = useRef(false);
-  // Download state
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] =
     useState<DownloadProgress | null>(null);
@@ -151,14 +143,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   );
 
 
-  // Pipeline management
   const {
     isLoading: isPipelineLoading,
     error: pipelineError,
     loadPipeline,
   } = usePipeline();
 
-  // WebRTC for streaming
   const {
     remoteStream,
     isStreaming,
@@ -227,8 +217,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
   }, [webrtcStats, onStatsChange]);
 
-  // Video source for preview (camera or video)
-  // Enable based on input mode, not pipeline category
   const [videoInputFps, setVideoInputFps] = useState<number | null>(null);
   const {
     localStream,
@@ -244,8 +232,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     onStopStream: stopStream,
     shouldReinitialize: shouldReinitializeVideo,
     enabled: settings.inputMode === "video",
-    // Sync output resolution when user uploads a custom video
-    // Store the custom resolution so it persists across mode/pipeline changes
     onCustomVideoResolution: resolution => {
       const fitted = fitResolutionToBounds(resolution);
       setCustomVideoResolution(fitted);
@@ -439,14 +425,12 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const handleTransitionSubmit = (transition: PromptTransition) => {
     setPromptItems(transition.target_prompts);
 
-    // Send transition to backend
     sendParameterUpdate({
       transition,
     });
   };
 
   const handlePipelineIdChange = (pipelineId: PipelineId) => {
-    // Stop the stream if it's currently running
     if (isStreaming) {
       stopStream();
     }
@@ -464,17 +448,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
     const defaults = getDefaults(pipelineId, modeToUse);
 
-    // Update prompts to mode-specific defaults (unified per mode, not per pipeline)
     setPromptItems([{ text: getDefaultPromptForMode(modeToUse), weight: 100 }]);
 
-    // Use custom video resolution if mode is video and one exists
-    // This preserves the user's uploaded video resolution across pipeline switches
     const resolution =
       modeToUse === "video" && customVideoResolution
         ? customVideoResolution
         : { height: defaults.height, width: defaults.width };
 
-    // Update the pipeline in settings with the appropriate mode and defaults
     updateSettings({
       pipelineId,
       inputMode: modeToUse,
@@ -497,39 +477,31 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     try {
       await downloadPipelineModels(pipelineIdToDownload);
 
-      // Enhanced polling with progress updates
       const checkDownloadProgress = async () => {
         try {
           const status = await checkModelStatus(pipelineIdToDownload);
 
-          // Update progress state
           if (status.progress) {
             setDownloadProgress(status.progress);
           }
 
           if (status.downloaded) {
-            // Download complete
             setIsDownloading(false);
             setDownloadProgress(null);
             setPipelineNeedsModels(null);
 
-            // Now update the pipeline since download is complete
             const pipelineId = pipelineIdToDownload;
 
-            // Preserve the current input mode that the user selected before download
-            // Only fall back to pipeline's default mode if no mode is currently set
             const newPipeline = pipelines?.[pipelineId];
             const currentMode =
               settings.inputMode || newPipeline?.defaultMode || "text";
             const defaults = getDefaults(pipelineId, currentMode);
 
-            // Use custom video resolution if mode is video and one exists
             const resolution =
               currentMode === "video" && customVideoResolution
                 ? customVideoResolution
                 : { height: defaults.height, width: defaults.width };
 
-            // Only update pipeline-related settings, preserving current input mode and prompts
             updateSettings({
               pipelineId,
               inputMode: currentMode,
@@ -561,7 +533,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         }
       };
 
-      // Start checking
       setTimeout(checkDownloadProgress, 5000);
     } catch (error) {
       console.error("Error downloading models:", error);
@@ -601,8 +572,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
 
   const handleLivePromptSubmit = (prompts: PromptItem[]) => {
-    // Also send the updated parameters to the backend immediately
-    // Preserve the full blend while live
     sendParameterUpdate({
       prompts,
       prompt_interpolation_method: interpolationMethod,
@@ -877,7 +846,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
 
     if (!serverVideoEnabled && restartedStream) {
-      // Keep current session alive and just replace the input track
       const trackReplaced = await updateVideoTrack(restartedStream);
       if (!trackReplaced) {
         const synthStarted = await handleStartStream(
@@ -901,7 +869,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
     }
 
-    // Send current prompt + parameters without resetting the session
     sendParameterUpdate({
       prompts: [{ text: promptText, weight: 100 }],
       prompt_interpolation_method: interpolationMethod,
@@ -951,7 +918,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     await handleStartStream();
   };
 
-  // Clear prompts if pipeline doesn't support them
   useEffect(() => {
     const pipeline = pipelines?.[settings.pipelineId];
     if (pipeline?.supportsPrompts === false) {
@@ -959,13 +925,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
   }, [settings.pipelineId, pipelines]);
 
-  // Ref to store callback that should execute when video starts playing
   const onVideoPlayingCallbackRef = useRef<(() => void) | null>(null);
-
-  // Note: We intentionally do NOT auto-sync videoResolution to settings.resolution.
-  // Mode defaults from the backend schema take precedence. Users can manually
-  // adjust resolution if needed. This prevents the video source resolution from
-  // overriding the carefully tuned per-mode defaults.
 
   const handleStartStream = async (
     overridePipelineId?: PipelineId,
@@ -986,73 +946,58 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
     startStreamInFlightRef.current = true;
 
-    // Use override pipeline ID if provided, otherwise use current settings
     const pipelineIdToUse = overridePipelineId || settings.pipelineId;
    
 
     try {
       setIsWaitingForFrames(true);
-      // Check if models are needed but not downloaded
       const pipelineInfo = pipelines?.[pipelineIdToUse];
       if (pipelineInfo?.requiresModels) {
         try {
           const status = await checkModelStatus(pipelineIdToUse);
           if (!status.downloaded) {
-            // Auto-download models and show progress in the video panel
             void handleDownloadModels(pipelineIdToUse);
-            return false; // Stream did not start
+            return false;
           }
         } catch (error) {
           console.error("Error checking model status:", error);
-          // Continue anyway if check fails
         }
       }
 
-      // Always load pipeline with current parameters - backend will handle the rest
       console.log(`Loading ${pipelineIdToUse} pipeline...`);
 
-      // Determine current input mode
       const currentMode =
         settings.inputMode || getPipelineDefaultMode(pipelineIdToUse) || "text";
 
-      // Use settings.resolution if available, otherwise fall back to videoResolution
       let resolution = settings.resolution || videoResolution;
 
-      // Adjust resolution to be divisible by required scale factor for the pipeline
       if (resolution) {
         const { resolution: adjustedResolution, wasAdjusted } =
           adjustResolutionForPipeline(pipelineIdToUse, resolution);
 
         if (wasAdjusted) {
-          // Update settings with adjusted resolution
           updateSettings({ resolution: adjustedResolution });
           resolution = adjustedResolution;
         }
       }
 
-      // Build load parameters dynamically based on pipeline capabilities and settings
-      // The backend will use only the parameters it needs based on the pipeline schema
       const currentPipeline = pipelines?.[pipelineIdToUse];
       let loadParams: Record<string, unknown> | null = null;
 
       if (resolution) {
-        // Start with common parameters
         loadParams = {
           height: resolution.height,
           width: resolution.width,
         };
 
-        // Add seed if pipeline supports quantization (implies it needs seed)
         if (currentPipeline?.supportsQuantization) {
           loadParams.seed = overrideSeed ?? settings.seed ?? 42;
         }
 
-        // Add VACE parameters if pipeline supports VACE
         if (currentPipeline?.supportsVACE) {
           const vaceEnabled = settings.vaceEnabled ?? currentMode !== "video";
           loadParams.vace_enabled = vaceEnabled;
 
-          // Add VACE reference images if provided
           const vaceParams = getVaceParams(
             settings.refImages,
             settings.vaceContextScale
@@ -1080,12 +1025,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
     
 
-      // Check video requirements based on input mode
       const serverVideoEnabled = Boolean(sam3MaskId);
       const needsVideoInput = !serverVideoEnabled;
       const isSpoutMode = false;
 
-      // Only send video stream for pipelines that need video input (not in Spout mode)
       const streamToSend =
         needsVideoInput && !isSpoutMode
           ? overrideStream || localStream || undefined
@@ -1097,7 +1040,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         return false;
       }
 
-      // Build initial parameters based on pipeline type
       const initialParameters: {
         input_mode?: "text" | "video";
         prompts?: PromptItem[];
@@ -1120,25 +1062,20 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         capture_mask_indices?: boolean;
         capture_mask_reset?: boolean;
       } = {
-        // Signal the intended input mode to the backend so it doesn't
-        // briefly fall back to text mode before video frames arrive
         input_mode: currentMode,
       };
 
-      // Common parameters for pipelines that support prompts
       if (pipelineInfo?.supportsPrompts !== false) {
         initialParameters.prompts = overridePrompts ?? promptItems;
         initialParameters.prompt_interpolation_method = interpolationMethod;
         initialParameters.denoising_step_list = MAX_DENOISING_STEPS;
       }
 
-      // KV cache bias for pipelines that support it
       if (pipelineInfo?.supportsKvCacheBias) {
         initialParameters.kv_cache_attention_bias =
           settings.kvCacheAttentionBias ?? 1.0;
       }
 
-      // VACE-specific parameters - backend will ignore if not supported
       const vaceParams = getVaceParams(
         settings.refImages,
         settings.vaceContextScale
@@ -1148,13 +1085,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.vace_context_scale = vaceParams.vace_context_scale;
       }
 
-      // Video mode parameters - hardcoded for maximum denoise behavior
       if (currentMode === "video") {
         initialParameters.noise_scale = HARD_NOISE_SCALE;
         initialParameters.noise_controller = HARD_NOISE_CONTROLLER;
       }
 
-      // Spout settings - send if enabled
       if (settings.spoutSender?.enabled) {
         initialParameters.spout_sender = settings.spoutSender;
       }
@@ -1175,7 +1110,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.capture_mask_reset = true;
       }
 
-      // Control paused state when starting a fresh stream
       if (forcePaused !== undefined) {
         autoUnpauseForSam3Ref.current = Boolean(forcePaused);
         updateSettings({ paused: forcePaused });
@@ -1184,11 +1118,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         updateSettings({ paused: false });
       }
 
-      // Pipeline is loaded, now start WebRTC stream
       startStream(initialParameters, streamToSend);
      
 
-      return true; // Stream started successfully
+      return true;
     } catch (error) {
       console.error("Error during stream start:", error);
       setIsWaitingForFrames(false);
@@ -1294,10 +1227,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
             </div>
           </div>
         </>
-      ) : (
+      ) : viewMode === "play" ? (
         <div className="flex-1 flex px-4 pb-4 min-h-0 overflow-hidden justify-center items-start">
           <div className="w-full max-w-[720px] h-full">
             <PlayPanel className="h-full" />
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex px-4 pb-4 min-h-0 overflow-hidden justify-center items-start">
+          <div className="w-full max-w-[720px] h-full">
+            <AboutPanel className="h-full" />
           </div>
         </div>
       )}

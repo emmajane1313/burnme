@@ -56,7 +56,6 @@ export function PromptField({
           <X className="h-4 w-4" />
         </Button>
       )}
-      {/* Send button is handled by parent controls row. */}
     </>
   );
 }

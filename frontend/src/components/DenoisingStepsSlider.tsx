@@ -32,7 +32,6 @@ export function DenoisingStepsSlider({
   );
   const [validationError, setValidationError] = useState<string>("");
 
-  // Sync with external value changes
   useEffect(() => {
     if (value.length > 0) {
       setLocalValue(value);
@@ -52,11 +51,9 @@ export function DenoisingStepsSlider({
     index: number,
     attemptedValue: number
   ): number => {
-    // If we violated the constraint with the previous step, set to previous step - 1
     if (index > 0 && attemptedValue >= localValue[index - 1]) {
       return localValue[index - 1] - 1;
     }
-    // If we violated the constraint with the next step, set to next step + 1
     if (
       index < localValue.length - 1 &&
       attemptedValue <= localValue[index + 1]
@@ -95,7 +92,6 @@ export function DenoisingStepsSlider({
 
   const addSlider = () => {
     if (localValue.length < MAX_SLIDERS) {
-      // Add a new slider with a value lower than the last one
       const lastValue = localValue[localValue.length - 1];
       const newValue = Math.max(MIN_VALUE, lastValue - 100);
       const updatedValue = [...localValue, newValue];

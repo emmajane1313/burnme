@@ -139,7 +139,7 @@ class Parameters(BaseModel):
     )
     capture_mask_indices: bool | None = Field(
         default=None,
-        description="Capture SAM3 mask indices during burn for exact restore alignment.",
+        description="Capture SAM3 mask indices during burn for exact decrypt alignment.",
     )
 
 

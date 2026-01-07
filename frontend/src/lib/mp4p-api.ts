@@ -189,12 +189,12 @@ export async function restoreMP4P(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to restore MP4P: ${response.statusText}`);
+    throw new Error(`Failed to decrypt MP4P: ${response.statusText}`);
   }
 
   const result = await response.json();
   if (!result.success) {
-    throw new Error(result.error || "Failed to restore MP4P");
+    throw new Error(result.error || "Failed to decrypt MP4P");
   }
 
   return { videoBase64: result.videoBase64, mimeType: result.mimeType };

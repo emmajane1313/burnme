@@ -1,7 +1,7 @@
 interface HeaderProps {
   className?: string;
-  mode?: "upload" | "play";
-  onModeChange?: (mode: "upload" | "play") => void;
+  mode?: "upload" | "play" | "about";
+  onModeChange?: (mode: "upload" | "play" | "about") => void;
 }
 
 export function Header({
@@ -39,6 +39,16 @@ export function Header({
             }`}
           >
             Play
+          </label>
+          <label
+            onClick={() => onModeChange?.("about")}
+            className={`mac-frosted-button px-2 py-1 text-sm text-center ${
+              mode === "about"
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
+          >
+            About
           </label>
         </div>
       </div>

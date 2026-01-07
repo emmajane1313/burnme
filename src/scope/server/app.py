@@ -2022,7 +2022,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             raise RuntimeError("Missing key material for restore.")
         key_material = parse_key_material(visual_cipher.keyMaterial)
         logger.info(
-            "Restore start: mp4p_id=%s burn_index=%s prompt_len=%s",
+            "Decrypt start: mp4p_id=%s burn_index=%s prompt_len=%s",
             request.mp4pData.metadata.id,
             request.burnIndex,
             len(visual_cipher.prompt or ""),
@@ -2050,11 +2050,11 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             synth_path.write_bytes(synthed_video)
 
             if iio is None:
-                raise RuntimeError("imageio is required for restore.")
+                raise RuntimeError("imageio is required for decrypt.")
             try:
                 burn_reader = iio.get_reader(str(synth_path), format="pyav")
             except Exception as exc:
-                logger.error("Restore burn open failed: %s", exc)
+                logger.error("Decrypt burn open failed: %s", exc)
                 raise
             burn_iter = iter(burn_reader)
             try:
@@ -2062,7 +2062,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             except StopIteration:
                 raise RuntimeError("Burn video contains no frames.")
             except Exception as exc:
-                logger.error("Restore burn decode failed: %s", exc)
+                logger.error("Decrypt burn decode failed: %s", exc)
                 raise
             height, width = first_frame.shape[:2]
             fps = visual_cipher.fps or 0.0
@@ -2072,10 +2072,10 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
                     burn_meta = burn_reader.get_meta_data()
                     fps = float(burn_meta.get("fps") or 15.0)
                 except Exception as meta_exc:
-                    logger.error("Restore burn meta failed: %s", meta_exc)
+                    logger.error("Decrypt burn meta failed: %s", meta_exc)
                     fps = 15.0
             logger.info(
-                "Restore burn decode: reader=pyav fps=%.3f size=%sx%s frames_meta=%s payload_frames=%s",
+                "Decrypt burn decode: reader=pyav fps=%.3f size=%sx%s frames_meta=%s payload_frames=%s",
                 fps,
                 width,
                 height,
@@ -2172,7 +2172,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
                 frame_index += 1
                 if frame_index % 60 == 0:
                     logger.info(
-                        "Restore frame: index=%s hits=%s misses=%s",
+                        "Decrypt frame: index=%s hits=%s misses=%s",
                         frame_index,
                         payload_hits,
                         payload_misses,
@@ -2188,7 +2188,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             restored_bytes = out_path.read_bytes()
 
         logger.info(
-            "Restore done: bytes=%s frames=%s hits=%s misses=%s",
+            "Decrypt done: bytes=%s frames=%s hits=%s misses=%s",
             len(restored_bytes),
             frame_index,
             payload_hits,

@@ -284,7 +284,6 @@ export function InputAndControlsPanel({
       }
     }
 
-    // Reset the input value so the same file can be selected again
     event.target.value = "";
   };
 
@@ -534,36 +533,14 @@ export function InputAndControlsPanel({
             )}
           </div>
           {localStream && !hideLocalPreview && onVideoFileUpload ? (
-            <div className="mt-2 flex flex-col items-center gap-2">
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="xs"
-                  onClick={handleTriggerFilePicker}
-                >
-                  Change Video
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  FREE Y2K LORA 4 U!!! CLICK &amp; DOWNLOAD
-                </span>
-                <a
-                  href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k-1.3b.safetensors"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs underline cursor-pointer"
-                >
-                  1.3B
-                </a>
-                <span className="text-xs text-muted-foreground">&amp;</span>
-                <a
-                  href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k.safetensors"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs underline cursor-pointer"
-                >
-                  14B
-                </a>
-              </div>
+            <div className="mt-2 flex justify-center">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={handleTriggerFilePicker}
+              >
+                Change Video
+              </Button>
             </div>
           ) : null}
           {pipeline?.supportsPrompts !== false && (

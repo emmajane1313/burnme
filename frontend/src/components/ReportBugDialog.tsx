@@ -26,13 +26,10 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
       setError(null);
       setCopySuccess(false);
 
-      // Fetch logs from backend
       const logsText = await fetchCurrentLogs();
 
-      // Copy to clipboard
       await navigator.clipboard.writeText(logsText);
 
-      // Show success feedback
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 3000);
     } catch (err) {
@@ -54,7 +51,6 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-      // Reset state when closing
       setCopySuccess(false);
       setError(null);
       onClose();

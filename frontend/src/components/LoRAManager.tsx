@@ -50,7 +50,6 @@ export function LoRAManager({
     loadAvailableLoRAs();
   }, []);
 
-  // Sync localScales from loras prop when it changes from outside
   useEffect(() => {
     const newLocalScales: Record<string, number> = {};
     loras.forEach(lora => {

@@ -117,7 +117,6 @@ export function VideoOutput({
     return () => clearTimeout(timeout);
   }, [remoteStream, fallbackStream, burnedVideoUrl]);
 
-  // Listen for video readiness to notify parent
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !remoteStream) return;
@@ -136,10 +135,7 @@ export function VideoOutput({
       setNeedsUserPlay(true);
     };
 
-    // Check if video is already playing when effect runs
-    // This handles cases where the video was already playing before the callback was set
     if (!video.paused && video.currentTime > 0 && !video.ended) {
-      // Use setTimeout to avoid calling during render
       setTimeout(() => onVideoPlaying?.(), 0);
     }
 
@@ -152,8 +148,6 @@ export function VideoOutput({
       video.removeEventListener("pause", handlePause);
     };
   }, [onVideoPlaying, remoteStream]);
-
-  // No manual play/pause handling in auto-loop mode.
 
   const hasVideo = Boolean(
     burnedVideoUrl || (!isBurning && (remoteStream || fallbackStream))
