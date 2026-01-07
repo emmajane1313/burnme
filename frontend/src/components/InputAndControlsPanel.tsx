@@ -432,14 +432,7 @@ export function InputAndControlsPanel({
       <CardContent className="space-y-3 overflow-y-auto flex-1 px-4 py-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div>
           <h3 className="text-xs font-medium mb-1.5">Video Input</h3>
-          <div
-            className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px] cursor-pointer"
-            onClick={() => {
-              if (localStream && !hideLocalPreview) {
-                handleTriggerFilePicker();
-              }
-            }}
-          >
+          <div className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px]">
             {onVideoFileUpload && (
               <input
                 type="file"
@@ -500,11 +493,6 @@ export function InputAndControlsPanel({
                 {sourceVideoBlocked ? (
                   <div className="absolute inset-0 bg-black/20" />
                 ) : null}
-                <div className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none">
-                  <span className="mac-frosted-button px-3 py-1 text-[11px] text-white opacity-80">
-                    Click to change video
-                  </span>
-                </div>
               </div>
             ) : (
               onVideoFileUpload && (
@@ -519,6 +507,17 @@ export function InputAndControlsPanel({
               )
             )}
           </div>
+          {localStream && !hideLocalPreview && onVideoFileUpload ? (
+            <div className="mt-2 flex justify-center">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={handleTriggerFilePicker}
+              >
+                Change Video
+              </Button>
+            </div>
+          ) : null}
           {pipeline?.supportsPrompts !== false && (
             <div className="flex items-center justify-center gap-2 mt-2">
               <Button

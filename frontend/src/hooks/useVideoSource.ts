@@ -148,8 +148,15 @@ export function useVideoSource(props?: UseVideoSourceProps) {
             const stream = canvas.captureStream(fps);
             resolve({ stream, resolution: detectedResolution });
 
-            // Explicit start required; no autoplay.
-            setSourceVideoBlocked(true);
+            // Try to auto-play after upload for immediate loop playback.
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+              playPromise
+                .then(() => setSourceVideoBlocked(false))
+                .catch(() => setSourceVideoBlocked(true));
+            } else {
+              setSourceVideoBlocked(false);
+            }
           } catch (error) {
             clearTimeout(timeout);
             reject(error);
