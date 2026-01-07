@@ -58,7 +58,10 @@ export function VideoOutput({
     const playPromise = video.play();
     if (playPromise && typeof playPromise.catch === "function") {
       playPromise
-        .then(() => setAutoplayBlocked(false))
+        .then(() => {
+          setAutoplayBlocked(false);
+          setNeedsUserPlay(false);
+        })
         .catch(error => {
           console.warn("Video autoplay failed:", error);
           setAutoplayBlocked(true);
@@ -79,6 +82,9 @@ export function VideoOutput({
       videoRef.current.srcObject = null;
       videoRef.current.src = burnedVideoUrl;
       videoRef.current.loop = true;
+      videoRef.current.muted = true;
+      videoRef.current.currentTime = 0;
+      videoRef.current.load();
       attemptPlay();
       return;
     }
@@ -114,7 +120,8 @@ export function VideoOutput({
   // Listen for video readiness to notify parent
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !remoteStream) return;
+    const hasActiveVideo = Boolean(remoteStream || fallbackStream || burnedVideoUrl);
+    if (!video || !hasActiveVideo) return;
 
     const handlePlaying = () => {
       onVideoPlaying?.();
@@ -145,7 +152,7 @@ export function VideoOutput({
       video.removeEventListener("loadeddata", handleLoadedData);
       video.removeEventListener("pause", handlePause);
     };
-  }, [onVideoPlaying, remoteStream]);
+  }, [onVideoPlaying, remoteStream, fallbackStream, burnedVideoUrl]);
 
   // No manual play/pause handling in auto-loop mode.
 

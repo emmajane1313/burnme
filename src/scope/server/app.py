@@ -1444,26 +1444,26 @@ async def render_server_burn_endpoint(
                 output_path = Path(tempfile.gettempdir()) / (
                     f"burn-render-{uuid4().hex}.{suffix}"
                 )
-            if use_webm:
-                writer = iio.get_writer(
-                    str(output_path),
-                    fps=float(output_fps),
-                    codec="libvpx",
-                    quality=8,
-                    macro_block_size=1,
-                )
-            else:
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                writer = cv2.VideoWriter(
-                    str(output_path),
-                    fourcc,
-                    float(output_fps),
-                    (width, height),
-                )
-                if not writer.isOpened():
-                    raise RuntimeError(
-                        "Failed to open output writer for server burn."
+                if use_webm:
+                    writer = iio.get_writer(
+                        str(output_path),
+                        fps=float(output_fps),
+                        codec="libvpx",
+                        quality=8,
+                        macro_block_size=1,
                     )
+                else:
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    writer = cv2.VideoWriter(
+                        str(output_path),
+                        fourcc,
+                        float(output_fps),
+                        (width, height),
+                    )
+                    if not writer.isOpened():
+                        raise RuntimeError(
+                            "Failed to open output writer for server burn."
+                        )
             if use_webm:
                 writer.append_data(frame_np)
             else:

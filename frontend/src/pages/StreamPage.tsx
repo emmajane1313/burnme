@@ -926,6 +926,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     setSynthEndPending(false);
     setIsSynthCapturing(false);
     setSynthLockedPrompt("");
+    setConfirmedSynthedBlob(null);
     setServerSynthedFps(null);
     captureResetInFlightRef.current = false;
     pendingRecordStartRef.current = false;

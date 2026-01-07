@@ -456,7 +456,7 @@ export function InputAndControlsPanel({
             ) : localStream && !hideLocalPreview ? (
               <div className="relative w-full h-full">
                 <video
-                  key={`${uploadedVideoFile?.name ?? "preview"}-${localStream?.id ?? "stream"}`}
+                  key={`${uploadedVideoFile?.name ?? "preview"}-${uploadedVideoFile?.lastModified ?? 0}-${uploadedVideoFile?.size ?? 0}-${localStream?.id ?? "stream"}`}
                   ref={videoRef}
                   className="w-full h-full object-contain bg-black/20"
                   autoPlay
