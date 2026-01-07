@@ -1,13 +1,13 @@
 # 𓆩❤️‍🔥𓆪 Burn me while i'm hot 𓆩❤️‍🔥𓆪
 
-template do runpod: `emmajane1313/burnme`
+template do runpod: `emmajane1313/burnme:latest`
 
 ----
 
 💖💗🥰💞❤️😘🥰💋😍
 عشان كل حاجة بالمصري احلى:
 
-القالب بتاع رونبود: `emmajane1313/burnme`
+القالب بتاع رونبود: `emmajane1313/burnme:latest`
 
 ----
 
@@ -16,7 +16,7 @@ template do runpod: `emmajane1313/burnme`
 - `HF_TOKEN` in env
 - access approved to facebook/sam3: https://huggingface.co/facebook/sam3
 - GPU: RTX 5090 or better
-- template do runpod: `emmajane1313/burnme`
+- template do runpod: `emmajane1313/burnme:latest`
 
 ## About
 
@@ -74,8 +74,8 @@ state, and render order. those differences are small, but they are
 stable enough to matter cryptographically and unstable enough to resist
 replay.
 
-here, the frames of the live synth are treated as input to the
-encryption process. each burn frame becomes part of the key schedule for
+here, the frames of the live synth are inputs to the
+encryption process. each burn frame is part of the key schedule for
 the visual payloads. the exact bytes of the frame are hashed and folded
 into per-frame key material. that means the encryption context is bound
 not only to abstract settings like prompt or seed, but to the concrete
