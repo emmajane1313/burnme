@@ -1156,6 +1156,7 @@ from threading import Lock
 class EncryptVideoRequest(BaseModel):
     videoBase64: str
     expiresAt: int
+    keyMaterial: str
 
 
 class CreateMP4PRequest(BaseModel):
@@ -1164,11 +1165,13 @@ class CreateMP4PRequest(BaseModel):
 
 class DecryptVideoRequest(BaseModel):
     mp4pData: MP4PData
+    keyMaterial: str
 
 
 class BurnVideoRequest(BaseModel):
     mp4pData: MP4PData
     apiKey: str
+    keyMaterial: str
 
 
 class AddSynthedVideoRequest(BaseModel):
@@ -1194,6 +1197,7 @@ class VisualCipherRequest(BaseModel):
     seed: int
     pipelineId: str
     maskMode: str = "inside"
+    keyMaterial: str
 
 
 class LoadMP4PRequest(BaseModel):
@@ -1231,13 +1235,26 @@ class RestoreMP4PRequest(BaseModel):
     burnIndex: int | None = None
 
 
+def parse_key_material(key_material: str) -> bytes:
+    try:
+        material = bytes.fromhex(key_material)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid key material.") from exc
+    if not material:
+        raise HTTPException(status_code=400, detail="Key material cannot be empty.")
+    return material
+
+
 @app.post("/api/v1/mp4p/encrypt")
 async def encrypt_video_endpoint(request: EncryptVideoRequest):
     try:
         video_data = base64.b64decode(request.videoBase64)
         video_id = str(uuid4())
 
-        mp4p_data = await encrypt_video(video_data, request.expiresAt, video_id)
+        key_material = parse_key_material(request.keyMaterial)
+        mp4p_data = await encrypt_video(
+            video_data, request.expiresAt, video_id, key_material
+        )
 
         return {"success": True, "data": mp4p_data.model_dump()}
     except Exception as e:
@@ -1259,7 +1276,8 @@ async def create_mp4p_endpoint(request: CreateMP4PRequest):
 @app.post("/api/v1/mp4p/decrypt")
 async def decrypt_video_endpoint(request: DecryptVideoRequest):
     try:
-        video_buffer = await decrypt_video(request.mp4pData)
+        key_material = parse_key_material(request.keyMaterial)
+        video_buffer = await decrypt_video(request.mp4pData, key_material)
 
         return {
             "success": True,
@@ -1274,12 +1292,14 @@ async def decrypt_video_endpoint(request: DecryptVideoRequest):
 @app.post("/api/v1/mp4p/burn")
 async def burn_video_endpoint(request: BurnVideoRequest):
     try:
-        video_buffer = await decrypt_video(request.mp4pData)
+        key_material = parse_key_material(request.keyMaterial)
+        video_buffer = await decrypt_video(request.mp4pData, key_material)
 
         burned_mp4p = await burn_video(
             request.mp4pData,
             request.apiKey,
-            video_buffer
+            video_buffer,
+            key_material,
         )
 
         return {"success": True, "data": burned_mp4p.model_dump()}
@@ -1595,6 +1615,8 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
         if session is None:
             raise RuntimeError(f"SAM3 session {request.maskId} not found")
 
+        key_material = parse_key_material(request.keyMaterial)
+
         logger.info(
             "VisualCipher start: mp4p_id=%s mask_id=%s pipeline=%s seed=%s prompt_len=%s",
             request.mp4pData.metadata.id,
@@ -1610,7 +1632,9 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             if request.originalVideoBase64:
                 original_video = base64.b64decode(request.originalVideoBase64)
             else:
-                original_video = await decrypt_video(request.mp4pData)
+                original_video = await decrypt_video(
+                    request.mp4pData, key_material
+                )
         synthed_video = base64.b64decode(request.synthedVideoBase64)
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1768,7 +1792,9 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
             prompt_bytes = request.prompt.encode()
             params_bytes = json.dumps(request.params, sort_keys=True).encode()
             seed_bytes = str(request.seed).encode()
-            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            base_key_material = (
+                key_material + b"|" + prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            )
             base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
             base_key.update(base_key_material)
             base_key_bytes = base_key.finalize()
@@ -1992,6 +2018,9 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             raise RuntimeError("OpenCV is required for restore.")
 
         visual_cipher = VisualCipherMetadata.model_validate(request.visualCipher)
+        if not visual_cipher.keyMaterial:
+            raise RuntimeError("Missing key material for restore.")
+        key_material = parse_key_material(visual_cipher.keyMaterial)
         logger.info(
             "Restore start: mp4p_id=%s burn_index=%s prompt_len=%s",
             request.mp4pData.metadata.id,
@@ -2071,7 +2100,9 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             prompt_bytes = visual_cipher.prompt.encode()
             params_bytes = json.dumps(visual_cipher.params, sort_keys=True).encode()
             seed_bytes = str(visual_cipher.seed).encode()
-            base_key_material = prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            base_key_material = (
+                key_material + b"|" + prompt_bytes + b"|" + params_bytes + b"|" + seed_bytes
+            )
             base_key = hashes.Hash(hashes.SHA256(), backend=default_backend())
             base_key.update(base_key_material)
             base_key_bytes = base_key.finalize()

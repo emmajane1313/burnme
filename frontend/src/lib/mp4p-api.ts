@@ -32,6 +32,7 @@ export interface MP4PMetadata {
     maskResolution: { width: number; height: number };
     frameCount: number;
     fps: number;
+    keyMaterial?: string;
   };
 }
 
@@ -91,7 +92,8 @@ export function base64ToBlob(base64: string, mimeType: string): Blob {
 
 export async function encryptVideo(
   videoFile: File,
-  expiresAt: number
+  expiresAt: number,
+  keyMaterial: string
 ): Promise<MP4PData> {
   const videoBase64 = await fileToBase64(videoFile);
 
@@ -103,6 +105,7 @@ export async function encryptVideo(
     body: JSON.stringify({
       videoBase64,
       expiresAt,
+      keyMaterial,
     }),
   });
 
@@ -293,6 +296,7 @@ export async function generateVisualCipherPayload(
   seed: number,
   pipelineId: string,
   maskMode = "inside",
+  keyMaterial: string,
   synthedFps?: number | null
 ): Promise<{
   visualCipher: MP4PMetadata["visualCipher"];
@@ -317,6 +321,7 @@ export async function generateVisualCipherPayload(
       seed,
       pipelineId,
       maskMode,
+      keyMaterial,
       synthedFps,
     }),
   });
@@ -340,14 +345,15 @@ export async function generateVisualCipherPayload(
 }
 
 export async function decryptMP4P(
-  mp4pData: MP4PData
+  mp4pData: MP4PData,
+  keyMaterial: string
 ): Promise<{ videoBase64: string; metadata: MP4PMetadata }> {
   const response = await fetch(`${API_BASE_URL}/api/v1/mp4p/decrypt`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ mp4pData }),
+    body: JSON.stringify({ mp4pData, keyMaterial }),
   });
 
   if (!response.ok) {

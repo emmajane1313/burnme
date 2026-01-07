@@ -105,7 +105,12 @@ export function PlayPanel({
       const fileText = await file.text();
       const parsed = JSON.parse(fileText);
       const visualCipher = parsed.visualCipher ?? parsed;
-      if (!visualCipher?.prompt || !visualCipher?.params || visualCipher.seed === undefined) {
+      if (
+        !visualCipher?.prompt ||
+        !visualCipher?.params ||
+        visualCipher.seed === undefined ||
+        !visualCipher.keyMaterial
+      ) {
         throw new Error("Invalid key file");
       }
       setKeyData(visualCipher);

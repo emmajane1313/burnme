@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "../components/Header";
 import { InputAndControlsPanel } from "../components/InputAndControlsPanel";
 import { VideoOutput } from "../components/VideoOutput";
-import { SettingsPanel } from "../components/SettingsPanel";
 import { PlayPanel } from "../components/PlayPanel";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useVideoSource } from "../hooks/useVideoSource";
@@ -88,7 +87,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     settings,
     updateSettings,
     getDefaults,
-    spoutAvailable,
   } = useStreamState();
 
   // Prompt state - use unified default prompts based on mode
@@ -118,6 +116,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     stream: MediaStream;
     prompt: string;
     pipelineId: PipelineId;
+    seed: number;
   } | null>(null);
   const [isWaitingForFrames, setIsWaitingForFrames] = useState(false);
   const [burnedVideoUrl, setBurnedVideoUrl] = useState<string | null>(null);
@@ -546,7 +545,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                 pending.pipelineId,
                 [{ text: pending.prompt, weight: 100 }],
                 pending.stream,
-                false
+                false,
+                pending.seed,
+                true
               );
             }
 
@@ -570,8 +571,13 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
   };
 
-  const handleSeedChange = (seed: number) => {
-    updateSettings({ seed });
+  const generateRandomSeed = () => {
+    if (globalThis.crypto?.getRandomValues) {
+      const value = new Uint32Array(1);
+      globalThis.crypto.getRandomValues(value);
+      return value[0] & 0x7fffffff;
+    }
+    return Math.floor(Math.random() * 2147483648);
   };
 
   const handleUploadVideoFile = async (file: File) => {
@@ -592,32 +598,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       stopStream();
     }
     return handleVideoFileUpload(file);
-  };
-
-  const handleQuantizationChange = (quantization: "fp8_e4m3fn" | null) => {
-    updateSettings({ quantization });
-    // Note: This setting requires pipeline reload, so we don't send parameter update here
-  };
-
-  const handleKvCacheAttentionBiasChange = (bias: number) => {
-    updateSettings({ kvCacheAttentionBias: bias });
-    // Send KV cache attention bias update to backend
-    sendParameterUpdate({
-      kv_cache_attention_bias: bias,
-    });
-  };
-
-
-  const handleSpoutSenderChange = (
-    spoutSender: { enabled: boolean; name: string } | undefined
-  ) => {
-    updateSettings({ spoutSender });
-    // Send Spout output settings to backend
-    if (isStreaming) {
-      sendParameterUpdate({
-        spout_sender: spoutSender,
-      });
-    }
   };
 
   const handleLivePromptSubmit = (prompts: PromptItem[]) => {
@@ -770,7 +750,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       return;
     }
 
-   
+    const synthSeed = generateRandomSeed();
+    updateSettings({ seed: synthSeed });
+
     const serverVideoEnabled = Boolean(sam3MaskId);
     setSynthLockedPrompt(promptText);
     setIsSynthCapturing(true);
@@ -807,7 +789,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
             maskId: sam3MaskId,
             params: renderParams,
             loadParams: {
-              default_lora_enabled: settings.defaultLoraEnabled ?? true,
+              default_lora_enabled: true,
+              seed: synthSeed,
               height: resolution?.height,
               width: resolution?.width,
             },
@@ -870,14 +853,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       maybeStartRecording();
     };
 
-    const canReuseStream = isStreaming && remoteStreamRef.current;
+    const canReuseStream = false;
 
     if (!canReuseStream) {
       const synthStarted = await handleStartStream(
         settings.pipelineId,
         [{ text: promptText, weight: 100 }],
         serverVideoEnabled ? null : restartedStream,
-        false
+        false,
+        synthSeed,
+        true
       );
 
       if (!synthStarted && restartedStream) {
@@ -885,6 +870,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           stream: restartedStream,
           prompt: promptText,
           pipelineId: settings.pipelineId,
+          seed: synthSeed,
         };
       }
       return;
@@ -898,7 +884,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           settings.pipelineId,
           [{ text: promptText, weight: 100 }],
           restartedStream,
-          false
+          false,
+          synthSeed,
+          true
         );
 
         if (!synthStarted && restartedStream) {
@@ -906,6 +894,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
             stream: restartedStream,
             prompt: promptText,
             pipelineId: settings.pipelineId,
+            seed: synthSeed,
           };
         }
         return;
@@ -982,11 +971,15 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     overridePipelineId?: PipelineId,
     overridePrompts?: PromptItem[],
     overrideStream?: MediaStream | null,
-    forcePaused?: boolean
+    forcePaused?: boolean,
+    overrideSeed?: number,
+    forceRestart = false
   ): Promise<boolean> => {
     if (isStreaming) {
       stopStream();
-      return true;
+      if (!forceRestart) {
+        return true;
+      }
     }
     if (startStreamInFlightRef.current) {
       return false;
@@ -1051,8 +1044,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
         // Add seed if pipeline supports quantization (implies it needs seed)
         if (currentPipeline?.supportsQuantization) {
-          loadParams.seed = settings.seed ?? 42;
-          loadParams.quantization = settings.quantization ?? null;
+          loadParams.seed = overrideSeed ?? settings.seed ?? 42;
         }
 
         // Add VACE parameters if pipeline supports VACE
@@ -1075,7 +1067,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
 
       loadParams = loadParams || {};
-      loadParams.default_lora_enabled = settings.defaultLoraEnabled ?? true;
+      loadParams.default_lora_enabled = true;
 
       const loadSuccess = await loadPipeline(
         pipelineIdToUse,
@@ -1213,7 +1205,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       {viewMode === "upload" ? (
         <>
           <div className="mac-upload-skin flex-1 flex relative px-2 md:px-4 py-4 overflow-y-auto justify-center items-start">
-            <div className="flex relative gap-2 md:gap-4 w-full h-full max-w-[900px] flex-col md:flex-row">
+            <div className="flex relative gap-2 md:gap-4 w-full h-full max-w-[1100px] flex-col md:flex-row">
               <div className="w-full md:w-64 h-full">
                 <InputAndControlsPanel
                   className="h-full"
@@ -1228,6 +1220,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   hideLocalPreview={hideBurnSourcePreview}
                   sourceVideoBlocked={sourceVideoBlocked}
                   pipelineId={settings.pipelineId}
+                  onPipelineIdChange={handlePipelineIdChange}
                   seed={settings.seed ?? 42}
                   prompts={promptItems}
                   onPromptsChange={setPromptItems}
@@ -1267,7 +1260,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                 />
               </div>
 
-              <div className="w-full md:w-[560px] h-full flex relative flex-col min-h-0">
+              <div className="w-full md:flex-1 h-full flex relative flex-col min-h-0">
                 <div className="flex-1 relative min-h-0">
                   <VideoOutput
                     className="h-full"
@@ -1297,35 +1290,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                     }}
                   />
                 </div>
-              </div>
-
-              <div className="w-full md:w-64 h-full">
-                <SettingsPanel
-                  className="h-full"
-                  pipelines={pipelines}
-                  pipelineId={settings.pipelineId}
-                  onPipelineIdChange={handlePipelineIdChange}
-                  isStreaming={isStreaming}
-                  isLoading={isLoading}
-                  seed={settings.seed ?? 42}
-                  onSeedChange={handleSeedChange}
-                  quantization={
-                    settings.quantization !== undefined
-                      ? settings.quantization
-                      : "fp8_e4m3fn"
-                  }
-                  onQuantizationChange={handleQuantizationChange}
-                  kvCacheAttentionBias={settings.kvCacheAttentionBias ?? 0.3}
-                  onKvCacheAttentionBiasChange={handleKvCacheAttentionBiasChange}
-                  defaultLoraEnabled={settings.defaultLoraEnabled ?? true}
-                  onDefaultLoraEnabledChange={(enabled) =>
-                    updateSettings({ defaultLoraEnabled: enabled })
-                  }
-                  spoutSender={settings.spoutSender}
-                  onSpoutSenderChange={handleSpoutSenderChange}
-                  spoutAvailable={spoutAvailable}
-                  isVideoPaused={settings.paused}
-                />
               </div>
             </div>
           </div>

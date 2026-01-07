@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
   Select,
@@ -9,10 +8,8 @@ import {
 } from "./ui/select";
 import { LabelWithTooltip } from "./ui/label-with-tooltip";
 import { Input } from "./ui/input";
-import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
 import { SliderWithInput } from "./ui/slider-with-input";
-import { Minus, Plus } from "lucide-react";
 import { PARAMETER_METADATA } from "../data/parameterMetadata";
 import { useLocalSliderValue } from "../hooks/useLocalSliderValue";
 import type { PipelineId, SettingsState, PipelineInfo } from "../types";
@@ -25,8 +22,6 @@ interface SettingsPanelProps {
   onPipelineIdChange?: (pipelineId: PipelineId) => void;
   isStreaming?: boolean;
   isLoading?: boolean;
-  seed?: number;
-  onSeedChange?: (seed: number) => void;
   quantization?: "fp8_e4m3fn" | null;
   onQuantizationChange?: (quantization: "fp8_e4m3fn" | null) => void;
   kvCacheAttentionBias?: number;
@@ -48,8 +43,6 @@ export function SettingsPanel({
   onPipelineIdChange,
   isStreaming = false,
   isLoading = false,
-  seed = 42,
-  onSeedChange,
   quantization = "fp8_e4m3fn",
   onQuantizationChange,
   kvCacheAttentionBias = 0.3,
@@ -66,43 +59,11 @@ export function SettingsPanel({
     kvCacheAttentionBias,
     onKvCacheAttentionBiasChange
   );
-  // Validation error states
-  const [seedError, setSeedError] = useState<string | null>(null);
 
   const handlePipelineIdChange = (value: string) => {
     if (pipelines && value in pipelines) {
       onPipelineIdChange?.(value as PipelineId);
     }
-  };
-
-
-  const handleSeedChange = (value: number) => {
-    const minValue = 0;
-    const maxValue = 2147483647;
-
-    // Validate and set error state
-    if (value < minValue) {
-      setSeedError(`Must be at least ${minValue}`);
-    } else if (value > maxValue) {
-      setSeedError(`Must be at most ${maxValue}`);
-    } else {
-      setSeedError(null);
-    }
-
-    // Always update the value (even if invalid)
-    onSeedChange?.(value);
-  };
-
-  const incrementSeed = () => {
-    const maxValue = 2147483647;
-    const newValue = Math.min(maxValue, seed + 1);
-    handleSeedChange(newValue);
-  };
-
-  const decrementSeed = () => {
-    const minValue = 0;
-    const newValue = Math.max(minValue, seed - 1);
-    handleSeedChange(newValue);
   };
 
   const isControlsLocked = isLoading || (isStreaming && !isVideoPaused);
@@ -158,59 +119,6 @@ export function SettingsPanel({
           ) : null}
         </div>
 
-
-        {pipelines?.[pipelineId]?.supportsQuantization && (
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <LabelWithTooltip
-                  label={PARAMETER_METADATA.seed.label}
-                  tooltip={PARAMETER_METADATA.seed.tooltip}
-                  className="text-sm text-foreground w-14"
-                />
-                <div
-                  className={`flex-1 flex items-center border rounded-full overflow-hidden h-8 ${seedError ? "border-red-500" : ""}`}
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 rounded-none hover:bg-accent"
-                    onClick={decrementSeed}
-                    disabled={isControlsLocked}
-                  >
-                    <Minus className="h-3.5 w-3.5" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={seed}
-                    onChange={e => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value)) {
-                        handleSeedChange(value);
-                      }
-                    }}
-                    disabled={isControlsLocked}
-                    className="text-center border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    min={0}
-                    max={2147483647}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 rounded-none hover:bg-accent"
-                    onClick={incrementSeed}
-                    disabled={isControlsLocked}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-              {seedError && (
-                <p className="text-xs text-red-500 ml-16">{seedError}</p>
-              )}
-            </div>
-          </div>
-        )}
 
         {pipelines?.[pipelineId]?.supportsCacheManagement && (
           <div className="space-y-4">

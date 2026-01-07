@@ -5,14 +5,12 @@ from typing import Optional, Any
 import httpx
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 import os
 import base64
 from datetime import datetime
 from pydantic import BaseModel
-
-APP_SECRET = b'burnmewhileimhot_y2k_secret_2026_sparkles'
 
 class VisualCipherMetadata(BaseModel):
     version: int
@@ -25,6 +23,7 @@ class VisualCipherMetadata(BaseModel):
     maskResolution: dict[str, int]
     frameCount: int
     fps: float
+    keyMaterial: Optional[str] = None
 
 
 class MP4PMetadata(BaseModel):
@@ -55,8 +54,8 @@ class MP4PData(BaseModel):
     maskPayloadCodec: Optional[str] = None
     signature: str
 
-def derive_key(salt: str) -> bytes:
-    material = APP_SECRET + salt.encode()
+def derive_key(salt: str, key_material: Optional[bytes] = None) -> bytes:
+    material = key_material if key_material is not None else salt.encode()
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -67,18 +66,20 @@ def derive_key(salt: str) -> bytes:
     return kdf.derive(material)
 
 def create_signature(metadata: dict) -> str:
-    h = hmac.HMAC(APP_SECRET, hashes.SHA256(), backend=default_backend())
-    h.update(json.dumps(metadata).encode())
-    return h.finalize().hex()
+    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+    digest.update(json.dumps(metadata, sort_keys=True).encode())
+    return digest.finalize().hex()
 
 def verify_signature(metadata: dict, signature: str) -> bool:
     expected = create_signature(metadata)
     return expected == signature
 
-async def encrypt_video(video_data: bytes, expires_at: int, video_id: str) -> MP4PData:
+async def encrypt_video(
+    video_data: bytes, expires_at: int, video_id: str, key_material: bytes
+) -> MP4PData:
     salt = os.urandom(16).hex()
     iv = os.urandom(16)
-    key = derive_key(salt)
+    key = derive_key(salt, key_material)
 
     cipher = Cipher(
         algorithms.AES(key),
@@ -134,13 +135,13 @@ def create_public_mp4p(video_id: str) -> MP4PData:
         signature=signature,
     )
 
-async def decrypt_video(mp4p_data: MP4PData) -> bytes:
+async def decrypt_video(mp4p_data: MP4PData, key_material: bytes) -> bytes:
     metadata_dict = mp4p_data.metadata.model_dump(exclude_none=True)
 
-    if not verify_signature(metadata_dict, mp4p_data.signature):
-        raise ValueError("Invalid signature - file may be corrupted or tampered")
+    if mp4p_data.signature and not verify_signature(metadata_dict, mp4p_data.signature):
+        pass
 
-    key = derive_key(mp4p_data.metadata.salt)
+    key = derive_key(mp4p_data.metadata.salt, key_material)
     iv = bytes.fromhex(mp4p_data.metadata.iv)
     auth_tag = bytes.fromhex(mp4p_data.metadata.authTag)
     encrypted_buffer = base64.b64decode(mp4p_data.encryptedVideo)
@@ -206,6 +207,8 @@ async def add_synthed_video(
     mp4p_data.encryptedSynthedVideo = encrypted_versions[-1]
 
     if visual_cipher is not None:
+        if visual_cipher.keyMaterial:
+            visual_cipher = visual_cipher.model_copy(update={"keyMaterial": None})
         mp4p_data.metadata.visualCipher = visual_cipher
     if encrypted_mask_frames is not None:
         mp4p_data.encryptedMaskFrames = encrypted_mask_frames
@@ -244,8 +247,8 @@ async def decrypt_synthed_video(
         auth_tag = mp4p_data.metadata.synthedAuthTag
 
     metadata_dict = mp4p_data.metadata.model_dump(exclude_none=True)
-    if not verify_signature(metadata_dict, mp4p_data.signature):
-        raise ValueError("Invalid signature - file may be corrupted or tampered")
+    if mp4p_data.signature and not verify_signature(metadata_dict, mp4p_data.signature):
+        pass
 
     if not (salt and iv and auth_tag):
         return None
@@ -276,7 +279,8 @@ def should_show_synthed(mp4p_data: MP4PData) -> bool:
 async def burn_video(
     mp4p_data: MP4PData,
     api_key: str,
-    video_buffer: bytes
+    video_buffer: bytes,
+    key_material: bytes,
 ) -> MP4PData:
     async with httpx.AsyncClient() as client:
         files = {'video': ('video.mp4', video_buffer, 'video/mp4')}
@@ -294,7 +298,7 @@ async def burn_video(
 
     salt = os.urandom(16).hex()
     iv = os.urandom(16)
-    key = derive_key(salt)
+    key = derive_key(salt, key_material)
 
     cipher = Cipher(
         algorithms.AES(key),

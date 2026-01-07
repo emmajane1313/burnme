@@ -5,6 +5,13 @@ import type { PromptItem, PromptTransition } from "../lib/api";
 import type { PipelineInfo } from "../types";
 import { Button } from "./ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import {
   createMP4P,
   downloadMP4P,
   addSynthedVideoBase64,
@@ -27,6 +34,7 @@ interface InputAndControlsPanelProps {
   prefillVideoFile?: File | null;
   hideLocalPreview?: boolean;
   pipelineId: string;
+  onPipelineIdChange?: (pipelineId: string) => void;
   seed?: number;
   prompts: PromptItem[];
   onPromptsChange: (prompts: PromptItem[]) => void;
@@ -105,6 +113,7 @@ export function InputAndControlsPanel({
   prefillVideoFile = null,
   hideLocalPreview = false,
   pipelineId,
+  onPipelineIdChange,
   seed = 42,
   prompts,
   onPromptsChange,
@@ -314,12 +323,21 @@ export function InputAndControlsPanel({
         let encryptedMaskFrames;
         let maskFrameIndexMap;
         let maskPayloadCodec;
+        let keyMaterial: string | null = null;
         if (sam3MaskId && promptTexts[0]) {
           if (!uploadedVideoFile) {
             throw new Error(
               "Missing original video for visual cipher payload."
             );
           }
+          if (!globalThis.crypto?.getRandomValues) {
+            throw new Error("Crypto API not available for key generation.");
+          }
+          const keyBytes = new Uint8Array(32);
+          globalThis.crypto.getRandomValues(keyBytes);
+          keyMaterial = Array.from(keyBytes, byte =>
+            byte.toString(16).padStart(2, "0")
+          ).join("");
           const originalVideoBase64 = uploadedVideoFile
             ? await blobToBase64(uploadedVideoFile, uploadedVideoFile.name)
             : undefined;
@@ -340,6 +358,7 @@ export function InputAndControlsPanel({
             seed ?? 42,
             pipelineId,
             "inside",
+            keyMaterial,
             confirmedSynthedFps
           );
           visualCipher = payload.visualCipher;
@@ -372,11 +391,14 @@ export function InputAndControlsPanel({
           );
         }
 
-        if (visualCipher) {
+        if (visualCipher && keyMaterial) {
           const keyData = {
             mp4pId: mp4pData.metadata.id,
             burnIndex: (mp4pData.metadata.synthedVersions?.length || 1) - 1,
-            visualCipher,
+            visualCipher: {
+              ...visualCipher,
+              keyMaterial,
+            },
           };
           const keyName = uploadedVideoFile
             ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
@@ -512,14 +534,36 @@ export function InputAndControlsPanel({
             )}
           </div>
           {localStream && !hideLocalPreview && onVideoFileUpload ? (
-            <div className="mt-2 flex justify-center">
-              <Button
-                variant="secondary"
-                size="xs"
-                onClick={handleTriggerFilePicker}
-              >
-                Change Video
-              </Button>
+            <div className="mt-2 flex flex-col items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={handleTriggerFilePicker}
+                >
+                  Change Video
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  FREE Y2K LORA 4 U!!! CLICK &amp; DOWNLOAD
+                </span>
+                <a
+                  href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k-1.3b.safetensors"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs underline cursor-pointer"
+                >
+                  1.3B
+                </a>
+                <span className="text-xs text-muted-foreground">&amp;</span>
+                <a
+                  href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k.safetensors"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs underline cursor-pointer"
+                >
+                  14B
+                </a>
+              </div>
             </div>
           ) : null}
           {pipeline?.supportsPrompts !== false && (
@@ -534,6 +578,27 @@ export function InputAndControlsPanel({
               </Button>
             </div>
           )}
+          {pipelines ? (
+            <div className="mt-3 space-y-1">
+              <h3 className="text-xs font-medium">Pipeline</h3>
+              <Select
+                value={pipelineId}
+                onValueChange={value => onPipelineIdChange?.(value)}
+                disabled={isSynthCapturing || isLoading || isConnecting}
+              >
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue placeholder="Select a pipeline" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(pipelines).map(id => (
+                    <SelectItem key={id} value={id}>
+                      {id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
         </div>
 
         <div>
