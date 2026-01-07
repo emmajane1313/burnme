@@ -1,6 +1,6 @@
 # 𓆩❤️‍🔥𓆪 Burn me while i'm hot 𓆩❤️‍🔥𓆪
 
-Runpod template: `emmajane1313/burnme`
+template do runpod: `emmajane1313/burnme`
 
 ----
 
@@ -14,9 +14,9 @@ Runpod template: `emmajane1313/burnme`
 ## Requirements (Runpod)
 
 - `HF_TOKEN` in env
-- Access approved to facebook/sam3: https://huggingface.co/facebook/sam3
+- access approved to facebook/sam3: https://huggingface.co/facebook/sam3
 - GPU: RTX 5090 or better
-- Runpod template: `emmajane1313/burnme`
+- template do runpod: `emmajane1313/burnme`
 
 ## About
 
