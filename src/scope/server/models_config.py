@@ -24,8 +24,10 @@ DEFAULT_LORA_URL = (
     "y2k-1.3b.safetensors?download="
 )
 DEFAULT_LORA_FILENAME = "y2k-1.3b.safetensors"
+DEFAULT_LORA_MERGE_MODE = "runtime_peft"
 DEFAULT_LORA_URL_ENV_VAR = "BURN_DEFAULT_LORA_URL"
 DEFAULT_LORA_FILENAME_ENV_VAR = "BURN_DEFAULT_LORA_FILENAME"
+DEFAULT_LORA_MERGE_MODE_ENV_VAR = "BURN_DEFAULT_LORA_MERGE_MODE"
 
 
 def get_models_dir() -> Path:
@@ -109,6 +111,10 @@ def get_default_lora_filename() -> str:
 def get_default_lora_path() -> Path:
     models_dir = get_models_dir()
     return models_dir / "lora" / get_default_lora_filename()
+
+
+def get_default_lora_merge_mode() -> str:
+    return os.environ.get(DEFAULT_LORA_MERGE_MODE_ENV_VAR, DEFAULT_LORA_MERGE_MODE)
 
 
 def get_required_model_files(pipeline_id: str | None = None) -> list[Path]:

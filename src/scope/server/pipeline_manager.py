@@ -11,6 +11,8 @@ from typing import Any
 import torch
 from omegaconf import OmegaConf
 
+from .models_config import get_default_lora_merge_mode, get_default_lora_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -285,14 +287,20 @@ class PipelineManager:
 
         default_lora_path = get_default_lora_path()
         if default_lora_path.exists():
+            default_merge_mode = get_default_lora_merge_mode()
             loras = [
                 {
                     "path": str(default_lora_path),
                     "scale": 1.0,
-                    "merge_mode": "permanent_merge",
+                    "merge_mode": default_merge_mode,
                 }
             ]
-            lora_merge_mode = "permanent_merge"
+            lora_merge_mode = default_merge_mode
+            logger.info(
+                "Applying default LoRA: path=%s scale=1.0 merge_mode=%s",
+                default_lora_path,
+                default_merge_mode,
+            )
 
         config["height"] = height
         config["width"] = width
