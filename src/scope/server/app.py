@@ -1433,6 +1433,13 @@ async def render_server_burn_endpoint(
     init_cache = True
     writer = None
     output_path = None
+    target_width = int(session.width or 0)
+    target_height = int(session.height or 0)
+    source_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+    source_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+    if source_width > 0 and source_height > 0:
+        target_width = source_width
+        target_height = source_height
 
     def write_frames(output_tensor, mask_indices, valid_count):
         nonlocal output_frames, writer, output_path
@@ -1450,6 +1457,14 @@ async def render_server_burn_endpoint(
         )
         for idx in range(min(valid_count, output_tensor.shape[0])):
             frame_np = output_tensor[idx].numpy()
+            if target_width > 0 and target_height > 0:
+                if frame_np.shape[:2] != (target_height, target_width):
+                    frame_np, _ = _letterbox_frame(
+                        frame_np,
+                        target_width,
+                        target_height,
+                        interpolation=cv2.INTER_LINEAR,
+                    )
             if writer is None:
                 height, width = frame_np.shape[:2]
                 suffix = "webm" if use_webm else "mp4"
