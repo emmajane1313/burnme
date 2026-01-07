@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { Spinner } from "./ui/spinner";
 import type { PromptItem, PromptTransition } from "../lib/api";
 import type { PipelineInfo } from "../types";
 import { Button } from "./ui/button";
@@ -153,6 +154,12 @@ export function InputAndControlsPanel({
       videoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  useEffect(() => {
+    if (isSynthCapturing && videoRef.current) {
+      videoRef.current.pause();
+    }
+  }, [isSynthCapturing]);
 
   useEffect(() => {
     if (prefillVideoFile) {
@@ -370,6 +377,12 @@ export function InputAndControlsPanel({
                   muted
                   playsInline
                 />
+                {isSynthCapturing ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+                    <Spinner size={22} />
+                    <span className="text-xs text-muted-foreground">Burning...</span>
+                  </div>
+                ) : null}
                 {sourceVideoBlocked ? (
                   <div className="absolute inset-0 bg-black/20" />
                 ) : null}
@@ -479,19 +492,21 @@ export function InputAndControlsPanel({
             >
               Start Burn
             </Button>
-            <Button
-              onClick={onCancelSynth}
-              disabled={!isSynthCapturing || isLoading}
-              size="xs"
-              variant="destructive"
-            >
-              Cancel Burn
-            </Button>
-            {confirmedSynthedBlob && !isSynthCapturing && (
+            {isSynthCapturing ? (
+              <Button
+                onClick={onCancelSynth}
+                disabled={isLoading}
+                size="xs"
+                variant="destructive"
+              >
+                Cancel Burn
+              </Button>
+            ) : null}
+            {confirmedSynthedBlob && !isSynthCapturing ? (
               <Button onClick={onDeleteBurn} size="xs" variant="destructive">
                 Delete Burn
               </Button>
-            )}
+            ) : null}
           </div>
           {isSynthCapturing && (
             <div className="mt-2 text-xs text-muted-foreground">

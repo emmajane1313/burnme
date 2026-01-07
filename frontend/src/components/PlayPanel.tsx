@@ -1,18 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Spinner } from "./ui/spinner";
-import {
-  downloadMP4P,
-  loadMP4P,
-  restoreMP4P,
-  type MP4PData,
-  type MP4PMetadata,
-} from "../lib/mp4p-api";
-
-type BurnVersionOption = {
-  label: string;
-  index: number;
-};
+import { loadMP4P, restoreMP4P, type MP4PData, type MP4PMetadata } from "../lib/mp4p-api";
 
 function base64ToUrl(base64: string, mimeType: string): string {
   const byteCharacters = atob(base64);
@@ -31,42 +20,27 @@ export function PlayPanel({
   className?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [mp4pFile, setMp4pFile] = useState<File | null>(null);
   const [mp4pData, setMp4pData] = useState<MP4PData | null>(null);
-  const [metadata, setMetadata] = useState<MP4PMetadata | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selectedBurnIndex, setSelectedBurnIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [keyFile, setKeyFile] = useState<File | null>(null);
   const [keyData, setKeyData] = useState<MP4PMetadata["visualCipher"] | null>(null);
   const [keyBurnIndex, setKeyBurnIndex] = useState<number | null>(null);
-  const [manualPrompt, setManualPrompt] = useState("");
-  const [manualSeed, setManualSeed] = useState("42");
-  const [manualParams, setManualParams] = useState("{}");
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
-  
 
-  const burnOptions = useMemo<BurnVersionOption[]>(() => {
-    if (!metadata) return [];
-    if (metadata.synthedVersions && metadata.synthedVersions.length > 0) {
-      return metadata.synthedVersions.map((version, index) => ({
-        index,
-        label: version.promptsUsed?.join(", ") || `Burn ${index + 1}`,
-      }));
-    }
-    if (metadata.promptsUsed) {
-      return [{ index: 0, label: metadata.promptsUsed.join(", ") }];
-    }
-    return [];
-  }, [metadata]);
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds)) return "0:00";
+    const clamped = Math.max(0, seconds);
+    const mins = Math.floor(clamped / 60);
+    const secs = Math.floor(clamped % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -101,7 +75,6 @@ export function PlayPanel({
         mimeType: result.mimeType,
         hasVideo: Boolean(result.videoBase64),
       });
-      setMetadata(result.metadata);
       if (result.videoBase64) {
         const url = base64ToUrl(result.videoBase64, result.mimeType || "video/mp4");
         setVideoUrl(prev => {
@@ -110,14 +83,6 @@ export function PlayPanel({
         });
       } else {
         setVideoUrl(null);
-      }
-
-      if (typeof result.selectedBurnIndex === "number") {
-        setSelectedBurnIndex(result.selectedBurnIndex);
-      } else if (burnIndex != null) {
-        setSelectedBurnIndex(burnIndex);
-      } else {
-        setSelectedBurnIndex(null);
       }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Failed to load MP4P");
@@ -130,13 +95,11 @@ export function PlayPanel({
 
   const handleFileChange = async (file: File | null) => {
     if (!file) return;
-    setMp4pFile(file);
     await handleLoad(file);
   };
 
   const handleKeyFileChange = async (file: File | null) => {
     if (!file) return;
-    setKeyFile(file);
     setRestoreError(null);
     try {
       const fileText = await file.text();
@@ -146,9 +109,6 @@ export function PlayPanel({
         throw new Error("Invalid key file");
       }
       setKeyData(visualCipher);
-      setManualPrompt(String(visualCipher.prompt ?? ""));
-      setManualSeed(String(visualCipher.seed ?? ""));
-      setManualParams(JSON.stringify(visualCipher.params ?? {}, null, 2));
       setKeyBurnIndex(
         typeof parsed.burnIndex === "number" ? parsed.burnIndex : null
       );
@@ -156,33 +116,6 @@ export function PlayPanel({
       setRestoreError(error instanceof Error ? error.message : "Invalid key file");
       setKeyData(null);
       setKeyBurnIndex(null);
-    }
-  };
-
-  const handleManualKeyApply = () => {
-    try {
-      const parsedParams = JSON.parse(manualParams || "{}");
-      const seed = Number(manualSeed);
-      if (!Number.isFinite(seed)) {
-        throw new Error("Seed must be a number");
-      }
-      if (!manualPrompt.trim()) {
-        throw new Error("Prompt is required");
-      }
-      setKeyData({
-        version: 1,
-        pipelineId: metadata?.visualCipher?.pipelineId || "memflow",
-        prompt: manualPrompt.trim(),
-        params: parsedParams,
-        seed,
-        maskMode: metadata?.visualCipher?.maskMode || "inside",
-        maskResolution: metadata?.visualCipher?.maskResolution || { width: 0, height: 0 },
-        frameCount: metadata?.visualCipher?.frameCount || 0,
-        fps: metadata?.visualCipher?.fps || 0,
-      });
-      setRestoreError(null);
-    } catch (error) {
-      setRestoreError(error instanceof Error ? error.message : "Invalid manual key");
     }
   };
 
@@ -204,22 +137,6 @@ export function PlayPanel({
     }
   };
 
-  const handleSelectBurn = async (index: number) => {
-    if (!mp4pFile) return;
-    setSelectedBurnIndex(index);
-    await handleLoad(mp4pFile, index);
-  };
-
-  const handleExport = async () => {
-    if (!mp4pData || !mp4pFile) return;
-    setIsExporting(true);
-    try {
-      const filename = mp4pFile.name.replace(/\.[^.]+$/, "");
-      await downloadMP4P(mp4pData, filename);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -257,21 +174,38 @@ export function PlayPanel({
       </CardHeader>
       <CardContent className="space-y-4 overflow-y-auto flex-1 p-4">
         <div className="space-y-2">
-          <input
-            type="file"
-            accept=".mp4p"
-            className="hidden"
-            id="mp4p-play-upload"
-            onChange={(event) =>
-              handleFileChange(event.target.files ? event.target.files[0] : null)
-            }
-          />
-          <label
-            htmlFor="mp4p-play-upload"
-            className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
-          >
-            Load MP4P
-          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="file"
+              accept=".mp4p"
+              className="hidden"
+              id="mp4p-play-upload"
+              onChange={(event) =>
+                handleFileChange(event.target.files ? event.target.files[0] : null)
+              }
+            />
+            <label
+              htmlFor="mp4p-play-upload"
+              className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
+            >
+              Load MP4P
+            </label>
+            <input
+              type="file"
+              accept=".json"
+              onChange={(event) =>
+                handleKeyFileChange(event.target.files?.[0] ?? null)
+              }
+              className="hidden"
+              id="mp4p-key-upload"
+            />
+            <label
+              htmlFor="mp4p-key-upload"
+              className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
+            >
+              Load Key File
+            </label>
+          </div>
           {loadError && (
             <div className="text-xs text-red-500">{loadError}</div>
           )}
@@ -336,6 +270,10 @@ export function PlayPanel({
             }}
             className="mac-translucent-slider"
           />
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>0:00</span>
+            <span>{formatTime(duration)}</span>
+          </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <label className="flex items-center gap-2">
@@ -361,71 +299,10 @@ export function PlayPanel({
         </div>
 
         <div className="space-y-2">
-          <div className="text-xs font-medium">Unlock (Key File / Manual)</div>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <input
-              type="file"
-              accept=".json"
-              onChange={(event) =>
-                handleKeyFileChange(event.target.files?.[0] ?? null)
-              }
-              className="hidden"
-              id="mp4p-key-upload"
-            />
-            <label
-              htmlFor="mp4p-key-upload"
-              className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
-            >
-              Load Key File
-            </label>
-            {keyFile && (
-              <span className="text-[11px] text-muted-foreground">
-                {keyFile.name}
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <label className="flex flex-col gap-1">
-              Prompt
-              <textarea
-                value={manualPrompt}
-                onChange={(event) => setManualPrompt(event.target.value)}
-                className="mac-translucent-input h-16 resize-none"
-              />
-            </label>
-            <div className="flex items-center gap-2">
-              <label className="flex flex-col gap-1">
-                Seed
-                <input
-                  type="number"
-                  value={manualSeed}
-                  onChange={(event) => setManualSeed(event.target.value)}
-                  className="mac-translucent-input w-28"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={handleManualKeyApply}
-                className="mac-frosted-button px-3 py-1 text-xs"
-              >
-                Use Manual Key
-              </button>
-            </div>
-            <label className="flex flex-col gap-1">
-              Params (JSON)
-              <textarea
-                value={manualParams}
-                onChange={(event) => setManualParams(event.target.value)}
-                className="mac-translucent-input h-24 resize-none font-mono text-[11px]"
-              />
-            </label>
-          </div>
-
+          <div className="text-xs font-medium">Unlock</div>
           {restoreError && (
             <div className="text-xs text-red-500">{restoreError}</div>
           )}
-
           <button
             type="button"
             onClick={handleRestore}
@@ -435,35 +312,6 @@ export function PlayPanel({
             {isRestoring ? "Restoring..." : "Restore with Key"}
           </button>
         </div>
-
-        {burnOptions.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium">Burn versions</div>
-            <div className="flex flex-wrap gap-2">
-              {burnOptions.map((option) => (
-                <button
-                  key={option.index}
-                  type="button"
-                  onClick={() => handleSelectBurn(option.index)}
-                  className={`mac-frosted-button px-3 py-1 text-xs ${
-                    option.index === selectedBurnIndex ? "ring-2 ring-white/40" : ""
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={!mp4pData || isExporting}
-          className="mac-frosted-button w-full px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {isExporting ? "Exporting..." : "Export MP4P"}
-        </button>
       </CardContent>
     </Card>
   );

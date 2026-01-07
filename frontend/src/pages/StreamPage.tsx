@@ -138,6 +138,11 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
   const [serverSynthedFps, setServerSynthedFps] = useState<number | null>(null);
   const serverRenderAbortRef = useRef(false);
+  const pendingServerRenderRef = useRef<{
+    promptText: string;
+    pipelineId: PipelineId;
+    sam3MaskId: string;
+  } | null>(null);
 
 
   // Download state
@@ -169,6 +174,55 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendFrameMeta,
   } = useWebRTC({
     onServerVideoEnded: () => {
+      if (pendingServerRenderRef.current) {
+        const pending = pendingServerRenderRef.current;
+        pendingServerRenderRef.current = null;
+        stopStream();
+        void (async () => {
+          try {
+            const renderResult = await renderServerBurn({
+              pipelineId: pending.pipelineId,
+              maskId: pending.sam3MaskId,
+              params: {
+                prompts: [{ text: pending.promptText, weight: 100 }],
+                prompt_interpolation_method: interpolationMethod,
+                denoising_step_list: MAX_DENOISING_STEPS,
+                noise_scale: settings.noiseScale,
+                noise_controller: settings.noiseController,
+                kv_cache_attention_bias: settings.kvCacheAttentionBias,
+                sam3_mask_id: pending.sam3MaskId,
+                sam3_mask_mode: sam3MaskMode,
+                input_mode: "video" as const,
+              },
+              loadParams: {
+                default_lora_enabled: settings.defaultLoraEnabled ?? true,
+              },
+              outputMimeType: "video/webm",
+              capture_mask_reset: true,
+            });
+            if (serverRenderAbortRef.current) {
+              return;
+            }
+            const outputBlob = base64ToBlob(
+              renderResult.videoBase64,
+              renderResult.mimeType || "video/mp4"
+            );
+            setConfirmedSynthedBlob(outputBlob);
+            setServerSynthedFps(renderResult.fps ?? null);
+          } catch (error) {
+            console.error("Server burn render failed:", error);
+            toast.error("Server burn failed", {
+              description:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to render burn on server",
+            });
+          } finally {
+            setIsSynthCapturing(false);
+          }
+        })();
+        return;
+      }
       stopRecording();
       sendParameterUpdate({ capture_mask_indices: false });
       stopStream();
@@ -784,22 +838,52 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           sam3_mask_mode: sam3MaskMode,
           input_mode: "video" as const,
         };
-        const renderResult = await renderServerBurn({
-          pipelineId: settings.pipelineId,
-          maskId: sam3MaskId,
-          params: renderParams,
-          outputMimeType: "video/webm",
-          capture_mask_reset: true,
-        });
-        if (serverRenderAbortRef.current) {
-          return;
+        const runRender = async () => {
+          const renderResult = await renderServerBurn({
+            pipelineId: settings.pipelineId,
+            maskId: sam3MaskId,
+            params: renderParams,
+            loadParams: {
+              default_lora_enabled: settings.defaultLoraEnabled ?? true,
+            },
+            outputMimeType: "video/webm",
+            capture_mask_reset: true,
+          });
+          if (serverRenderAbortRef.current) {
+            return;
+          }
+          const outputBlob = base64ToBlob(
+            renderResult.videoBase64,
+            renderResult.mimeType || "video/mp4"
+          );
+          setConfirmedSynthedBlob(outputBlob);
+          setServerSynthedFps(renderResult.fps ?? null);
+        };
+
+        if (settings.liveBurnPreview ?? true) {
+          pendingServerRenderRef.current = {
+            promptText,
+            pipelineId: settings.pipelineId,
+            sam3MaskId,
+          };
+          const previewStarted = await handleStartStream(
+            settings.pipelineId,
+            [{ text: promptText, weight: 100 }],
+            null,
+            false
+          );
+          if (!previewStarted) {
+            pendingServerRenderRef.current = null;
+            await runRender();
+          } else {
+            sendParameterUpdate({
+              server_video_loop: false,
+              server_video_reset: true,
+            });
+          }
+        } else {
+          await runRender();
         }
-        const outputBlob = base64ToBlob(
-          renderResult.videoBase64,
-          renderResult.mimeType || "video/mp4"
-        );
-        setConfirmedSynthedBlob(outputBlob);
-        setServerSynthedFps(renderResult.fps ?? null);
       } catch (error) {
         console.error("Server burn render failed:", error);
         toast.error("Server burn failed", {
@@ -807,7 +891,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
             error instanceof Error ? error.message : "Failed to render burn on server",
         });
       } finally {
-        setIsSynthCapturing(false);
+        if (!pendingServerRenderRef.current) {
+          setIsSynthCapturing(false);
+        }
       }
       return;
     } else {
@@ -897,6 +983,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const handleCancelSynth = async () => {
     debugLog("Burn: cancel");
     serverRenderAbortRef.current = true;
+    pendingServerRenderRef.current = null;
     setSynthEndPending(false);
     setIsSynthCapturing(false);
     setSynthLockedPrompt("");
@@ -1053,6 +1140,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           loadParams
         );
       }
+
+      loadParams = loadParams || {};
+      loadParams.default_lora_enabled = settings.defaultLoraEnabled ?? true;
 
       const loadSuccess = await loadPipeline(
         pipelineIdToUse,
@@ -1261,6 +1351,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                     isSam3Generating={isSam3Generating}
                     sam3AutoPending={sam3AutoPending}
                     sam3Status={sam3Status}
+                    isBurning={isSynthCapturing}
                     onVideoPlaying={() => {
                       setIsWaitingForFrames(false);
                       if (onVideoPlayingCallbackRef.current) {
@@ -1290,6 +1381,14 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onQuantizationChange={handleQuantizationChange}
                   kvCacheAttentionBias={settings.kvCacheAttentionBias ?? 0.3}
                   onKvCacheAttentionBiasChange={handleKvCacheAttentionBiasChange}
+                  liveBurnPreview={settings.liveBurnPreview ?? true}
+                  onLiveBurnPreviewChange={(enabled) =>
+                    updateSettings({ liveBurnPreview: enabled })
+                  }
+                  defaultLoraEnabled={settings.defaultLoraEnabled ?? true}
+                  onDefaultLoraEnabledChange={(enabled) =>
+                    updateSettings({ defaultLoraEnabled: enabled })
+                  }
                   spoutSender={settings.spoutSender}
                   onSpoutSenderChange={handleSpoutSenderChange}
                   spoutAvailable={spoutAvailable}

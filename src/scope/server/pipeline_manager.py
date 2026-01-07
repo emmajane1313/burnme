@@ -277,6 +277,7 @@ class PipelineManager:
         seed = default_seed
         loras = None
         lora_merge_mode = "permanent_merge"
+        default_lora_enabled = True
 
         if load_params:
             height = load_params.get("height", default_height)
@@ -284,9 +285,11 @@ class PipelineManager:
             seed = load_params.get("seed", default_seed)
             loras = load_params.get("loras", None)
             lora_merge_mode = load_params.get("lora_merge_mode", lora_merge_mode)
+            if "default_lora_enabled" in load_params:
+                default_lora_enabled = bool(load_params.get("default_lora_enabled"))
 
         default_lora_path = get_default_lora_path()
-        if default_lora_path.exists():
+        if default_lora_enabled and default_lora_path.exists():
             default_merge_mode = get_default_lora_merge_mode()
             loras = [
                 {
@@ -301,6 +304,8 @@ class PipelineManager:
                 default_lora_path,
                 default_merge_mode,
             )
+        elif not default_lora_enabled:
+            logger.info("Default LoRA disabled by load params.")
 
         config["height"] = height
         config["width"] = width

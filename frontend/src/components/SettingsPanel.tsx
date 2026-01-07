@@ -31,6 +31,10 @@ interface SettingsPanelProps {
   onQuantizationChange?: (quantization: "fp8_e4m3fn" | null) => void;
   kvCacheAttentionBias?: number;
   onKvCacheAttentionBiasChange?: (bias: number) => void;
+  liveBurnPreview?: boolean;
+  onLiveBurnPreviewChange?: (enabled: boolean) => void;
+  defaultLoraEnabled?: boolean;
+  onDefaultLoraEnabledChange?: (enabled: boolean) => void;
   // Spout settings
   spoutSender?: SettingsState["spoutSender"];
   onSpoutSenderChange?: (spoutSender: SettingsState["spoutSender"]) => void;
@@ -52,6 +56,10 @@ export function SettingsPanel({
   onQuantizationChange,
   kvCacheAttentionBias = 0.3,
   onKvCacheAttentionBiasChange,
+  liveBurnPreview = true,
+  onLiveBurnPreviewChange,
+  defaultLoraEnabled = true,
+  onDefaultLoraEnabledChange,
   spoutSender,
   onSpoutSenderChange,
   spoutAvailable = false,
@@ -102,6 +110,7 @@ export function SettingsPanel({
   };
 
   const isControlsLocked = isLoading || (isStreaming && !isVideoPaused);
+  const loraToggleDisabled = isStreaming && !isVideoPaused;
 
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
@@ -128,6 +137,44 @@ export function SettingsPanel({
                 ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <LabelWithTooltip
+              label="Live Burn Preview"
+              tooltip="Show the synth preview while burn runs. May increase VRAM usage."
+              className="text-sm text-foreground"
+            />
+            <Toggle
+              pressed={liveBurnPreview}
+              onPressedChange={(value) => onLiveBurnPreviewChange?.(value)}
+              disabled={isControlsLocked}
+              size="sm"
+            >
+              {liveBurnPreview ? "On" : "Off"}
+            </Toggle>
+          </div>
+          <div className="flex items-center justify-between">
+            <LabelWithTooltip
+              label="Y2K LoRA"
+              tooltip="Enable the default Y2K LoRA (scale 1.0). Toggle only when paused."
+              className="text-sm text-foreground"
+            />
+            <Toggle
+              pressed={defaultLoraEnabled}
+              onPressedChange={(value) => onDefaultLoraEnabledChange?.(value)}
+              disabled={loraToggleDisabled}
+              size="sm"
+            >
+              {defaultLoraEnabled ? "On" : "Off"}
+            </Toggle>
+          </div>
+          {loraToggleDisabled ? (
+            <p className="text-xs text-muted-foreground">
+              Pause video to toggle the LoRA.
+            </p>
+          ) : null}
         </div>
 
 

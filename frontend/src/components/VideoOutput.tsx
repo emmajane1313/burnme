@@ -22,6 +22,7 @@ interface VideoOutputProps {
   sam3AutoPending?: boolean;
   sam3Status?: string | null;
   onVideoPlaying?: () => void;
+  isBurning?: boolean;
 }
 
 export function VideoOutput({
@@ -43,6 +44,7 @@ export function VideoOutput({
   sam3AutoPending = false,
   sam3Status = null,
   onVideoPlaying,
+  isBurning = false,
 }: VideoOutputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
@@ -83,7 +85,7 @@ export function VideoOutput({
     videoRef.current.src = "";
     videoRef.current.srcObject = remoteStream || fallbackStream || null;
     attemptPlay();
-  }, [remoteStream, fallbackStream, burnedVideoUrl]);
+  }, [remoteStream, fallbackStream, burnedVideoUrl, isBurning]);
 
   useEffect(() => {
     if (!remoteStream && !fallbackStream && !burnedVideoUrl) {
@@ -206,19 +208,26 @@ export function VideoOutput({
                   <p>Warming up pipeline...</p>
                 </div>
               </div>
-            ) : isSam3Generating || sam3AutoPending ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                <div className="text-center text-muted-foreground text-lg">
-                  <Spinner size={24} className="mx-auto mb-3" />
-                  <p>Generating SAM3 mask...</p>
-                  {sam3Status ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {sam3Status}
-                    </p>
-                  ) : null}
-                </div>
+          ) : isSam3Generating || sam3AutoPending ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <div className="text-center text-muted-foreground text-lg">
+                <Spinner size={24} className="mx-auto mb-3" />
+                <p>Generating SAM3 mask...</p>
+                {sam3Status ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {sam3Status}
+                  </p>
+                ) : null}
               </div>
-            ) : null}
+            </div>
+          ) : isBurning ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="text-center text-muted-foreground text-lg">
+                <Spinner size={24} className="mx-auto mb-3" />
+                <p>Burning...</p>
+              </div>
+            </div>
+          ) : null}
           </div>
         ) : isDownloading || pipelineNeedsModels ? (
           <div className="text-center text-muted-foreground text-lg">
