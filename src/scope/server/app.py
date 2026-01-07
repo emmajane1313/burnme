@@ -1433,30 +1433,22 @@ async def render_server_burn_endpoint(
     init_cache = True
     writer = None
     output_path = None
-    target_width = int(session.width or 0)
-    target_height = int(session.height or 0)
     source_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
     source_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
-    if source_width > 0 and source_height > 0:
-        target_width = source_width
-        target_height = source_height
 
     logger.info(
-        "Server burn sizing: source=%sx%s session=%sx%s target=%sx%s output_fps=%.2f output_mime=%s",
+        "Server burn sizing: source=%sx%s session=%sx%s output_fps=%.2f output_mime=%s",
         source_width,
         source_height,
         session.width,
         session.height,
-        target_width,
-        target_height,
         output_fps,
         output_mime,
     )
     last_output_shape = None
-    last_letterbox_box = None
 
     def write_frames(output_tensor, mask_indices, valid_count):
-        nonlocal output_frames, writer, output_path, last_output_shape, last_letterbox_box
+        nonlocal output_frames, writer, output_path, last_output_shape
         if output_tensor is None:
             return
         if mask_indices and output_tensor.shape[0] > len(mask_indices):
@@ -1472,24 +1464,6 @@ async def render_server_burn_endpoint(
         for idx in range(min(valid_count, output_tensor.shape[0])):
             frame_np = output_tensor[idx].numpy()
             original_shape = frame_np.shape[:2]
-            if target_width > 0 and target_height > 0:
-                if frame_np.shape[:2] != (target_height, target_width):
-                    frame_np, box = _letterbox_frame(
-                        frame_np,
-                        target_width,
-                        target_height,
-                        interpolation=cv2.INTER_LINEAR,
-                    )
-                    if last_letterbox_box != box:
-                        logger.info(
-                            "Server burn letterbox: input=%sx%s target=%sx%s box=%s",
-                            original_shape[1],
-                            original_shape[0],
-                            target_width,
-                            target_height,
-                            box,
-                        )
-                        last_letterbox_box = box
             if writer is None:
                 height, width = frame_np.shape[:2]
                 logger.info(

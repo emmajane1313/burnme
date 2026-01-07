@@ -790,12 +790,15 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
           input_mode: "video" as const,
         };
         const runRender = async () => {
+          const resolution = settings.resolution || videoResolution;
           const renderResult = await renderServerBurn({
             pipelineId: settings.pipelineId,
             maskId: sam3MaskId,
             params: renderParams,
             loadParams: {
               default_lora_enabled: settings.defaultLoraEnabled ?? true,
+              height: resolution?.height,
+              width: resolution?.width,
             },
             outputMimeType: "video/webm",
             capture_mask_reset: true,
