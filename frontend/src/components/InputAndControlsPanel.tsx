@@ -171,7 +171,9 @@ export function InputAndControlsPanel({
 
   useEffect(() => {
     if (videoRef.current && localStream) {
+      videoRef.current.srcObject = null;
       videoRef.current.srcObject = localStream;
+      void videoRef.current.play();
     }
   }, [localStream]);
 
@@ -455,8 +457,9 @@ export function InputAndControlsPanel({
             ) : localStream && !hideLocalPreview ? (
               <div className="relative w-full h-full">
                 <video
+                  key={`${uploadedVideoFile?.name ?? "preview"}-${localStream?.id ?? "stream"}`}
                   ref={videoRef}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black/20"
                   autoPlay
                   muted
                   playsInline
