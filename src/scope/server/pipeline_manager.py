@@ -194,7 +194,6 @@ class PipelineManager:
             return True
 
         except Exception as e:
-from .models_config import get_default_lora_path, get_models_dir
 
             models_dir = get_models_dir()
             error_msg = f"Failed to load pipeline {pipeline_id}: {e}"
