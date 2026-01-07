@@ -154,7 +154,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     isLoading: isPipelineLoading,
     error: pipelineError,
     loadPipeline,
-    pipelineInfo,
   } = usePipeline();
 
   // WebRTC for streaming

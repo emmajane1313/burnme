@@ -101,7 +101,6 @@ export function SettingsPanel({
     handleSeedChange(newValue);
   };
 
-  const currentPipeline = pipelines?.[pipelineId];
   const isControlsLocked = isLoading || (isStreaming && !isVideoPaused);
 
   return (
