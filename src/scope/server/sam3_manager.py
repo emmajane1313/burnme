@@ -258,9 +258,7 @@ class Sam3MaskManager:
         box: list[int] | None = None,
         input_fps: float | None = None,
     ) -> Sam3MaskSession:
-        prompt = (prompt or "").strip()
-        if not prompt:
-            prompt = SAM3_PERSON_PROMPT
+        prompt = SAM3_PERSON_PROMPT
 
         predictor = self._get_predictor(desired_dtype=torch.float32)
         try:

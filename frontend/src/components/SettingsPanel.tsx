@@ -31,8 +31,6 @@ interface SettingsPanelProps {
   onQuantizationChange?: (quantization: "fp8_e4m3fn" | null) => void;
   kvCacheAttentionBias?: number;
   onKvCacheAttentionBiasChange?: (bias: number) => void;
-  liveBurnPreview?: boolean;
-  onLiveBurnPreviewChange?: (enabled: boolean) => void;
   defaultLoraEnabled?: boolean;
   onDefaultLoraEnabledChange?: (enabled: boolean) => void;
   // Spout settings
@@ -56,8 +54,6 @@ export function SettingsPanel({
   onQuantizationChange,
   kvCacheAttentionBias = 0.3,
   onKvCacheAttentionBiasChange,
-  liveBurnPreview = true,
-  onLiveBurnPreviewChange,
   defaultLoraEnabled = true,
   onDefaultLoraEnabledChange,
   spoutSender,
@@ -140,21 +136,6 @@ export function SettingsPanel({
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <LabelWithTooltip
-              label="Live Burn Preview"
-              tooltip="Show the synth preview while burn runs. May increase VRAM usage."
-              className="text-sm text-foreground"
-            />
-            <Toggle
-              pressed={liveBurnPreview}
-              onPressedChange={(value) => onLiveBurnPreviewChange?.(value)}
-              disabled={isControlsLocked}
-              size="sm"
-            >
-              {liveBurnPreview ? "On" : "Off"}
-            </Toggle>
-          </div>
           <div className="flex items-center justify-between">
             <LabelWithTooltip
               label="Y2K LoRA"

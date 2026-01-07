@@ -145,7 +145,6 @@ export function useStreamState() {
     quantization: null,
     kvCacheAttentionBias: 0.3,
     paused: false,
-    liveBurnPreview: true,
     defaultLoraEnabled: true,
     inputMode: initialDefaults.inputMode,
   });

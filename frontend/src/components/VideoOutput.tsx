@@ -54,6 +54,7 @@ export function VideoOutput({
   const attemptPlay = () => {
     const video = videoRef.current;
     if (!video) return;
+    if (isBurning && !burnedVideoUrl) return;
     const playPromise = video.play();
     if (playPromise && typeof playPromise.catch === "function") {
       playPromise
@@ -79,6 +80,12 @@ export function VideoOutput({
       videoRef.current.src = burnedVideoUrl;
       videoRef.current.loop = true;
       attemptPlay();
+      return;
+    }
+
+    if (isBurning) {
+      videoRef.current.src = "";
+      videoRef.current.srcObject = null;
       return;
     }
 
@@ -142,13 +149,17 @@ export function VideoOutput({
 
   // No manual play/pause handling in auto-loop mode.
 
+  const hasVideo = Boolean(
+    burnedVideoUrl || (!isBurning && (remoteStream || fallbackStream))
+  );
+
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
       <CardHeader className="flex-shrink-0">
         <CardTitle className="text-base font-medium text-white">Video Output</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex items-center justify-center min-h-0 p-4">
-        {burnedVideoUrl || remoteStream || fallbackStream ? (
+        {hasVideo ? (
           <div className="relative w-full h-full flex items-center justify-center">
             <video
               ref={videoRef}
@@ -228,6 +239,11 @@ export function VideoOutput({
               </div>
             </div>
           ) : null}
+          </div>
+        ) : isBurning ? (
+          <div className="text-center text-muted-foreground text-lg">
+            <Spinner size={24} className="mx-auto mb-3" />
+            <p>Burning...</p>
           </div>
         ) : isDownloading || pipelineNeedsModels ? (
           <div className="text-center text-muted-foreground text-lg">
