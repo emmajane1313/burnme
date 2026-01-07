@@ -1207,6 +1207,8 @@ class Sam3MaskRequest(BaseModel):
     prompt: str
     box: list[int] | None = None
     input_fps: float | None = None
+    target_width: int | None = None
+    target_height: int | None = None
 
 
 class Sam3MaskJobRequest(BaseModel):
@@ -1215,6 +1217,8 @@ class Sam3MaskJobRequest(BaseModel):
     prompt: str
     box: list[int] | None = None
     input_fps: float | None = None
+    target_width: int | None = None
+    target_height: int | None = None
 
 
 sam3_jobs_lock = Lock()
@@ -2181,6 +2185,8 @@ async def generate_sam3_mask(request: Sam3MaskRequest):
             request.prompt,
             request.box,
             request.input_fps,
+            request.target_width,
+            request.target_height,
         )
         return {
             "success": True,
@@ -2215,6 +2221,8 @@ async def start_sam3_mask_job(request: Sam3MaskJobRequest):
                 request.prompt,
                 request.box,
                 request.input_fps,
+                request.target_width,
+                request.target_height,
             )
             result = {
                 "maskId": session.session_id,

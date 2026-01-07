@@ -301,6 +301,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
     setSam3NoDetections(false);
     const boxToUse = sam3BoxPromptEnabled ? sam3Box : null;
+    const targetResolution = settings.resolution || videoResolution;
+    const targetWidth = targetResolution?.width ?? null;
+    const targetHeight = targetResolution?.height ?? null;
     if (sam3BoxPromptEnabled && !boxToUse) {
       setSam3Status("Draw a box around the person first.");
       return;
@@ -327,7 +330,15 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         assetPath = asset.path;
         setSam3AssetPath(assetPath);
       }
-      const job = await startSam3MaskJob(null, assetPath, "", boxToUse, null);
+      const job = await startSam3MaskJob(
+        null,
+        assetPath,
+        "",
+        boxToUse,
+        null,
+        targetWidth,
+        targetHeight
+      );
       setSam3Status("Generating SAM3 mask...");
 
       const poll = async (): Promise<void> => {

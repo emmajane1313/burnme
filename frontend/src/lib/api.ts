@@ -288,7 +288,9 @@ export const generateSam3Mask = async (
   assetPath: string | null,
   prompt: string,
   box?: [number, number, number, number] | null,
-  inputFps?: number | null
+  inputFps?: number | null,
+  targetWidth?: number | null,
+  targetHeight?: number | null
 ): Promise<Sam3MaskResponse> => {
   const response = await fetch(apiUrl("/api/v1/sam3/mask"), {
     method: "POST",
@@ -299,6 +301,8 @@ export const generateSam3Mask = async (
       prompt,
       box,
       input_fps: inputFps,
+      target_width: targetWidth,
+      target_height: targetHeight,
     }),
   });
 
@@ -322,7 +326,9 @@ export const startSam3MaskJob = async (
   assetPath: string | null,
   prompt: string,
   box?: [number, number, number, number] | null,
-  inputFps?: number | null
+  inputFps?: number | null,
+  targetWidth?: number | null,
+  targetHeight?: number | null
 ): Promise<{ jobId: string }> => {
   const response = await fetch(apiUrl("/api/v1/sam3/mask/start"), {
     method: "POST",
@@ -333,6 +339,8 @@ export const startSam3MaskJob = async (
       prompt,
       box,
       input_fps: inputFps,
+      target_width: targetWidth,
+      target_height: targetHeight,
     }),
   });
 

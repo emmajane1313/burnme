@@ -204,7 +204,12 @@ class Sam3MaskManager:
         return session_dir / f"{frame_index:06d}.png"
 
     def _resample_video(
-        self, input_path: Path, output_path: Path, target_fps: float | None
+        self,
+        input_path: Path,
+        output_path: Path,
+        target_fps: float | None,
+        target_width: int | None = None,
+        target_height: int | None = None,
     ) -> tuple[Path, float | None]:
         if cv2 is None:
             return input_path, None
@@ -223,12 +228,25 @@ class Sam3MaskManager:
             cap.release()
             return input_path, None
 
-        if src_fps > 0 and abs(src_fps - target_fps) < 0.01:
+        if (
+            src_fps > 0
+            and abs(src_fps - target_fps) < 0.01
+            and not target_width
+            and not target_height
+        ):
             cap.release()
             return input_path, src_fps
 
+        output_width = width
+        output_height = height
+        if target_width and target_height:
+            output_width = target_width
+            output_height = target_height
+
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(str(output_path), fourcc, target_fps, (width, height))
+        writer = cv2.VideoWriter(
+            str(output_path), fourcc, target_fps, (output_width, output_height)
+        )
         if not writer.isOpened():
             cap.release()
             writer.release()
@@ -247,6 +265,8 @@ class Sam3MaskManager:
 
             current_time = frame_index * src_frame_time
             if current_time + 1e-6 >= next_time:
+                if output_width != width or output_height != height:
+                    frame = cv2.resize(frame, (output_width, output_height), interpolation=cv2.INTER_AREA)
                 writer.write(frame)
                 next_time += target_frame_time
             frame_index += 1
@@ -262,6 +282,8 @@ class Sam3MaskManager:
         prompt: str,
         box: list[int] | None = None,
         input_fps: float | None = None,
+        target_width: int | None = None,
+        target_height: int | None = None,
     ) -> Sam3MaskSession:
         self.reset_predictor()
         prompt = SAM3_PERSON_PROMPT
@@ -300,7 +322,11 @@ class Sam3MaskManager:
             effective_fps = input_fps
 
         video_path, forced_fps = self._resample_video(
-            video_path, resampled_path, effective_fps
+            video_path,
+            resampled_path,
+            effective_fps,
+            target_width=target_width,
+            target_height=target_height,
         )
 
         response = None
