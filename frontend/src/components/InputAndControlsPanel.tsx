@@ -45,6 +45,12 @@ interface InputAndControlsPanelProps {
   onTogglePause?: () => void;
   sam3MaskId?: string | null;
   onSam3Generate?: () => void;
+  sam3NoDetections?: boolean;
+  sam3BoxPromptEnabled?: boolean;
+  sam3Box?: [number, number, number, number] | null;
+  onSam3BoxChange?: (box: [number, number, number, number] | null) => void;
+  onSam3BoxPromptEnable?: () => void;
+  onSam3BoxPromptCancel?: () => void;
   sam3Ready?: boolean;
   sam3Status?: string | null;
   isSam3Generating?: boolean;
@@ -117,6 +123,12 @@ export function InputAndControlsPanel({
   onTogglePause,
   sam3MaskId = null,
   onSam3Generate,
+  sam3NoDetections = false,
+  sam3BoxPromptEnabled = false,
+  sam3Box = null,
+  onSam3BoxChange,
+  onSam3BoxPromptEnable,
+  onSam3BoxPromptCancel,
   sam3Ready = false,
   sam3Status = null,
   isSam3Generating = false,
@@ -144,6 +156,14 @@ export function InputAndControlsPanel({
     filename: string;
     payload: string;
   } | null>(null);
+  const [boxDisplay, setBoxDisplay] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const isDrawingBoxRef = useRef(false);
+  const boxStartRef = useRef<{ x: number; y: number } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -162,10 +182,81 @@ export function InputAndControlsPanel({
   }, [isSynthCapturing]);
 
   useEffect(() => {
+    if (!sam3BoxPromptEnabled) {
+      setBoxDisplay(null);
+    }
+  }, [sam3BoxPromptEnabled]);
+
+  useEffect(() => {
+    if (!sam3Box) {
+      setBoxDisplay(null);
+    }
+  }, [sam3Box]);
+
+  useEffect(() => {
     if (prefillVideoFile) {
       setUploadedVideoFile(prefillVideoFile);
     }
   }, [prefillVideoFile]);
+
+  const handleBoxPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!sam3BoxPromptEnabled || !videoRef.current) {
+      return;
+    }
+    const rect = videoRef.current.getBoundingClientRect();
+    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+    const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+    isDrawingBoxRef.current = true;
+    boxStartRef.current = { x, y };
+    setBoxDisplay({ x, y, width: 0, height: 0 });
+    onSam3BoxChange?.(null);
+  };
+
+  const handleBoxPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDrawingBoxRef.current || !boxStartRef.current || !videoRef.current) {
+      return;
+    }
+    const rect = videoRef.current.getBoundingClientRect();
+    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+    const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+    const start = boxStartRef.current;
+    const left = Math.min(start.x, x);
+    const top = Math.min(start.y, y);
+    const width = Math.abs(x - start.x);
+    const height = Math.abs(y - start.y);
+    setBoxDisplay({ x: left, y: top, width, height });
+  };
+
+  const handleBoxPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDrawingBoxRef.current || !boxStartRef.current || !videoRef.current) {
+      return;
+    }
+    isDrawingBoxRef.current = false;
+    const rect = videoRef.current.getBoundingClientRect();
+    const endX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+    const endY = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+    const start = boxStartRef.current;
+    boxStartRef.current = null;
+    const left = Math.min(start.x, endX);
+    const top = Math.min(start.y, endY);
+    const width = Math.abs(endX - start.x);
+    const height = Math.abs(endY - start.y);
+    if (width < 4 || height < 4) {
+      setBoxDisplay(null);
+      onSam3BoxChange?.(null);
+      return;
+    }
+    setBoxDisplay({ x: left, y: top, width, height });
+    const videoWidth = videoRef.current.videoWidth || rect.width;
+    const videoHeight = videoRef.current.videoHeight || rect.height;
+    const scaleX = videoWidth / rect.width;
+    const scaleY = videoHeight / rect.height;
+    const x1 = Math.round(left * scaleX);
+    const y1 = Math.round(top * scaleY);
+    const x2 = Math.round((left + width) * scaleX);
+    const y2 = Math.round((top + height) * scaleY);
+    onSam3BoxChange?.([x1, y1, x2, y2]);
+  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -377,6 +468,29 @@ export function InputAndControlsPanel({
                   muted
                   playsInline
                 />
+                {sam3BoxPromptEnabled ? (
+                  <div
+                    className="absolute inset-0 cursor-crosshair"
+                    onPointerDown={handleBoxPointerDown}
+                    onPointerMove={handleBoxPointerMove}
+                    onPointerUp={handleBoxPointerUp}
+                  >
+                    <div className="absolute left-2 top-2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white">
+                      Drag to box the person
+                    </div>
+                    {boxDisplay ? (
+                      <div
+                        className="absolute border-2 border-emerald-300 bg-emerald-300/10"
+                        style={{
+                          left: boxDisplay.x,
+                          top: boxDisplay.y,
+                          width: boxDisplay.width,
+                          height: boxDisplay.height,
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
                 {isSynthCapturing ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
                     <Spinner size={22} />
@@ -471,11 +585,50 @@ export function InputAndControlsPanel({
               <Button
                 size="xs"
                 onClick={onSam3Generate}
-                disabled={isSam3Generating || isConnecting || isLoading}
+                disabled={
+                  isSam3Generating ||
+                  isConnecting ||
+                  isLoading ||
+                  (sam3BoxPromptEnabled && !sam3Box)
+                }
               >
-                {isSam3Generating ? "Generating..." : "Regenerate Mask"}
+                {isSam3Generating
+                  ? "Generating..."
+                  : sam3BoxPromptEnabled
+                    ? "Regenerate with Box"
+                    : "Regenerate Mask"}
               </Button>
+              {sam3NoDetections && !sam3BoxPromptEnabled ? (
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  onClick={onSam3BoxPromptEnable}
+                  disabled={isSam3Generating || isConnecting || isLoading}
+                >
+                  Use Box Prompt
+                </Button>
+              ) : null}
+              {sam3BoxPromptEnabled ? (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={onSam3BoxPromptCancel}
+                  disabled={isSam3Generating}
+                >
+                  Cancel Box
+                </Button>
+              ) : null}
             </div>
+            {sam3NoDetections && !sam3BoxPromptEnabled ? (
+              <div className="text-xs text-muted-foreground">
+                No mask detected. Try box prompt for better focus.
+              </div>
+            ) : null}
+            {sam3BoxPromptEnabled ? (
+              <div className="text-xs text-muted-foreground">
+                Draw a box on the preview, then regenerate.
+              </div>
+            ) : null}
             {sam3Status && (
               <div className="text-xs text-muted-foreground">{sam3Status}</div>
             )}
