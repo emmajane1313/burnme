@@ -2116,14 +2116,7 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             letterbox_box = None
 
             def process_frame(frame: np.ndarray) -> None:
-                nonlocal (
-                    frame_index,
-                    payload_hits,
-                    payload_misses,
-                    mask_height,
-                    mask_width,
-                    letterbox_box,
-                )
+                nonlocal frame_index, payload_hits, payload_misses, mask_height, mask_width, letterbox_box
                 synth_frame = frame
                 if (mask_height, mask_width) != (height, width):
                     synth_frame, box = _letterbox_frame(
