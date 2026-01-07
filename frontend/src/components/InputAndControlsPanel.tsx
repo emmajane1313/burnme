@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
 import { Spinner } from "./ui/spinner";
 import type { PromptItem, PromptTransition } from "../lib/api";
 import type { PipelineInfo } from "../types";
@@ -490,7 +489,9 @@ export function InputAndControlsPanel({
                 {isSynthCapturing ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
                     <Spinner size={22} />
-                    <span className="text-xs text-muted-foreground">Burning...</span>
+                    <span className="text-xs text-muted-foreground">
+                      Burning...
+                    </span>
                   </div>
                 ) : null}
                 {sourceVideoBlocked ? (
@@ -540,11 +541,6 @@ export function InputAndControlsPanel({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium">Style</h3>
-                {isSynthCapturing && (
-                  <Badge variant="secondary" className="text-xs">
-                    Locked
-                  </Badge>
-                )}
               </div>
               <div className="prompt-orb-grid">
                 {PROMPT_PRESETS.map(preset => {

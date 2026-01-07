@@ -81,6 +81,43 @@ except Exception:  # pragma: no cover - optional dependency
     iio = None
 
 
+def _letterbox_frame(
+    frame: np.ndarray,
+    target_width: int,
+    target_height: int,
+    interpolation: int = cv2.INTER_LINEAR,
+) -> tuple[np.ndarray, tuple[int, int, int, int]]:
+    height, width = frame.shape[:2]
+    if height <= 0 or width <= 0:
+        return frame, (0, 0, width, height)
+    scale = min(target_width / width, target_height / height)
+    new_width = max(1, int(round(width * scale)))
+    new_height = max(1, int(round(height * scale)))
+    resized = cv2.resize(frame, (new_width, new_height), interpolation=interpolation)
+    if frame.ndim == 2:
+        canvas = np.zeros((target_height, target_width), dtype=frame.dtype)
+    else:
+        canvas = np.zeros((target_height, target_width, frame.shape[2]), dtype=frame.dtype)
+    left = (target_width - new_width) // 2
+    top = (target_height - new_height) // 2
+    canvas[top : top + new_height, left : left + new_width] = resized
+    return canvas, (left, top, new_width, new_height)
+
+
+def _unletterbox_frame(
+    frame: np.ndarray,
+    output_width: int,
+    output_height: int,
+    box: tuple[int, int, int, int],
+    interpolation: int = cv2.INTER_LINEAR,
+) -> np.ndarray:
+    left, top, width, height = box
+    cropped = frame[top : top + height, left : left + width]
+    if cropped.shape[:2] == (output_height, output_width):
+        return cropped
+    return cv2.resize(cropped, (output_width, output_height), interpolation=interpolation)
+
+
 async def ensure_default_lora_download() -> None:
     """Download the default LoRA if it is missing."""
     lora_path = get_default_lora_path()
@@ -1826,9 +1863,19 @@ async def generate_visual_cipher_endpoint(request: VisualCipherRequest):
                 else:
                     burn_rgb = cv2.cvtColor(frame_synth, cv2.COLOR_BGR2RGB)
                 if orig_rgb.shape[:2] != (mask_height, mask_width):
-                    orig_rgb = cv2.resize(orig_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+                    orig_rgb, _ = _letterbox_frame(
+                        orig_rgb,
+                        mask_width,
+                        mask_height,
+                        interpolation=cv2.INTER_LINEAR,
+                    )
                 if burn_rgb.shape[:2] != (mask_height, mask_width):
-                    burn_rgb = cv2.resize(burn_rgb, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+                    burn_rgb, _ = _letterbox_frame(
+                        burn_rgb,
+                        mask_width,
+                        mask_height,
+                        interpolation=cv2.INTER_LINEAR,
+                    )
 
                 frame_hash = hashes.Hash(hashes.SHA256(), backend=default_backend())
                 frame_hash.update(burn_rgb.tobytes())
@@ -2045,14 +2092,20 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
             frame_index = 0
             payload_hits = 0
             payload_misses = 0
+            letterbox_box = None
 
             def process_frame(frame: np.ndarray) -> None:
                 nonlocal frame_index, payload_hits, payload_misses, mask_height, mask_width
                 synth_frame = frame
                 if (mask_height, mask_width) != (height, width):
-                    synth_frame = cv2.resize(
-                        synth_frame, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR
+                    synth_frame, box = _letterbox_frame(
+                        synth_frame,
+                        mask_width,
+                        mask_height,
+                        interpolation=cv2.INTER_LINEAR,
                     )
+                    if letterbox_box is None:
+                        letterbox_box = box
 
                 payload_b64 = payload_by_index.get(frame_index)
                 if payload_b64:
@@ -2094,9 +2147,13 @@ async def restore_mp4p_endpoint(request: RestoreMP4PRequest):
                 else:
                     payload_misses += 1
 
-                if (mask_height, mask_width) != (height, width):
-                    synth_frame = cv2.resize(
-                        synth_frame, (width, height), interpolation=cv2.INTER_LINEAR
+                if (mask_height, mask_width) != (height, width) and letterbox_box:
+                    synth_frame = _unletterbox_frame(
+                        synth_frame,
+                        width,
+                        height,
+                        letterbox_box,
+                        interpolation=cv2.INTER_LINEAR,
                     )
 
                 writer.append_data(synth_frame)
