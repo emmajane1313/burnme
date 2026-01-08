@@ -1,3 +1,5 @@
+import { useI18n } from "../i18n";
+
 interface StatusBarProps {
   className?: string;
   fps?: number;
@@ -11,6 +13,7 @@ export function StatusBar({
   bitrate,
   videoControls,
 }: StatusBarProps) {
+  const { t } = useI18n();
   const MetricItem = ({
     label,
     value,
@@ -30,7 +33,7 @@ export function StatusBar({
   );
 
   const formatBitrate = (bps?: number): string => {
-    if (bps === undefined || bps === 0) return "N/A";
+    if (bps === undefined || bps === 0) return t("status.na");
 
     if (bps >= 1000000) {
       return `${(bps / 1000000).toFixed(1)} Mbps`;
@@ -39,7 +42,7 @@ export function StatusBar({
     }
   };
 
-  const fpsValue = fps !== undefined && fps > 0 ? fps.toFixed(1) : "N/A";
+  const fpsValue = fps !== undefined && fps > 0 ? fps.toFixed(1) : t("status.na");
   const bitrateValue = formatBitrate(bitrate);
 
   return (
@@ -48,7 +51,7 @@ export function StatusBar({
     >
       <div className="flex items-center">{videoControls}</div>
       <div className="flex flex-wrap items-center justify-center gap-2 text-lg break-all text-white">
-        <span>FREE Y2K LORA 4 U!!! CLICK &amp; DOWNLOAD</span>
+        <span>{t("status.freeLora")}</span>
         <a
           href="https://github.com/emmajane1313/Wan-LoRAs/blob/main/y2k-1.3b.safetensors"
           target="_blank"
@@ -68,8 +71,8 @@ export function StatusBar({
         </a>
       </div>
       <div className="flex items-center gap-6">
-        <MetricItem label="FPS" value={fpsValue} />
-        <MetricItem label="Bitrate" value={bitrateValue} />
+        <MetricItem label={t("status.fps")} value={fpsValue} />
+        <MetricItem label={t("status.bitrate")} value={bitrateValue} />
       </div>
     </div>
   );

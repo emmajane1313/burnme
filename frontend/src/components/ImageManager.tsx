@@ -3,6 +3,7 @@ import { Plus, X } from "lucide-react";
 import { LabelWithTooltip } from "./ui/label-with-tooltip";
 import { getAssetUrl } from "../lib/api";
 import { MediaPicker } from "./MediaPicker";
+import { useI18n } from "../i18n";
 
 interface ImageManagerProps {
   images: string[];
@@ -15,6 +16,7 @@ export function ImageManager({
   onImagesChange,
   disabled,
 }: ImageManagerProps) {
+  const { t } = useI18n();
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
 
   const handleAddImage = (imagePath: string) => {
@@ -28,8 +30,8 @@ export function ImageManager({
   return (
     <div>
       <LabelWithTooltip
-        label="Reference Images"
-        tooltip="Select reference images for VACE conditioning. Images will guide the video generation style and content."
+        label={t("imageManager.label")}
+        tooltip={t("imageManager.tooltip")}
         className="text-sm font-medium mb-2 block"
       />
 
@@ -41,7 +43,9 @@ export function ImageManager({
             className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center hover:bg-accent hover:border-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Plus className="h-6 w-6 mb-1 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Add Image</span>
+            <span className="text-xs text-muted-foreground">
+              {t("imageManager.addImage")}
+            </span>
           </button>
         )}
 
@@ -52,14 +56,14 @@ export function ImageManager({
           >
             <img
               src={getAssetUrl(imagePath)}
-              alt={`Reference ${index + 1}`}
+              alt={t("imageManager.referenceAlt", { index: index + 1 })}
               className="w-full h-full object-cover"
             />
             <button
               onClick={() => handleRemoveImage(index)}
               disabled={disabled}
               className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-              title="Remove image"
+              title={t("imageManager.removeImage")}
             >
               <X className="h-3 w-3" />
             </button>

@@ -39,15 +39,9 @@ maybe you don't need to disappear.
 
 but you do need to become harder to read.
 
-not privacy through absence, but privacy through interpretation.
+not privacy through absence, but privacy through interpretation, where cryptography can live inside a medium that already moves through culture on its own. instead of pushing everything down into invisible layers of math and code, the surface itself starts to carry the work. what you see becomes part of how meaning is shaped.
 
-this is not about replacing cryptography. it is about letting
-cryptography live inside a medium that already moves through culture on
-its own. instead of pushing everything down into invisible layers of
-math and code, the surface itself starts to carry the work. what you see
-becomes part of how meaning is shaped. layered, shifting, slightly off,
-suspicious in that CYOA escaping through the mirrors of victorian halls
-at midnight.
+layered, shifting, slightly off, suspicious in that CYOA escaping through the mirrors of victorian halls at midnight kind of way.
 
 and now its not just an mp4.
 

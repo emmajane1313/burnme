@@ -19,6 +19,7 @@ import {
   generateVisualCipherPayload,
   type MP4PData,
 } from "../lib/mp4p-api";
+import { useI18n } from "../i18n";
 
 interface InputAndControlsPanelProps {
   className?: string;
@@ -142,6 +143,8 @@ export function InputAndControlsPanel({
   sam3Ta3mel = false,
   sourceVideoBlocked = false,
 }: InputAndControlsPanelProps) {
+  const { t } = useI18n();
+
   const handlePresetSelect = (preset: (typeof PROMPT_PRESETS)[number]) => {
     const nextPrompts = [{ text: preset.prompt, weight: 100 }];
     onPromptsChange(nextPrompts);
@@ -448,12 +451,12 @@ export function InputAndControlsPanel({
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
       <CardHeader className="flex-shrink-0 py-3 px-4">
         <CardTitle className="text-sm font-medium text-white">
-          Input & Controls
+          {t("inputControls.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 overflow-y-auto flex-1 px-4 py-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div>
-          <h3 className="text-xs font-medium mb-1.5">Video Input</h3>
+          <h3 className="text-xs font-medium mb-1.5">{t("videoInput.title")}</h3>
           <div className="rounded-lg flex items-center justify-center bg-muted/10 overflow-hidden relative min-h-[120px]">
             {onVideoFileUpload && (
               <input
@@ -467,11 +470,11 @@ export function InputAndControlsPanel({
             )}
             {isInitializing ? (
               <div className="text-center text-muted-foreground text-sm">
-                Initializing video...
+                {t("videoInput.initializing")}
               </div>
             ) : error ? (
               <div className="text-center text-red-500 text-sm p-4">
-                <p>Video error:</p>
+                <p>{t("videoInput.errorLabel")}</p>
                 <p className="text-xs mt-1">{error}</p>
               </div>
             ) : localStream && !hideLocalPreview ? (
@@ -492,7 +495,7 @@ export function InputAndControlsPanel({
                     onPointerUp={handleBoxPointerUp}
                   >
                     <div className="absolute left-2 top-2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white">
-                      Drag to box the person
+                      {t("videoInput.dragBox")}
                     </div>
                     {boxDisplay ? (
                       <div
@@ -511,7 +514,7 @@ export function InputAndControlsPanel({
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
                     <Spinner size={22} />
                     <span className="text-xs text-muted-foreground">
-                      Burning...
+                      {t("videoInput.burning")}
                     </span>
                   </div>
                 ) : null}
@@ -526,7 +529,7 @@ export function InputAndControlsPanel({
                     htmlFor="video-upload"
                     className="mac-frosted-button px-4 py-3 text-sm text-center cursor-pointer"
                   >
-                    Upload a vid to begin
+                    {t("videoInput.uploadToBegin")}
                   </label>
                 </>
               )
@@ -539,7 +542,7 @@ export function InputAndControlsPanel({
                 size="xs"
                 onClick={handleTriggerFilePicker}
               >
-                Change Video
+                {t("videoInput.changeVideo")}
               </Button>
             </div>
           ) : null}
@@ -551,20 +554,20 @@ export function InputAndControlsPanel({
                 size="xs"
                 variant="secondary"
               >
-                {isVideoPaused ? "Play" : "Pause"}
+                {isVideoPaused ? t("videoInput.play") : t("videoInput.pause")}
               </Button>
             </div>
           )}
           {pipelines ? (
             <div className="mt-3 space-y-1">
-              <h3 className="text-xs font-medium">Pipeline</h3>
+              <h3 className="text-xs font-medium">{t("pipeline.title")}</h3>
               <Select
                 value={pipelineId}
                 onValueChange={value => onPipelineIdChange?.(value)}
                 disabled={isSynthCapturing || isLoading || isConnecting}
               >
                 <SelectTrigger className="w-full h-8">
-                  <SelectValue placeholder="Select a pipeline" />
+                  <SelectValue placeholder={t("pipeline.selectPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.keys(pipelines).map(id => (
@@ -582,7 +585,7 @@ export function InputAndControlsPanel({
           {pipeline?.supportsPrompts !== false && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium">Style</h3>
+                <h3 className="text-sm font-medium">{t("style.title")}</h3>
               </div>
               <div className="prompt-orb-grid">
                 {PROMPT_PRESETS.map(preset => {
@@ -608,9 +611,10 @@ export function InputAndControlsPanel({
 
         {onGenerarMascara && (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">SAM3 Mask</h3>
+            <h3 className="text-sm font-medium">{t("sam3.title")}</h3>
             <div className="text-xs text-muted-foreground">
-              Requires HF access to{" "}
+              {t("sam3.requiresAccessPrefix")}
+              {" "}
               <a
                 href="https://huggingface.co/facebook/sam3"
                 target="_blank"
@@ -619,7 +623,7 @@ export function InputAndControlsPanel({
               >
                 facebook/sam3
               </a>
-              . Request access before generating masks.
+              {t("sam3.requiresAccessSuffix")}
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Button
@@ -633,10 +637,10 @@ export function InputAndControlsPanel({
                 }
               >
                 {sam3Ta3mel
-                  ? "Generating..."
+                  ? t("sam3.generating")
                   : cajaSamPromptActiva
-                    ? "Regenerate with Box"
-                    : "Regenerate Mask"}
+                    ? t("sam3.regenerateWithBox")
+                    : t("sam3.regenerateMask")}
               </Button>
               {!cajaSamPromptActiva ? (
                 <Button
@@ -645,7 +649,7 @@ export function InputAndControlsPanel({
                   onClick={onCajaSamPromptActiva}
                   disabled={sam3Ta3mel || isConnecting || isLoading}
                 >
-                  Use Box Prompt
+                  {t("sam3.useBoxPrompt")}
                 </Button>
               ) : null}
               {cajaSamPromptActiva ? (
@@ -655,18 +659,18 @@ export function InputAndControlsPanel({
                   onClick={onCajaSamPromptCancelar}
                   disabled={sam3Ta3mel}
                 >
-                  Cancel Box
+                  {t("sam3.cancelBox")}
                 </Button>
               ) : null}
             </div>
             {sam3SinDetecciones && !cajaSamPromptActiva ? (
               <div className="text-xs text-muted-foreground">
-                No mask detected. Try box prompt for better focus.
+                {t("sam3.noMaskDetected")}
               </div>
             ) : null}
             {cajaSamPromptActiva ? (
               <div className="text-xs text-muted-foreground">
-                Draw a box on the preview, then regenerate.
+                {t("sam3.drawBoxHint")}
               </div>
             ) : null}
             {estadoMascaraSam && (
@@ -676,14 +680,14 @@ export function InputAndControlsPanel({
         )}
 
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Burn</h3>
+          <h3 className="text-sm font-medium">{t("burn.title")}</h3>
           <div className="flex flex-wrap items-center text-xs gap-2">
             <Button
               onClick={onStartSynth}
               disabled={!canStartSynth || isConnecting || isLoading}
               size="xs"
             >
-              Start Burn
+              {t("burn.start")}
             </Button>
             {isSynthCapturing ? (
               <Button
@@ -692,18 +696,22 @@ export function InputAndControlsPanel({
                 size="xs"
                 variant="destructive"
               >
-                Cancel Burn
+                {t("burn.cancel")}
               </Button>
             ) : null}
             {confirmedSynthedBlob && !isSynthCapturing ? (
               <Button onClick={onDeleteBurn} size="xs" variant="destructive">
-                Delete Burn
+                {t("burn.delete")}
               </Button>
             ) : null}
           </div>
           {isSynthCapturing && (
             <div className="mt-2 text-xs text-muted-foreground">
-              {isRecordingSynthed ? "Recording" : "Preparing"} from start.
+              {t("burn.statusFromStart", {
+                status: isRecordingSynthed
+                  ? t("burn.status.recording")
+                  : t("burn.status.preparing"),
+              })}
             </div>
           )}
         </div>
@@ -721,7 +729,7 @@ export function InputAndControlsPanel({
             className="w-full"
             size="sm"
           >
-            {isExporting ? "Exporting..." : "Export MP4P"}
+            {isExporting ? t("export.exporting") : t("export.exportMp4p")}
           </Button>
         </div>
 
@@ -745,7 +753,7 @@ export function InputAndControlsPanel({
               size="sm"
               variant="secondary"
             >
-              Download Key File
+              {t("export.downloadKeyFile")}
             </Button>
           </div>
         )}

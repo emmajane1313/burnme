@@ -7,6 +7,7 @@ import {
   getAssetUrl,
   type AssetFileInfo,
 } from "../lib/api";
+import { useI18n } from "../i18n";
 
 interface MediaPickerProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function MediaPicker({
   onSelectImage,
   disabled,
 }: MediaPickerProps) {
+  const { t } = useI18n();
   const [images, setImages] = useState<AssetFileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -122,7 +124,7 @@ export function MediaPicker({
         className="bg-card border rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Media Picker</h2>
+          <h2 className="text-lg font-semibold">{t("media.title")}</h2>
           <Button
             size="sm"
             variant="ghost"
@@ -144,7 +146,7 @@ export function MediaPicker({
 
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">
-            Loading images...
+            {t("media.loading")}
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto">
@@ -156,7 +158,7 @@ export function MediaPicker({
               >
                 <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  {isUploading ? "Uploading..." : "Upload"}
+                  {isUploading ? t("media.uploading") : t("media.upload")}
                 </span>
               </button>
 
@@ -179,7 +181,7 @@ export function MediaPicker({
 
               {images.length === 0 && (
                 <div className="col-span-2 text-center py-8 text-muted-foreground text-sm">
-                  No images found. Upload an image to get started.
+                  {t("media.empty")}
                 </div>
               )}
             </div>
@@ -188,8 +190,8 @@ export function MediaPicker({
 
         <p className="text-xs text-muted-foreground mt-4">
           {images.length > 0
-            ? `${images.length} images available, sorted by most recent`
-            : "No images available"}
+            ? t("media.availableCount", { count: images.length })
+            : t("media.availableNone")}
         </p>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { fetchCurrentLogs } from "../lib/api";
+import { useI18n } from "../i18n";
 
 interface ReportBugDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface ReportBugDialogProps {
 }
 
 export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
+  const { t } = useI18n();
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
     } catch (err) {
       console.error("Failed to copy logs:", err);
       setError(
-        err instanceof Error ? err.message : "Failed to fetch or copy logs"
+        err instanceof Error ? err.message : t("bug.error.fetchCopy")
       );
     } finally {
       setIsLoadingLogs(false);
@@ -63,10 +65,10 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bug className="h-5 w-5" />
-            Report Bug
+            {t("bug.title")}
           </DialogTitle>
           <DialogDescription className="mt-3">
-            Follow these steps to report a bug with diagnostic logs.
+            {t("bug.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -77,10 +79,10 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
                 1
               </div>
-              <h4 className="font-semibold text-sm">Copy Logs</h4>
+              <h4 className="font-semibold text-sm">{t("bug.copyTitle")}</h4>
             </div>
             <p className="text-sm text-muted-foreground pl-8">
-              Click the button below to copy logs to your clipboard.
+              {t("bug.copyHint")}
             </p>
             <div className="pl-8">
               <Button
@@ -92,12 +94,12 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
                 {copySuccess ? (
                   <>
                     <Check className="h-4 w-4" />
-                    Copied!
+                    {t("bug.copied")}
                   </>
                 ) : (
                   <>
                     <Copy className="h-4 w-4" />
-                    {isLoadingLogs ? "Loading..." : "Copy Logs"}
+                    {isLoadingLogs ? t("bug.loading") : t("bug.copyTitle")}
                   </>
                 )}
               </Button>
@@ -110,16 +112,15 @@ export function ReportBugDialog({ open, onClose }: ReportBugDialogProps) {
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
                 2
               </div>
-              <h4 className="font-semibold text-sm">Create Bug Report</h4>
+              <h4 className="font-semibold text-sm">{t("bug.createTitle")}</h4>
             </div>
             <p className="text-sm text-muted-foreground pl-8">
-              Click the button below to create a bug report on GitHub and then
-              attach the logs from your clipboard.
+              {t("bug.createHint")}
             </p>
             <div className="pl-8">
               <Button onClick={handleCreateBug} className="gap-2">
                 <ExternalLink className="h-4 w-4" />
-                Create Bug Report
+                {t("bug.createButton")}
               </Button>
             </div>
           </div>

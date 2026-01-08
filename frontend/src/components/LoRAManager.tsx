@@ -14,6 +14,7 @@ import { PARAMETER_METADATA } from "../data/parameterMetadata";
 import type { LoRAConfig, LoraMergeStrategy } from "../types";
 import { listLoRAFiles, type LoRAFileInfo } from "../lib/api";
 import { FilePicker } from "./ui/file-picker";
+import { useI18n } from "../i18n";
 
 interface LoRAManagerProps {
   loras: LoRAConfig[];
@@ -30,6 +31,7 @@ export function LoRAManager({
   isStreaming = false,
   loraMergeStrategy = "permanent_merge",
 }: LoRAManagerProps) {
+  const { t } = useI18n();
   const [availableLoRAs, setAvailableLoRAs] = useState<LoRAFileInfo[]>([]);
   const [isLoadingLoRAs, setIsLoadingLoRAs] = useState(false);
   const [localScales, setLocalScales] = useState<Record<string, number>>({});
@@ -92,8 +94,8 @@ export function LoRAManager({
     const isDisabled = disabled || (isStreaming && isPermanentMerge);
     const tooltipText =
       isStreaming && isPermanentMerge
-        ? PARAMETER_METADATA.loraScaleDisabledDuringStream.tooltip
-        : PARAMETER_METADATA.loraScale.tooltip;
+        ? t(PARAMETER_METADATA.loraScaleDisabledDuringStream.tooltip)
+        : t(PARAMETER_METADATA.loraScale.tooltip);
 
     return { isDisabled, tooltipText };
   };
@@ -101,7 +103,7 @@ export function LoRAManager({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">LoRA Adapters</h3>
+        <h3 className="text-sm font-medium">{t("lora.title")}</h3>
         <div className="flex gap-1">
           <Button
             size="sm"
@@ -109,7 +111,7 @@ export function LoRAManager({
             onClick={loadAvailableLoRAs}
             disabled={disabled || isLoadingLoRAs}
             className="h-6 px-2"
-            title="Refresh LoRA list"
+            title={t("lora.refreshTitle")}
           >
             <RefreshCw
               className={`h-3 w-3 ${isLoadingLoRAs ? "animate-spin" : ""}`}
@@ -122,7 +124,7 @@ export function LoRAManager({
             disabled={disabled || isStreaming}
             className="h-6 px-2"
             title={
-              isStreaming ? "Cannot add LoRAs while streaming" : "Add LoRA"
+              isStreaming ? t("lora.addDisabledTitle") : t("lora.addTitle")
             }
           >
             <Plus className="h-3 w-3" />
@@ -132,16 +134,17 @@ export function LoRAManager({
 
       {loras.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          No LoRA adapters configured. Follow the{" "}
+          {t("lora.noneConfiguredPrefix")}
+          {" "}
           <a
             href="https://github.com/daydreamlive/scope/blob/main/docs/lora.md"
             target="_blank"
             rel="noopener noreferrer"
             className="underline"
           >
-            docs
+            {t("lora.docs")}
           </a>{" "}
-          to add LoRA files.
+          {t("lora.noneConfiguredSuffix")}
         </p>
       )}
 
@@ -158,8 +161,8 @@ export function LoRAManager({
                   onChange={path => handleLoraChange(lora.id, { path })}
                   files={availableLoRAs}
                   disabled={disabled || isStreaming}
-                  placeholder="Select LoRA file"
-                  emptyMessage="No LoRA files found"
+                  placeholder={t("lora.filePlaceholder")}
+                  emptyMessage={t("lora.noFiles")}
                 />
               </div>
               <Button
@@ -170,8 +173,8 @@ export function LoRAManager({
                 className="h-6 w-6 p-0 shrink-0"
                 title={
                   isStreaming
-                    ? "Cannot remove LoRAs while streaming"
-                    : "Remove LoRA"
+                    ? t("lora.removeDisabledTitle")
+                    : t("lora.removeTitle")
                 }
               >
                 <X className="h-3 w-3" />
@@ -180,8 +183,8 @@ export function LoRAManager({
 
             <div className="flex items-center gap-2">
               <LabelWithTooltip
-                label="Strategy:"
-                tooltip={PARAMETER_METADATA.loraMergeStrategy.tooltip}
+                label={t("lora.strategyLabel")}
+                tooltip={t(PARAMETER_METADATA.loraMergeStrategy.tooltip)}
                 className="text-xs text-muted-foreground w-16"
               />
               <Select
@@ -198,16 +201,16 @@ export function LoRAManager({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="permanent_merge">
-                    Permanent Merge
+                    {t("lora.strategy.permanent")}
                   </SelectItem>
-                  <SelectItem value="runtime_peft">Runtime PEFT</SelectItem>
+                  <SelectItem value="runtime_peft">{t("lora.strategy.runtime")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-center gap-2">
               <LabelWithTooltip
-                label="Scale:"
+                label={t("lora.scaleLabel")}
                 tooltip={getScaleAdjustmentInfo(lora).tooltipText}
                 className="text-xs text-muted-foreground w-16"
               />

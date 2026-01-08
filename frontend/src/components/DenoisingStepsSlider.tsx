@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { SliderWithInput } from "./ui/slider-with-input";
 import { LabelWithTooltip } from "./ui/label-with-tooltip";
 import { Plus, Trash2 } from "lucide-react";
+import { useI18n } from "../i18n";
 
 interface DenoisingStepsSliderProps {
   className?: string;
@@ -27,6 +28,7 @@ export function DenoisingStepsSlider({
   defaultValues = DEFAULT_VALUES,
   tooltip,
 }: DenoisingStepsSliderProps) {
+  const { t } = useI18n();
   const [localValue, setLocalValue] = useState<number[]>(
     value.length > 0 ? value : defaultValues
   );
@@ -41,7 +43,7 @@ export function DenoisingStepsSlider({
   const validateSteps = (steps: number[]): string => {
     for (let i = 1; i < steps.length; i++) {
       if (steps[i] >= steps[i - 1]) {
-        return `Step ${i + 1} must be lower than Step ${i}`;
+        return t("denoise.validation", { current: i + 1, previous: i });
       }
     }
     return "";
@@ -130,7 +132,7 @@ export function DenoisingStepsSlider({
     <div className={`space-y-2 ${className}`}>
       <div className="flex items-center justify-between">
         <LabelWithTooltip
-          label="Denoising Step List"
+          label={t("denoise.title")}
           tooltip={tooltip}
           className="text-sm text-foreground"
         />
@@ -142,7 +144,7 @@ export function DenoisingStepsSlider({
             disabled={disabled}
             className="h-7 px-2 text-xs"
           >
-            Reset
+            {t("denoise.reset")}
           </Button>
           <Button
             variant="outline"
@@ -166,7 +168,7 @@ export function DenoisingStepsSlider({
         {localValue.map((stepValue, index) => (
           <SliderWithInput
             key={index}
-            label={`Step ${index + 1}:`}
+            label={t("denoise.stepLabel", { index: index + 1 })}
             value={stepValue}
             onValueChange={value => handleStepValueChange(index, value)}
             onValueCommit={value => handleStepCommit(index, value)}

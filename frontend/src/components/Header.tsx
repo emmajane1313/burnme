@@ -1,3 +1,5 @@
+import { useI18n } from "../i18n";
+
 interface HeaderProps {
   className?: string;
   mode?: "upload" | "play" | "about";
@@ -9,13 +11,15 @@ export function Header({
   mode = "upload",
   onModeChange,
 }: HeaderProps) {
+  const { t } = useI18n();
+
   return (
     <header className={`w-full bg-transparent px-6 py-4 ${className}`}>
       <div className="flex flex-col items-center justify-center gap-3">
         <img
           draggable={false}
           src="/assets/images/burnme.gif"
-          alt="Burn Me While I'm Hot"
+          alt={t("header.logoAlt")}
           className="h-8 object-contain"
         />
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -27,7 +31,7 @@ export function Header({
                 : "cursor-pointer"
             }`}
           >
-            Upload
+            {t("nav.upload")}
           </label>
 
           <label
@@ -38,7 +42,7 @@ export function Header({
                 : "cursor-pointer"
             }`}
           >
-            Play
+            {t("nav.play")}
           </label>
           <label
             onClick={() => onModeChange?.("about")}
@@ -48,7 +52,7 @@ export function Header({
                 : "cursor-pointer"
             }`}
           >
-            About
+            {t("nav.about")}
           </label>
         </div>
       </div>

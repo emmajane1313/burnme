@@ -7,6 +7,7 @@ import {
   type MP4PData,
   type MP4PMetadata,
 } from "../lib/mp4p-api";
+import { useI18n } from "../i18n";
 
 function base64ToUrl(base64: string, mimeType: string): string {
   const byteCharacters = atob(base64);
@@ -20,6 +21,7 @@ function base64ToUrl(base64: string, mimeType: string): string {
 }
 
 export function PlayPanel({ className = "" }: { className?: string }) {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mp4pData, setMp4pData] = useState<MP4PData | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
       }
     } catch (error) {
       setLoadError(
-        error instanceof Error ? error.message : "Failed to load MP4P"
+        error instanceof Error ? error.message : t("play.error.loadFailed")
       );
       setVideoUrl(null);
       console.error("MP4P load failed", error);
@@ -119,7 +121,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
         visualCipher.seed === undefined ||
         !visualCipher.keyMaterial
       ) {
-        throw new Error("Invalid key file");
+        throw new Error(t("play.error.invalidKeyFile"));
       }
       setKeyData(visualCipher);
       setKeyBurnIndex(
@@ -127,7 +129,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
       );
     } catch (error) {
       setRestoreError(
-        error instanceof Error ? error.message : "Invalid key file"
+        error instanceof Error ? error.message : t("play.error.invalidKeyFile")
       );
       setKeyData(null);
       setKeyBurnIndex(null);
@@ -150,7 +152,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
       });
     } catch (error) {
       setRestoreError(
-        error instanceof Error ? error.message : "Decrypt failed"
+        error instanceof Error ? error.message : t("play.error.decryptFailed")
       );
     } finally {
       setIsRestoring(false);
@@ -190,7 +192,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
       <CardHeader className="flex-shrink-0">
         <CardTitle className="text-base font-medium text-white">
-          Play MP4P
+          {t("play.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 overflow-y-auto flex-1 p-4">
@@ -211,7 +213,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
               htmlFor="mp4p-play-upload"
               className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
             >
-              Load MP4P
+              {t("play.loadMp4p")}
             </label>
             <input
               type="file"
@@ -226,7 +228,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
               htmlFor="mp4p-key-upload"
               className="mac-frosted-button px-3 py-2 text-xs inline-flex items-center justify-center cursor-pointer"
             >
-              Load Key File
+              {t("play.loadKeyFile")}
             </label>
           </div>
           {loadError && <div className="text-xs text-red-500">{loadError}</div>}
@@ -236,7 +238,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
           {isLoading ? (
             <div className="text-center text-xs text-muted-foreground">
               <Spinner size={22} className="mx-auto mb-2" />
-              Loading MP4P...
+              {t("play.loadingMp4p")}
             </div>
           ) : videoUrl ? (
             <video
@@ -255,7 +257,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
             />
           ) : (
             <div className="text-xs text-muted-foreground">
-              No video loaded.
+              {t("play.noVideoLoaded")}
             </div>
           )}
         </div>
@@ -267,35 +269,35 @@ export function PlayPanel({ className = "" }: { className?: string }) {
               onClick={togglePlay}
               disabled={!videoUrl || isLoading}
             >
-              {isPlaying ? "Pause" : "Play"}
+              {isPlaying ? t("play.pause") : t("play.play")}
             </button>
             <button
               className="mac-frosted-button px-3 py-1 text-xs"
               onClick={stopVideo}
               disabled={!videoUrl}
             >
-              Stop
+              {t("play.stop")}
             </button>
             <button
               className="mac-frosted-button px-3 py-1 text-xs"
               onClick={restartVideo}
               disabled={!videoUrl}
             >
-              Restart
+              {t("play.restart")}
             </button>
             <button
               className="mac-frosted-button px-3 py-1 text-xs"
               onClick={() => skipBy(-5)}
               disabled={!videoUrl}
             >
-              -5s
+              {t("play.skipBack")}
             </button>
             <button
               className="mac-frosted-button px-3 py-1 text-xs"
               onClick={() => skipBy(5)}
               disabled={!videoUrl}
             >
-              +5s
+              {t("play.skipForward")}
             </button>
           </div>
 
@@ -318,7 +320,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <label className="flex items-center gap-2">
-              Volume
+              {t("play.volume")}
               <input
                 type="range"
                 min={0}
@@ -334,13 +336,13 @@ export function PlayPanel({ className = "" }: { className?: string }) {
               onClick={() => setIsMuted(prev => !prev)}
               className="mac-frosted-button px-3 py-1 text-xs"
             >
-              {isMuted ? "Unmute" : "Mute"}
+              {isMuted ? t("play.unmute") : t("play.mute")}
             </button>
           </div>
         </div>
 
         <div className="space-y-2">
-          <div className="text-xs font-medium">Unlock</div>
+          <div className="text-xs font-medium">{t("play.unlock")}</div>
           {restoreError && (
             <div className="text-xs text-red-500">{restoreError}</div>
           )}
@@ -350,7 +352,7 @@ export function PlayPanel({ className = "" }: { className?: string }) {
             disabled={!mp4pData || !keyData || isRestoring}
             className="mac-frosted-button w-full px-4 py-2 text-sm disabled:opacity-50"
           >
-            {isRestoring ? "Decrypting..." : "Decrypt with Key"}
+            {isRestoring ? t("play.decrypting") : t("play.decryptWithKey")}
           </button>
         </div>
       </CardContent>

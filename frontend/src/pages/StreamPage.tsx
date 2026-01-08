@@ -25,6 +25,7 @@ import {
 } from "../lib/api";
 import { base64ToBlob } from "../lib/mp4p-api";
 import { toast } from "sonner";
+import { useI18n } from "../i18n";
 
 const VIDEO_REINITIALIZE_DELAY_MS = 100;
 const MAX_VIDEO_WIDTH = 496;
@@ -73,7 +74,26 @@ interface StreamPageProps {
 }
 
 export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
+  const { t } = useI18n();
   const { pipelines } = usePipelines();
+
+  const getSam3ErrorMessage = (error: unknown) => {
+    const rawMessage = error instanceof Error ? error.message : "";
+    const lower = rawMessage.toLowerCase();
+    if (lower.includes("no masks") || lower.includes("no detections")) {
+      return { rawMessage, displayMessage: t("sam3.error.noDetections") };
+    }
+    if (!rawMessage) {
+      return {
+        rawMessage: t("sam3.error.generic"),
+        displayMessage: t("sam3.error.generic"),
+      };
+    }
+    if (rawMessage === "Mask generation failed.") {
+      return { rawMessage, displayMessage: t("sam3.error.generic") };
+    }
+    return { rawMessage, displayMessage: rawMessage };
+  };
 
   const getPipelineDefaultMode = (_pipelineId: string): InputMode => {
     return "video";
@@ -247,14 +267,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
   const waitForSam3Models = async () => {
     setSam3Tanzil(true);
-    setEstadoMascaraSam("Downloading SAM3 models...");
+    setEstadoMascaraSam(t("sam3.status.downloading"));
 
     const poll = async (resolve: () => void, reject: (error: Error) => void) => {
       try {
         const status = await checkModelStatus("sam3");
         if (status.progress) {
           setEstadoMascaraSam(
-            `Downloading SAM3 models... ${status.progress.percentage.toFixed(0)}%`
+            t("sam3.status.downloadingProgress", {
+              percentage: status.progress.percentage.toFixed(0),
+            })
           );
         }
 
@@ -277,7 +299,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
   const handleGenerateSam3Mask = async () => {
     if (!uploadedVideoFile) {
-      setEstadoMascaraSam("Upload a video before generating masks.");
+      setEstadoMascaraSam(t("sam3.status.uploadBefore"));
       return;
     }
     if (sam3AutoListo || sam3AutoFallo) {
@@ -290,16 +312,16 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     const targetWidth = targetResolution?.width ?? null;
     const targetHeight = targetResolution?.height ?? null;
     if (cajaSamPromptActiva && !boxToUse) {
-      setEstadoMascaraSam("Draw a box around the person first.");
+      setEstadoMascaraSam(t("sam3.status.drawBoxFirst"));
       return;
     }
     if (!videoResolution) {
-      setEstadoMascaraSam("Video not ready yet. Try again in a moment.");
+      setEstadoMascaraSam(t("sam3.status.videoNotReady"));
       return;
     }
 
     setSam3Ta3mel(true);
-    setEstadoMascaraSam("Preparing SAM3...");
+    setEstadoMascaraSam(t("sam3.status.preparing"));
    
     try {
       const status = await checkModelStatus("sam3");
@@ -324,14 +346,14 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         targetWidth,
         targetHeight
       );
-      setEstadoMascaraSam("Generating SAM3 mask...");
+      setEstadoMascaraSam(t("sam3.status.generating"));
 
       const poll = async (): Promise<void> => {
         const status = await getSam3MaskJob(job.jobId);
         if (status.status === "completed" && status.result) {
        
           setIdMascaraSam(status.result.maskId);
-          setEstadoMascaraSam("Mask ready.");
+          setEstadoMascaraSam(t("sam3.status.ready"));
           setSam3AutoListo(true);
           setSam3AutoFallo(false);
           setSam3SinDetecciones(false);
@@ -354,24 +376,23 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         }
 
         if (status.status === "failed") {
-          throw new Error(status.error || "Mask generation failed.");
+          throw new Error(status.error || t("sam3.error.generic"));
         }
 
         setTimeout(() => {
           poll().catch(error => {
             console.error("SAM3 mask generation failed:", error);
-            const message =
-              error instanceof Error ? error.message : "Mask generation failed.";
-            setEstadoMascaraSam(message);
+            const { rawMessage, displayMessage } = getSam3ErrorMessage(error);
+            setEstadoMascaraSam(displayMessage);
             if (
-              message.toLowerCase().includes("no masks") ||
-              message.toLowerCase().includes("no detections")
+              rawMessage.toLowerCase().includes("no masks") ||
+              rawMessage.toLowerCase().includes("no detections")
             ) {
               setSam3SinDetecciones(true);
             }
             setSam3AutoFallo(true);
-            toast.error("SAM3 Mask Error", {
-              description: message,
+            toast.error(t("sam3.error.title"), {
+              description: displayMessage,
             });
             setSam3Ta3mel(false);
           });
@@ -380,35 +401,33 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
 
       poll().catch(error => {
         console.error("SAM3 mask generation failed:", error);
-        const message =
-          error instanceof Error ? error.message : "Mask generation failed.";
-        setEstadoMascaraSam(message);
+        const { rawMessage, displayMessage } = getSam3ErrorMessage(error);
+        setEstadoMascaraSam(displayMessage);
         if (
-          message.toLowerCase().includes("no masks") ||
-          message.toLowerCase().includes("no detections")
+          rawMessage.toLowerCase().includes("no masks") ||
+          rawMessage.toLowerCase().includes("no detections")
         ) {
           setSam3SinDetecciones(true);
         }
         setSam3AutoFallo(true);
-        toast.error("SAM3 Mask Error", {
-          description: message,
+        toast.error(t("sam3.error.title"), {
+          description: displayMessage,
         });
         setSam3Ta3mel(false);
       });
     } catch (error) {
       console.error("SAM3 mask generation failed:", error);
-      const message =
-        error instanceof Error ? error.message : "Mask generation failed.";
-      setEstadoMascaraSam(message);
+      const { rawMessage, displayMessage } = getSam3ErrorMessage(error);
+      setEstadoMascaraSam(displayMessage);
       if (
-        message.toLowerCase().includes("no masks") ||
-        message.toLowerCase().includes("no detections")
+        rawMessage.toLowerCase().includes("no masks") ||
+        rawMessage.toLowerCase().includes("no detections")
       ) {
         setSam3SinDetecciones(true);
       }
       setSam3AutoFallo(true);
-      toast.error("SAM3 Mask Error", {
-        description: message,
+      toast.error(t("sam3.error.title"), {
+        description: displayMessage,
       });
       setSam3Ta3mel(false);
     }
@@ -738,7 +757,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
       try {
         if (!idMascaraSam) {
-          throw new Error("Missing SAM3 mask for server burn.");
+          throw new Error(t("burn.missingSam3Mask"));
         }
         const renderParams = {
           prompts: [{ text: promptText, weight: 100 }],
@@ -780,9 +799,9 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         await runRender();
       } catch (error) {
         console.error("Server burn render failed:", error);
-        toast.error("Server burn failed", {
+        toast.error(t("burn.serverErrorTitle"), {
           description:
-            error instanceof Error ? error.message : "Failed to render burn on server",
+            error instanceof Error ? error.message : t("burn.serverErrorFallback"),
         });
       } finally {
         setIsSynthCapturing(false);
@@ -1187,7 +1206,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   sam3Listo={sam3Listo}
                   estadoMascaraSam={
                     estadoMascaraSam ||
-                    (sam3Tanzil ? "Downloading SAM3 models..." : null)
+                    (sam3Tanzil ? t("sam3.status.downloading") : null)
                   }
                   sam3Ta3mel={sam3Ta3mel}
                 />

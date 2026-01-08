@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { useI18n } from "../../i18n";
 
 interface TemporalTransitionControlsProps {
   transitionSteps: number;
@@ -28,22 +29,27 @@ export function TemporalTransitionControls({
   disabled = false,
   showHeader = false,
   showDisabledMessage = false,
-  disabledMessage = "First block cannot have transitions",
+  disabledMessage,
   maxSteps = 16,
   className = "",
 }: TemporalTransitionControlsProps) {
+  const { t } = useI18n();
+  const resolvedDisabledMessage = disabledMessage ?? t("transition.disabled");
+
   return (
     <div className={className}>
       {showHeader && (
         <div className="text-xs font-medium text-muted-foreground mb-3">
-          Temporal Transition Settings
+          {t("transition.header")}
         </div>
       )}
 
       <div
         className={`flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       >
-        <span className="text-xs text-muted-foreground">Temporal Blend:</span>
+        <span className="text-xs text-muted-foreground">
+          {t("transition.blend")}
+        </span>
         <Select
           value={temporalInterpolationMethod}
           onValueChange={value =>
@@ -55,8 +61,8 @@ export function TemporalTransitionControls({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="linear">Linear</SelectItem>
-            <SelectItem value="slerp">Slerp</SelectItem>
+            <SelectItem value="linear">{t("transition.linear")}</SelectItem>
+            <SelectItem value="slerp">{t("transition.slerp")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -64,7 +70,9 @@ export function TemporalTransitionControls({
       <div
         className={`flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       >
-        <span className="text-xs text-muted-foreground">Transition Steps:</span>
+        <span className="text-xs text-muted-foreground">
+          {t("transition.steps")}
+        </span>
         <div className="flex items-center gap-2 w-32 h-6">
           <Slider
             value={[transitionSteps]}
@@ -83,7 +91,7 @@ export function TemporalTransitionControls({
 
       {showDisabledMessage && disabled && (
         <div className="text-xs text-muted-foreground italic mt-2">
-          {disabledMessage}
+          {resolvedDisabledMessage}
         </div>
       )}
     </div>

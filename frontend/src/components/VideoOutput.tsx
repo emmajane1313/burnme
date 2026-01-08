@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Spinner } from "./ui/spinner";
 import type { DownloadProgress } from "../types";
+import { useI18n } from "../i18n";
 
 interface VideoOutputProps {
   className?: string;
@@ -46,6 +47,7 @@ export function VideoOutput({
   onVideoPlaying,
   isBurning = false,
 }: VideoOutputProps) {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [needsUserPlay, setNeedsUserPlay] = useState(false);
@@ -156,7 +158,9 @@ export function VideoOutput({
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="text-base font-medium text-white">Video Output</CardTitle>
+        <CardTitle className="text-base font-medium text-white">
+          {t("videoOutput.title")}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex items-center justify-center min-h-0 p-4">
         {hasVideo ? (
@@ -175,10 +179,10 @@ export function VideoOutput({
                   onClick={handleStartSourceVideo}
                   className="mac-frosted-button px-4 py-2 text-sm text-white"
                 >
-                  Start Pipeline
+                  {t("videoOutput.startPipeline")}
                 </button>
                 <p className="text-xs text-muted-foreground">
-                  Click to start the pipeline.
+                  {t("videoOutput.startPipelineHint")}
                 </p>
               </div>
             ) : (autoplayBlocked || needsUserPlay) && !isMaskLoading ? (
@@ -188,10 +192,10 @@ export function VideoOutput({
                   onClick={attemptPlay}
                   className="mac-frosted-button px-4 py-2 text-sm text-white"
                 >
-                  Tap to Play
+                  {t("videoOutput.tapToPlay")}
                 </button>
                 <p className="text-xs text-muted-foreground">
-                  Browser paused autoplay. Click to resume.
+                  {t("videoOutput.autoplayBlocked")}
                 </p>
               </div>
             ) : null}
@@ -199,7 +203,7 @@ export function VideoOutput({
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <div className="text-center text-muted-foreground text-lg">
                   <Spinner size={24} className="mx-auto mb-3" />
-                  <p>Downloading models...</p>
+                  <p>{t("videoOutput.downloadingModels")}</p>
                   {downloadProgress?.current_artifact ? (
                     <p className="mt-2 text-xs text-muted-foreground">
                       {downloadProgress.current_artifact}
@@ -216,14 +220,14 @@ export function VideoOutput({
               <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                 <div className="text-center text-muted-foreground text-lg">
                   <Spinner size={24} className="mx-auto mb-3" />
-                  <p>Warming up pipeline...</p>
+                  <p>{t("videoOutput.warmingPipeline")}</p>
                 </div>
               </div>
           ) : sam3Ta3mel || sam3AutoPendiente ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <div className="text-center text-muted-foreground text-lg">
                 <Spinner size={24} className="mx-auto mb-3" />
-                <p>Generating SAM3 mask...</p>
+                <p>{t("videoOutput.generatingMask")}</p>
                 {estadoMascaraSam ? (
                   <p className="mt-2 text-xs text-muted-foreground">
                     {estadoMascaraSam}
@@ -235,7 +239,7 @@ export function VideoOutput({
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
               <div className="text-center text-muted-foreground text-lg">
                 <Spinner size={24} className="mx-auto mb-3" />
-                <p>Burning...</p>
+                <p>{t("videoOutput.burning")}</p>
               </div>
             </div>
           ) : null}
@@ -243,12 +247,12 @@ export function VideoOutput({
         ) : isBurning ? (
           <div className="text-center text-muted-foreground text-lg">
             <Spinner size={24} className="mx-auto mb-3" />
-            <p>Burning...</p>
+            <p>{t("videoOutput.burning")}</p>
           </div>
         ) : isDownloading || pipelineNeedsModels ? (
           <div className="text-center text-muted-foreground text-lg">
             <Spinner size={24} className="mx-auto mb-3" />
-            <p>Downloading models...</p>
+            <p>{t("videoOutput.downloadingModels")}</p>
             {downloadProgress?.current_artifact ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 {downloadProgress.current_artifact}
@@ -263,16 +267,16 @@ export function VideoOutput({
         ) : isPipelineLoading ? (
           <div className="text-center text-muted-foreground text-lg">
             <Spinner size={24} className="mx-auto mb-3" />
-            <p>Loading...</p>
+            <p>{t("videoOutput.loading")}</p>
           </div>
         ) : isConnecting ? (
           <div className="text-center text-muted-foreground text-lg">
             <Spinner size={24} className="mx-auto mb-3" />
-            <p>Connecting...</p>
+            <p>{t("videoOutput.connecting")}</p>
           </div>
         ) : (
           <div className="relative w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-            Waiting for video...
+            {t("videoOutput.waitingForVideo")}
           </div>
         )}
       </CardContent>

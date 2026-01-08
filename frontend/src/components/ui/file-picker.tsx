@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useI18n } from "../../i18n";
 
 export interface FileInfo {
   name: string;
@@ -23,9 +24,13 @@ export function FilePicker({
   onChange,
   files,
   disabled,
-  placeholder = "Select file",
-  emptyMessage = "No files found",
+  placeholder,
+  emptyMessage,
 }: FilePickerProps) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("filePicker.selectFile");
+  const resolvedEmptyMessage = emptyMessage ?? t("filePicker.noFiles");
+  const rootLabel = t("filePicker.root");
   const [isOpen, setIsOpen] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(["Root"])
@@ -99,7 +104,7 @@ export function FilePicker({
         )}
       >
         <span className="truncate">
-          {selectedFile ? selectedFile.name : placeholder}
+          {selectedFile ? selectedFile.name : resolvedPlaceholder}
         </span>
         <ChevronDown className="h-3 w-3 ml-1 shrink-0" />
       </button>
@@ -108,7 +113,7 @@ export function FilePicker({
         <div className="absolute z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md">
           {groupedFiles.length === 0 ? (
             <div className="p-2 text-xs text-muted-foreground">
-              {emptyMessage}
+              {resolvedEmptyMessage}
             </div>
           ) : (
             <div className="p-1">
@@ -126,7 +131,9 @@ export function FilePicker({
                       ) : (
                         <ChevronRight className="h-3 w-3 shrink-0" />
                       )}
-                      <span className="text-muted-foreground">{folder}</span>
+                      <span className="text-muted-foreground">
+                        {folder === "Root" ? rootLabel : folder}
+                      </span>
                       <span className="text-muted-foreground/60">
                         ({folderFiles.length})
                       </span>

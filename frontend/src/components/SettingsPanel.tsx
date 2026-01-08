@@ -13,6 +13,7 @@ import { SliderWithInput } from "./ui/slider-with-input";
 import { PARAMETER_METADATA } from "../data/parameterMetadata";
 import { useLocalSliderValue } from "../hooks/useLocalSliderValue";
 import type { PipelineId, SettingsState, PipelineInfo } from "../types";
+import { useI18n } from "../i18n";
 
 
 interface SettingsPanelProps {
@@ -52,6 +53,7 @@ export function SettingsPanel({
   spoutAvailable = false,
   isVideoPaused = false,
 }: SettingsPanelProps) {
+  const { t } = useI18n();
   const kvCacheAttentionBiasSlider = useLocalSliderValue(
     kvCacheAttentionBias,
     onKvCacheAttentionBiasChange
@@ -69,18 +71,20 @@ export function SettingsPanel({
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="text-base font-medium text-white">Settings</CardTitle>
+        <CardTitle className="text-base font-medium text-white">
+          {t("settings.title")}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb:hover]:bg-gray-400">
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Pipeline ID</h3>
+          <h3 className="text-sm font-medium">{t("settings.pipelineId")}</h3>
           <Select
             value={pipelineId}
             onValueChange={handlePipelineIdChange}
             disabled={isControlsLocked}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a pipeline" />
+              <SelectValue placeholder={t("settings.selectPipeline")} />
             </SelectTrigger>
             <SelectContent>
               {pipelines &&
@@ -96,8 +100,8 @@ export function SettingsPanel({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <LabelWithTooltip
-              label="Y2K LoRA"
-              tooltip="Enable the default Y2K LoRA (scale 1.0). Toggle only when paused."
+              label={t("settings.lora.label")}
+              tooltip={t("settings.lora.tooltip")}
               className="text-sm text-foreground"
             />
             <Toggle
@@ -106,12 +110,12 @@ export function SettingsPanel({
               disabled={loraToggleDisabled}
               size="sm"
             >
-              {defaultLoraEnabled ? "On" : "Off"}
+              {defaultLoraEnabled ? t("settings.toggle.on") : t("settings.toggle.off")}
             </Toggle>
           </div>
           {loraToggleDisabled ? (
             <p className="text-xs text-muted-foreground">
-              Pause video to toggle the LoRA.
+              {t("settings.lora.pauseToToggle")}
             </p>
           ) : null}
         </div>
@@ -124,8 +128,8 @@ export function SettingsPanel({
                
                 {pipelines?.[pipelineId]?.supportsKvCacheBias && (
                   <SliderWithInput
-                    label={PARAMETER_METADATA.kvCacheAttentionBias.label}
-                    tooltip={PARAMETER_METADATA.kvCacheAttentionBias.tooltip}
+                    label={t(PARAMETER_METADATA.kvCacheAttentionBias.label)}
+                    tooltip={t(PARAMETER_METADATA.kvCacheAttentionBias.tooltip)}
                     value={kvCacheAttentionBiasSlider.localValue}
                     onValueChange={kvCacheAttentionBiasSlider.handleValueChange}
                     onValueCommit={kvCacheAttentionBiasSlider.handleValueCommit}
@@ -152,8 +156,8 @@ export function SettingsPanel({
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between gap-2">
                   <LabelWithTooltip
-                    label={PARAMETER_METADATA.quantization.label}
-                    tooltip={PARAMETER_METADATA.quantization.tooltip}
+                    label={t(PARAMETER_METADATA.quantization.label)}
+                    tooltip={t(PARAMETER_METADATA.quantization.tooltip)}
                     className="text-sm text-foreground"
                   />
                   <Select
@@ -169,9 +173,9 @@ export function SettingsPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="none">{t("settings.quantization.none")}</SelectItem>
                       <SelectItem value="fp8_e4m3fn">
-                        fp8_e4m3fn (Dynamic)
+                        {t("settings.quantization.fp8")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -185,8 +189,8 @@ export function SettingsPanel({
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <LabelWithTooltip
-                label={PARAMETER_METADATA.spoutSender.label}
-                tooltip={PARAMETER_METADATA.spoutSender.tooltip}
+                label={t(PARAMETER_METADATA.spoutSender.label)}
+                tooltip={t(PARAMETER_METADATA.spoutSender.tooltip)}
                 className="text-sm text-foreground"
               />
               <Toggle
@@ -201,15 +205,15 @@ export function SettingsPanel({
                 size="sm"
                 className="h-7"
               >
-                {spoutSender?.enabled ? "ON" : "OFF"}
+                {spoutSender?.enabled ? t("settings.spout.on") : t("settings.spout.off")}
               </Toggle>
             </div>
 
             {spoutSender?.enabled && (
               <div className="flex items-center gap-3">
                 <LabelWithTooltip
-                  label="Sender Name:"
-                  tooltip="The name of the sender that will send video to Spout-compatible apps like TouchDesigner, Resolume, OBS."
+                  label={t("settings.spout.senderName")}
+                  tooltip={t("settings.spout.senderTooltip")}
                   className="text-xs text-muted-foreground whitespace-nowrap"
                 />
                 <Input
@@ -223,7 +227,7 @@ export function SettingsPanel({
                   }}
                   disabled={isControlsLocked}
                   className="h-8 text-sm flex-1"
-                  placeholder="ScopeOut"
+                  placeholder={t("settings.spout.placeholder")}
                 />
               </div>
             )}
