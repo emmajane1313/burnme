@@ -4,7 +4,6 @@ import logging
 import os
 import threading
 import time
-from pathlib import Path
 
 from aiortc import MediaStreamTrack
 from aiortc.mediastreams import VIDEO_CLOCK_RATE, VIDEO_TIME_BASE, MediaStreamError
@@ -12,7 +11,6 @@ from av import VideoFrame
 
 from .frame_processor import FrameProcessor
 from .pipeline_manager import PipelineManager
-from .sam3_manager import sam3_mask_manager
 
 logger = logging.getLogger(__name__)
 DEBUG_ALL = os.getenv("BURN_DEBUG_ALL") == "1"
@@ -44,15 +42,6 @@ class VideoProcessingTrack(MediaStreamTrack):
         self._paused_lock = threading.Lock()
         self._last_frame = None
         self._input_frame_index = 0
-        self._server_video_enabled = False
-        self._server_video_loop = True
-        self._server_video_reset = threading.Event()
-        self._server_video_stop = threading.Event()
-        self._server_video_paused = threading.Event()
-        self._server_video_thread: threading.Thread | None = None
-        self._server_video_fps = None
-        self._server_video_path: Path | None = None
-        self._server_video_ended = False
 
         # Spout input mode - when enabled, frames come from Spout instead of WebRTC
         self._spout_receiver_enabled = False
@@ -124,147 +113,9 @@ class VideoProcessingTrack(MediaStreamTrack):
             self.frame_processor.start()
 
     def initialize_input_processing(self, track: MediaStreamTrack):
-        if self._server_video_enabled:
-            logger.info("Server video source enabled; ignoring incoming track.")
-            return
         self.track = track
         self.input_task_running = True
         self.input_task = asyncio.create_task(self.input_loop())
-
-    def initialize_server_video(self, mask_id: str, loop: bool = True):
-        session = sam3_mask_manager.get_session(mask_id)
-        if session is None:
-            raise RuntimeError(f"SAM3 session {mask_id} not found")
-        self._server_video_path = session.video_path
-        self._server_video_fps = session.input_fps or session.sam3_fps or 15.0
-        self._server_video_loop = loop
-        self._server_video_enabled = True
-        self.input_task_running = True
-        self.initialize_output_processing()
-        self._server_video_stop.clear()
-        self._server_video_paused.clear()
-        self._server_video_reset.clear()
-        self._server_video_thread = threading.Thread(
-            target=self._server_video_loop_fn,
-            name="server-video-input",
-            daemon=True,
-        )
-        self._server_video_thread.start()
-        logger.info(
-            "Server video input started: path=%s fps=%s loop=%s",
-            self._server_video_path,
-            self._server_video_fps,
-            self._server_video_loop,
-        )
-
-    def set_server_video_loop(self, loop: bool):
-        self._server_video_loop = loop
-
-    def pause_server_video(self, paused: bool):
-        if paused:
-            self._server_video_paused.set()
-        else:
-            self._server_video_paused.clear()
-            if not self._server_video_ended:
-                self.pause(False)
-        logger.info("Server video %s", "paused" if paused else "resumed")
-
-    def reset_server_video(self):
-        logger.info("Server video reset requested")
-        if self.frame_processor:
-            self.frame_processor.reset_buffers("server_video_reset")
-        self._server_video_reset.set()
-        if self.frame_processor:
-            self.frame_processor.reset_buffers("server_video_reset")
-
-    def _server_video_loop_fn(self):
-        try:
-            import cv2  # type: ignore
-        except Exception:
-            logger.error("OpenCV not available; server video input disabled.")
-            return
-
-        if not self._server_video_path:
-            return
-
-        cap = cv2.VideoCapture(str(self._server_video_path))
-        if not cap.isOpened():
-            logger.error("Failed to open server video: %s", self._server_video_path)
-            return
-
-        fps = self._server_video_fps or float(cap.get(cv2.CAP_PROP_FPS) or 15.0)
-        frame_period = 1.0 / fps if fps > 0 else 1.0 / 15.0
-        frame_idx = 0
-        reset_pending = False
-        sent_end_notification = False
-        next_time = time.time()
-
-        while not self._server_video_stop.is_set():
-            if self._server_video_reset.is_set():
-                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                frame_idx = 0
-                self._server_video_reset.clear()
-                self._server_video_ended = False
-                sent_end_notification = False
-                if not self._server_video_paused.is_set():
-                    self.pause(False)
-                next_time = time.time()
-                reset_pending = True
-                if self.notification_callback:
-                    self.notification_callback({"type": "server_video_reset_done"})
-            if self._server_video_paused.is_set():
-                next_time = time.time()
-                time.sleep(0.01)
-                continue
-            if self._server_video_ended:
-                if self._server_video_loop:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    frame_idx = 0
-                    self._server_video_ended = False
-                    sent_end_notification = False
-                    self.pause(False)
-                    logger.info("Server video loop restart")
-                    continue
-                time.sleep(0.01)
-                continue
-
-            ret, frame = cap.read()
-            if not ret:
-                if self._server_video_loop:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    frame_idx = 0
-                    logger.info("Server video loop restart")
-                    continue
-                if not sent_end_notification:
-                    if self.notification_callback:
-                        self.notification_callback({"type": "server_video_ended"})
-                    logger.info("Server video ended at frame=%s", frame_idx)
-                    sent_end_notification = True
-                self.pause(True)
-                self._server_video_ended = True
-                continue
-
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            video_frame = VideoFrame.from_ndarray(frame_rgb, format="rgb24")
-            pts = int(frame_idx * frame_period * VIDEO_CLOCK_RATE)
-            video_frame.pts = pts
-            video_frame.time_base = VIDEO_TIME_BASE
-            if self.frame_processor:
-                self.frame_processor.put(video_frame)
-            if reset_pending and self.notification_callback:
-                self.notification_callback(
-                    {"type": "server_video_start_ready", "frame_index": frame_idx}
-                )
-                reset_pending = False
-                logger.info("Server video start ready at frame=%s", frame_idx)
-
-            frame_idx += 1
-            next_time += frame_period
-            sleep_for = next_time - time.time()
-            if sleep_for > 0:
-                time.sleep(sleep_for)
-
-        cap.release()
 
     async def recv(self) -> VideoFrame:
         """Return the next available processed frame"""
@@ -321,10 +172,6 @@ class VideoProcessingTrack(MediaStreamTrack):
     async def stop_async(self):
         self.input_task_running = False
         self._spout_receiver_enabled = False
-        if self._server_video_enabled:
-            self._server_video_stop.set()
-            if self._server_video_thread:
-                self._server_video_thread.join(timeout=1.0)
 
         if self.input_task is not None:
             self.input_task.cancel()

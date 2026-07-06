@@ -29,42 +29,9 @@ export interface WebRTCOfferRequest {
     kv_cache_attention_bias?: number;
     vace_ref_images?: string[];
     vace_context_scale?: number;
-    sam3_mask_id?: string | null;
-    sam3_mask_mode?: "inside" | "outside";
-    capture_mask_indices?: boolean;
-    capture_mask_reset?: boolean;
+    mask_mode?: "inside" | "outside";
+    mask_enabled?: boolean;
   };
-}
-
-export interface ServerBurnRenderRequest {
-  pipelineId: string;
-  maskId: string;
-  params: {
-    prompts?: string[] | PromptItem[];
-    prompt_interpolation_method?: "linear" | "slerp";
-    transition?: PromptTransition;
-    denoising_step_list?: number[];
-    noise_scale?: number;
-    noise_controller?: boolean;
-    manage_cache?: boolean;
-    kv_cache_attention_bias?: number;
-    vace_ref_images?: string[];
-    vace_context_scale?: number;
-    sam3_mask_id?: string | null;
-    sam3_mask_mode?: "inside" | "outside";
-    input_mode?: "video";
-  };
-  loadParams?: Record<string, unknown> | null;
-  outputFps?: number | null;
-  outputMimeType?: string | null;
-  capture_mask_reset?: boolean | null;
-}
-
-export interface ServerBurnRenderResponse {
-  videoBase64: string;
-  mimeType: string;
-  fps: number;
-  frameCount: number;
 }
 
 export interface PipelineLoadParams {
@@ -89,16 +56,6 @@ export interface PipelineStatusResponse {
   error?: string;
 }
 
-export interface Sam3MaskResponse {
-  success: boolean;
-  maskId: string;
-  frameCount: number;
-  height: number;
-  width: number;
-  inputFps?: number | null;
-  sam3Fps?: number | null;
-  error?: string;
-}
 
 export const getIceServers = async (): Promise<IceServersResponse> => {
   const response = await fetch(apiUrl("/api/v1/webrtc/ice-servers"), {
@@ -141,35 +98,6 @@ export const sendWebRTCOffer = async (
 
   const result = await response.json();
   return result;
-};
-
-export const renderServerBurn = async (
-  data: ServerBurnRenderRequest
-): Promise<ServerBurnRenderResponse> => {
-  const response = await fetch(apiUrl("/api/v1/burn/render"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Server burn render failed: ${response.status} ${response.statusText}: ${errorText}`
-    );
-  }
-
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || "Server burn render failed");
-  }
-
-  return {
-    videoBase64: result.videoBase64,
-    mimeType: result.mimeType,
-    fps: result.fps,
-    frameCount: result.frameCount,
-  };
 };
 
 export const sendIceCandidates = async (
@@ -281,128 +209,6 @@ export const downloadPipelineModels = async (
 
   const result = await response.json();
   return result;
-};
-
-export const generateSam3Mask = async (
-  videoBase64: string | null,
-  assetPath: string | null,
-  prompt: string,
-  box?: [number, number, number, number] | null,
-  inputFps?: number | null,
-  targetWidth?: number | null,
-  targetHeight?: number | null
-): Promise<Sam3MaskResponse> => {
-  const response = await fetch(apiUrl("/api/v1/sam3/mask"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      videoBase64,
-      assetPath,
-      prompt,
-      box,
-      input_fps: inputFps,
-      target_width: targetWidth,
-      target_height: targetHeight,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `SAM3 mask generation failed: ${response.status} ${response.statusText}: ${errorText}`
-    );
-  }
-
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || "SAM3 mask generation failed");
-  }
-
-  return result;
-};
-
-export const startSam3MaskJob = async (
-  videoBase64: string | null,
-  assetPath: string | null,
-  prompt: string,
-  box?: [number, number, number, number] | null,
-  inputFps?: number | null,
-  targetWidth?: number | null,
-  targetHeight?: number | null
-): Promise<{ jobId: string }> => {
-  const response = await fetch(apiUrl("/api/v1/sam3/mask/start"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      videoBase64,
-      assetPath,
-      prompt,
-      box,
-      input_fps: inputFps,
-      target_width: targetWidth,
-      target_height: targetHeight,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `SAM3 mask start failed: ${response.status} ${response.statusText}: ${errorText}`
-    );
-  }
-
-  const rawText = await response.text();
-  let result: any;
-  try {
-    result = JSON.parse(rawText);
-  } catch (error) {
-    throw new Error(
-      `SAM3 mask start failed: Invalid JSON response: ${rawText.slice(0, 200)}`
-    );
-  }
-  if (!result.success || !result.jobId) {
-    throw new Error(result.error || "SAM3 mask start failed");
-  }
-
-  return { jobId: result.jobId };
-};
-
-export const getSam3MaskJob = async (
-  jobId: string
-): Promise<{
-  status: string;
-  error?: string | null;
-  result?: Sam3MaskResponse | null;
-}> => {
-  const response = await fetch(apiUrl(`/api/v1/sam3/mask/status/${jobId}`), {
-    method: "GET",
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `SAM3 mask status failed: ${response.status} ${response.statusText}: ${errorText}`
-    );
-  }
-
-  const rawText = await response.text();
-  let result: any;
-  try {
-    result = JSON.parse(rawText);
-  } catch (error) {
-    throw new Error(
-      `SAM3 mask status failed: Invalid JSON response: ${rawText.slice(0, 200)}`
-    );
-  }
-  if (!result.success) {
-    throw new Error(result.error || "SAM3 mask status failed");
-  }
-
-  return {
-    status: result.status,
-    error: result.error,
-    result: result.result,
-  };
 };
 
 export interface HardwareInfoResponse {

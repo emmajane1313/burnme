@@ -11,7 +11,7 @@ from diffusers.modular_pipelines.modular_pipeline_utils import InputParam, Outpu
 class MaskCompositeBlock(ModularPipelineBlocks):
     @property
     def description(self) -> str:
-        return "Composite decoded output with original video using a SAM3 mask."
+        return "Composite decoded output with original video using a realtime mask."
 
     @property
     def inputs(self) -> list[InputParam]:
@@ -35,7 +35,7 @@ class MaskCompositeBlock(ModularPipelineBlocks):
                 description="Preprocessed SAM3 mask frames",
             ),
             InputParam(
-                "sam3_mask_mode",
+                "mask_mode",
                 default="inside",
                 type_hint=str,
                 description="Composite mode: inside or outside mask",
@@ -142,7 +142,7 @@ class MaskCompositeBlock(ModularPipelineBlocks):
         if mask.shape[2] == 1 and output_video.shape[2] != 1:
             mask = mask.expand(-1, -1, output_video.shape[2], -1, -1)
 
-        if block_state.sam3_mask_mode == "outside":
+        if block_state.mask_mode == "outside":
             mask = 1.0 - mask
 
         block_state.output_video = output_video * mask + video_raw * (1.0 - mask)

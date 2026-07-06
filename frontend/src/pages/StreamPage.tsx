@@ -18,13 +18,7 @@ import type { PromptItem, PromptTransition } from "../lib/api";
 import {
   checkModelStatus,
   downloadPipelineModels,
-  renderServerBurn,
-  startSam3MaskJob,
-  getSam3MaskJob,
-  uploadAsset,
 } from "../lib/api";
-import { base64ToBlob } from "../lib/mp4p-api";
-import { toast } from "sonner";
 import { useI18n } from "../i18n";
 
 const VIDEO_REINITIALIZE_DELAY_MS = 100;
@@ -77,24 +71,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const { t } = useI18n();
   const { pipelines } = usePipelines();
 
-  const getSam3ErrorMessage = (error: unknown) => {
-    const rawMessage = error instanceof Error ? error.message : "";
-    const lower = rawMessage.toLowerCase();
-    if (lower.includes("no masks") || lower.includes("no detections")) {
-      return { rawMessage, displayMessage: t("sam3.error.noDetections") };
-    }
-    if (!rawMessage) {
-      return {
-        rawMessage: t("sam3.error.generic"),
-        displayMessage: t("sam3.error.generic"),
-      };
-    }
-    if (rawMessage === "Mask generation failed.") {
-      return { rawMessage, displayMessage: t("sam3.error.generic") };
-    }
-    return { rawMessage, displayMessage: rawMessage };
-  };
-
   const getPipelineDefaultMode = (_pipelineId: string): InputMode => {
     return "video";
   };
@@ -136,25 +112,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const [viewMode, setViewMode] = useState<"upload" | "play" | "about">("upload");
   const hideBurnSourcePreview = false;
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
-  const [idMascaraSam, setIdMascaraSam] = useState<string | null>(null);
-  const modoMascaraSam: "inside" | "outside" = "inside";
-  const [estadoMascaraSam, setEstadoMascaraSam] = useState<string | null>(null);
-  const [rutaAssetSam, setRutaAssetSam] = useState<string | null>(null);
-  const [sam3Ta3mel, setSam3Ta3mel] = useState(false);
-  const [sam3Tanzil, setSam3Tanzil] = useState(false);
-  const [sam3AutoListo, setSam3AutoListo] = useState(false);
-  const [sam3AutoFallo, setSam3AutoFallo] = useState(false);
-  const [sam3SinDetecciones, setSam3SinDetecciones] = useState(false);
-  const [cajaSamPromptActiva, setCajaSamPromptActiva] = useState(false);
-  const [cajaSam, setCajaSam] = useState<[number, number, number, number] | null>(
-    null
-  );
   const startStreamInFlightRef = useRef(false);
   const debugLog = (...args: unknown[]) => {
     console.log("[burn-debug]", ...args);
   };
-  const [serverSynthedFps, setServerSynthedFps] = useState<number | null>(null);
-  const serverRenderAbortRef = useRef(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] =
     useState<DownloadProgress | null>(null);
@@ -180,30 +141,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     sendParameterUpdate,
     sendFrameMeta,
   } = useWebRTC({
-    onServerVideoEnded: () => {
+    onStreamStop: () => {
       stopRecording();
-      sendParameterUpdate({ capture_mask_indices: false });
       stopStream();
       setSynthEndPending(true);
-    },
-    onCaptureResetDone: _ => {
-   
-      awaitingCaptureResetRef.current = false;
-      if (captureResetInFlightRef.current) {
-        maybeStartRecording();
-      }
-    },
-    onServerVideoResetDone: () => {
-      awaitingServerResetRef.current = false;
-      if (captureResetInFlightRef.current) {
-        maybeStartRecording();
-      }
-    },
-    onServerVideoStartReady: _ => {
-      awaitingServerStartRef.current = false;
-    },
-    onCaptureStartReady: maskId => {
-      debugLog("Capture start ready", { maskId });
     },
   });
   const {
@@ -215,14 +156,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     resetRecording,
   } = useVideoRecorder();
   const remoteStreamRef = useRef<MediaStream | null>(null);
-  const autoUnpauseForSam3Ref = useRef(false);
   const pendingRecordStreamRef = useRef<MediaStream | null>(null);
-  const awaitingCaptureResetRef = useRef(false);
-  const awaitingServerResetRef = useRef(false);
-  const awaitingServerStartRef = useRef(false);
   const pendingRecordStartRef = useRef(false);
-  const captureResetInFlightRef = useRef(false);
-  const serverStartUnpauseSentRef = useRef(false);
 
   const isLoading = isDownloading || isPipelineLoading || isConnecting;
 
@@ -264,174 +199,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       sendFrameMeta(meta);
     },
   });
-
-  const waitForSam3Models = async () => {
-    setSam3Tanzil(true);
-    setEstadoMascaraSam(t("sam3.status.downloading"));
-
-    const poll = async (resolve: () => void, reject: (error: Error) => void) => {
-      try {
-        const status = await checkModelStatus("sam3");
-        if (status.progress) {
-          setEstadoMascaraSam(
-            t("sam3.status.downloadingProgress", {
-              percentage: status.progress.percentage.toFixed(0),
-            })
-          );
-        }
-
-        if (status.downloaded) {
-          setSam3Tanzil(false);
-          resolve();
-          return;
-        }
-
-        setTimeout(() => poll(resolve, reject), 2000);
-      } catch (error) {
-        reject(error as Error);
-      }
-    };
-
-    return new Promise<void>((resolve, reject) => {
-      poll(resolve, reject);
-    });
-  };
-
-  const handleGenerateSam3Mask = async () => {
-    if (!uploadedVideoFile) {
-      setEstadoMascaraSam(t("sam3.status.uploadBefore"));
-      return;
-    }
-    if (sam3AutoListo || sam3AutoFallo) {
-      setSam3AutoListo(false);
-      setSam3AutoFallo(false);
-    }
-    setSam3SinDetecciones(false);
-    const boxToUse = cajaSamPromptActiva ? cajaSam : null;
-    const targetResolution = settings.resolution || videoResolution;
-    const targetWidth = targetResolution?.width ?? null;
-    const targetHeight = targetResolution?.height ?? null;
-    if (cajaSamPromptActiva && !boxToUse) {
-      setEstadoMascaraSam(t("sam3.status.drawBoxFirst"));
-      return;
-    }
-    if (!videoResolution) {
-      setEstadoMascaraSam(t("sam3.status.videoNotReady"));
-      return;
-    }
-
-    setSam3Ta3mel(true);
-    setEstadoMascaraSam(t("sam3.status.preparing"));
-   
-    try {
-      const status = await checkModelStatus("sam3");
- 
-      if (!status.downloaded) {
-        await downloadPipelineModels("sam3");
-        await waitForSam3Models();
-      }
-
-      let assetPath = rutaAssetSam;
-      if (!assetPath) {
-        const asset = await uploadAsset(uploadedVideoFile);
-        assetPath = asset.path;
-        setRutaAssetSam(assetPath);
-      }
-      const job = await startSam3MaskJob(
-        null,
-        assetPath,
-        "",
-        boxToUse,
-        null,
-        targetWidth,
-        targetHeight
-      );
-      setEstadoMascaraSam(t("sam3.status.generating"));
-
-      const poll = async (): Promise<void> => {
-        const status = await getSam3MaskJob(job.jobId);
-        if (status.status === "completed" && status.result) {
-       
-          setIdMascaraSam(status.result.maskId);
-          setEstadoMascaraSam(t("sam3.status.ready"));
-          setSam3AutoListo(true);
-          setSam3AutoFallo(false);
-          setSam3SinDetecciones(false);
-          setCajaSamPromptActiva(false);
-          setCajaSam(null);
-          if (status.result.inputFps && status.result.inputFps > 0) {
-            setVideoInputFps(status.result.inputFps);
-            await restartVideoStream({ loop: true });
-          }
-
-          if (isStreaming) {
-        
-            sendParameterUpdate({
-              sam3_mask_id: status.result.maskId,
-              sam3_mask_mode: modoMascaraSam,
-            });
-          }
-          setSam3Ta3mel(false);
-          return;
-        }
-
-        if (status.status === "failed") {
-          throw new Error(status.error || t("sam3.error.generic"));
-        }
-
-        setTimeout(() => {
-          poll().catch(error => {
-            console.error("SAM3 mask generation failed:", error);
-            const { rawMessage, displayMessage } = getSam3ErrorMessage(error);
-            setEstadoMascaraSam(displayMessage);
-            if (
-              rawMessage.toLowerCase().includes("no masks") ||
-              rawMessage.toLowerCase().includes("no detections")
-            ) {
-              setSam3SinDetecciones(true);
-            }
-            setSam3AutoFallo(true);
-            toast.error(t("sam3.error.title"), {
-              description: displayMessage,
-            });
-            setSam3Ta3mel(false);
-          });
-        }, 2000);
-      };
-
-      poll().catch(error => {
-        console.error("SAM3 mask generation failed:", error);
-        const { rawMessage, displayMessage } = getSam3ErrorMessage(error);
-        setEstadoMascaraSam(displayMessage);
-        if (
-          rawMessage.toLowerCase().includes("no masks") ||
-          rawMessage.toLowerCase().includes("no detections")
-        ) {
-          setSam3SinDetecciones(true);
-        }
-        setSam3AutoFallo(true);
-        toast.error(t("sam3.error.title"), {
-          description: displayMessage,
-        });
-        setSam3Ta3mel(false);
-      });
-    } catch (error) {
-      console.error("SAM3 mask generation failed:", error);
-      const { rawMessage, displayMessage } = getSam3ErrorMessage(error);
-      setEstadoMascaraSam(displayMessage);
-      if (
-        rawMessage.toLowerCase().includes("no masks") ||
-        rawMessage.toLowerCase().includes("no detections")
-      ) {
-        setSam3SinDetecciones(true);
-      }
-      setSam3AutoFallo(true);
-      toast.error(t("sam3.error.title"), {
-        description: displayMessage,
-      });
-      setSam3Ta3mel(false);
-    }
-  };
 
   const handleTogglePause = () => {
     const nextPaused = !settings.paused;
@@ -573,17 +340,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   const handleUploadVideoFile = async (file: File) => {
     setUploadedVideoFile(file);
     setVideoInputFps(null);
-    setIdMascaraSam(null);
-    setEstadoMascaraSam(null);
-    setRutaAssetSam(null);
-    setSam3AutoListo(false);
-    setSam3AutoFallo(false);
-    setSam3SinDetecciones(false);
-    setCajaSamPromptActiva(false);
-    setCajaSam(null);
     setConfirmedSynthedBlob(null);
     if (isStreaming) {
-      autoUnpauseForSam3Ref.current = false;
       updateSettings({ paused: false });
       stopStream();
     }
@@ -599,12 +357,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
 
   const maybeStartRecording = useCallback(() => {
-   
     if (!pendingRecordStartRef.current) {
-      return;
-    }
-    if (awaitingCaptureResetRef.current || awaitingServerResetRef.current) {
-     
       return;
     }
     const streamToRecord = pendingRecordStreamRef.current || remoteStreamRef.current;
@@ -613,15 +366,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     }
     pendingRecordStartRef.current = false;
     pendingRecordStreamRef.current = null;
-    captureResetInFlightRef.current = false;
-   
     startRecording(streamToRecord);
-    if (awaitingServerStartRef.current && !serverStartUnpauseSentRef.current) {
-      serverStartUnpauseSentRef.current = true;
-      sendParameterUpdate({ server_video_pause: false });
-    
-    }
-  }, [startRecording, sendParameterUpdate, isStreaming]);
+  }, [startRecording]);
 
   useEffect(() => {
     remoteStreamRef.current = remoteStream;
@@ -632,11 +378,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       setConfirmedSynthedBlob(recordedSynthedBlob);
       setSynthEndPending(false);
       setIsSynthCapturing(false);
-      if (isStreaming) {
-        sendParameterUpdate({ capture_mask_indices: false });
-      }
     }
-  }, [synthEndPending, recordedSynthedBlob, isStreaming, sendParameterUpdate]);
+  }, [synthEndPending, recordedSynthedBlob]);
 
   useEffect(() => {
     if (!confirmedSynthedBlob) {
@@ -663,9 +406,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     if (pipelineNeedsModels) {
       return;
     }
-    if (uploadedVideoFile && !idMascaraSam) {
-      return;
-    }
     void handleStartStream();
   }, [
     localStream,
@@ -674,63 +414,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     isConnecting,
     isSynthCapturing,
     pipelineNeedsModels,
-    idMascaraSam,
-    uploadedVideoFile,
   ]);
-
-  useEffect(() => {
-    if (!isStreaming || !idMascaraSam) {
-      return;
-    }
-   
-    sendParameterUpdate({
-      sam3_mask_id: idMascaraSam,
-      sam3_mask_mode: modoMascaraSam,
-    });
-  }, [isStreaming, idMascaraSam, modoMascaraSam, sendParameterUpdate]);
-
-  useEffect(() => {
-    if (!uploadedVideoFile || !videoResolution) {
-      return;
-    }
-    if (
-      isWaitingForFrames ||
-      sam3Ta3mel ||
-      sam3AutoListo ||
-      sam3AutoFallo
-    ) {
-      return;
-    }
-    void handleGenerateSam3Mask();
-  }, [
-    uploadedVideoFile,
-    videoResolution,
-    isWaitingForFrames,
-    sam3Ta3mel,
-    sam3AutoListo,
-    sam3AutoFallo,
-  ]);
-
-  useEffect(() => {
-    if (!idMascaraSam || !isStreaming) {
-      return;
-    }
-    if (!autoUnpauseForSam3Ref.current) {
-      return;
-    }
-    if (settings.paused) {
-      updateSettings({ paused: false });
-      sendParameterUpdate({ paused: false });
-    }
-    autoUnpauseForSam3Ref.current = false;
-  }, [idMascaraSam, isStreaming, settings.paused, sendParameterUpdate, updateSettings]);
-
-  const sam3Listo = Boolean(idMascaraSam);
-  const sam3AutoPendiente =
-    Boolean(uploadedVideoFile) &&
-    !isWaitingForFrames &&
-    !sam3Listo &&
-    !sam3AutoFallo;
 
   const handleStartSynth = async () => {
     const promptText = promptItems[0]?.text?.trim();
@@ -741,103 +425,28 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
     const synthSeed = generateRandomSeed();
     updateSettings({ seed: synthSeed });
 
-    const serverVideoEnabled = Boolean(idMascaraSam);
     setSynthLockedPrompt(promptText);
     setIsSynthCapturing(true);
     setSynthEndPending(false);
     setConfirmedSynthedBlob(null);
-    setServerSynthedFps(null);
     resetRecording();
 
-    let restartedStream: MediaStream | null = null;
-    if (serverVideoEnabled) {
-      serverRenderAbortRef.current = false;
-      if (isStreaming) {
+    const restartedStream = await restartVideoStream({
+      loop: false,
+      onEnded: () => {
+        stopRecording();
         stopStream();
-      }
-      try {
-        if (!idMascaraSam) {
-          throw new Error(t("burn.missingSam3Mask"));
-        }
-        const renderParams = {
-          prompts: [{ text: promptText, weight: 100 }],
-          prompt_interpolation_method: interpolationMethod,
-          denoising_step_list: MAX_DENOISING_STEPS,
-          noise_scale: settings.noiseScale,
-          noise_controller: settings.noiseController,
-          kv_cache_attention_bias: settings.kvCacheAttentionBias,
-          sam3_mask_id: idMascaraSam,
-          sam3_mask_mode: modoMascaraSam,
-          input_mode: "video" as const,
-        };
-        const runRender = async () => {
-          const resolution = settings.resolution || videoResolution;
-          const renderResult = await renderServerBurn({
-            pipelineId: settings.pipelineId,
-            maskId: idMascaraSam,
-            params: renderParams,
-            loadParams: {
-              default_lora_enabled: true,
-              seed: synthSeed,
-              height: resolution?.height,
-              width: resolution?.width,
-            },
-            outputMimeType: "video/webm",
-            capture_mask_reset: true,
-          });
-          if (serverRenderAbortRef.current) {
-            return;
-          }
-          const outputBlob = base64ToBlob(
-            renderResult.videoBase64,
-            renderResult.mimeType || "video/mp4"
-          );
-          setConfirmedSynthedBlob(outputBlob);
-          setServerSynthedFps(renderResult.fps ?? null);
-        };
-
-        await runRender();
-      } catch (error) {
-        console.error("Server burn render failed:", error);
-        toast.error(t("burn.serverErrorTitle"), {
-          description:
-            error instanceof Error ? error.message : t("burn.serverErrorFallback"),
-        });
-      } finally {
-        setIsSynthCapturing(false);
-      }
+        setSynthEndPending(true);
+      },
+    });
+    if (!restartedStream) {
+      setIsSynthCapturing(false);
       return;
-    } else {
-      restartedStream = await restartVideoStream({
-        loop: false,
-        onEnded: () => {
-          stopRecording();
-          sendParameterUpdate({ capture_mask_indices: false });
-          stopStream();
-          setSynthEndPending(true);
-        },
-      });
-      if (!restartedStream) {
-        setIsSynthCapturing(false);
-        return;
-      }
     }
 
     onVideoPlayingCallbackRef.current = () => {
-      if (serverVideoEnabled) {
-        return;
-      }
-      awaitingCaptureResetRef.current = true;
-      awaitingServerResetRef.current = false;
-      awaitingServerStartRef.current = false;
       pendingRecordStartRef.current = true;
       pendingRecordStreamRef.current = remoteStreamRef.current;
-      captureResetInFlightRef.current = true;
-      serverStartUnpauseSentRef.current = false;
-      sendParameterUpdate({
-        capture_mask_reset: true,
-        capture_mask_indices: true,
-      });
       maybeStartRecording();
     };
 
@@ -847,7 +456,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       const synthStarted = await handleStartStream(
         settings.pipelineId,
         [{ text: promptText, weight: 100 }],
-        serverVideoEnabled ? null : restartedStream,
+        restartedStream,
         false,
         synthSeed,
         true
@@ -864,7 +473,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       return;
     }
 
-    if (!serverVideoEnabled && restartedStream) {
+    if (restartedStream) {
       const trackReplaced = await updateVideoTrack(restartedStream);
       if (!trackReplaced) {
         const synthStarted = await handleStartStream(
@@ -896,43 +505,22 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
   };
 
   const handleCancelSynth = async () => {
-
-    serverRenderAbortRef.current = true;
     setSynthEndPending(false);
     setIsSynthCapturing(false);
     setSynthLockedPrompt("");
     setConfirmedSynthedBlob(null);
-    setServerSynthedFps(null);
-    captureResetInFlightRef.current = false;
-    pendingRecordStartRef.current = false;
-    awaitingCaptureResetRef.current = false;
-    awaitingServerResetRef.current = false;
-    awaitingServerStartRef.current = false;
-    serverStartUnpauseSentRef.current = false;
     pendingSynthRef.current = null;
     setIsWaitingForFrames(false);
     stopRecording();
-    sendParameterUpdate({ capture_mask_indices: false });
     stopStream();
-    if (idMascaraSam) {
-      sendParameterUpdate({ server_video_reset: true, server_video_loop: true });
-    } else {
-      await restartVideoStream({ loop: true });
-    }
+    await restartVideoStream({ loop: true });
   };
 
   const handleDeleteBurn = async () => {
     setConfirmedSynthedBlob(null);
-    setServerSynthedFps(null);
     resetRecording();
     setSynthLockedPrompt("");
-    captureResetInFlightRef.current = false;
     pendingRecordStartRef.current = false;
-    awaitingCaptureResetRef.current = false;
-    awaitingServerResetRef.current = false;
-    awaitingServerStartRef.current = false;
-    serverStartUnpauseSentRef.current = false;
-    sendParameterUpdate({ capture_mask_indices: false });
     await restartVideoStream({ loop: true });
     await handleStartStream();
   };
@@ -1044,8 +632,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
       }
     
 
-      const serverVideoEnabled = Boolean(idMascaraSam);
-      const needsVideoInput = !serverVideoEnabled;
+      const needsVideoInput = true;
       const isSpoutMode = false;
 
       const streamToSend =
@@ -1073,13 +660,8 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         spout_receiver?: { enabled: boolean; name: string };
         vace_ref_images?: string[];
         vace_context_scale?: number;
-        sam3_mask_id?: string | null;
-        sam3_mask_mode?: "inside" | "outside";
-        server_video_source?: "sam3";
-        server_video_mask_id?: string;
-        server_video_loop?: boolean;
-        capture_mask_indices?: boolean;
-        capture_mask_reset?: boolean;
+        mask_mode?: "inside" | "outside";
+        mask_enabled?: boolean;
       } = {
         input_mode: currentMode,
       };
@@ -1116,21 +698,10 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
         initialParameters.spout_receiver = settings.spoutReceiver;
       }
 
-      if (idMascaraSam) {
-        initialParameters.sam3_mask_id = idMascaraSam;
-        initialParameters.sam3_mask_mode = modoMascaraSam;
-        initialParameters.server_video_source = "sam3";
-        initialParameters.server_video_mask_id = idMascaraSam;
-        initialParameters.server_video_loop = true;
-      }
-
-      if (isSynthCapturing) {
-        initialParameters.capture_mask_indices = true;
-        initialParameters.capture_mask_reset = true;
-      }
+      initialParameters.mask_mode = "inside";
+      initialParameters.mask_enabled = true;
 
       if (forcePaused !== undefined) {
-        autoUnpauseForSam3Ref.current = Boolean(forcePaused);
         updateSettings({ paused: forcePaused });
         initialParameters.paused = forcePaused;
       } else {
@@ -1180,7 +751,7 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onLivePromptSubmit={handleLivePromptSubmit}
                   isVideoPaused={settings.paused}
                   confirmedSynthedBlob={confirmedSynthedBlob}
-                  confirmedSynthedFps={serverSynthedFps ?? recordedSynthedFps}
+                  confirmedSynthedFps={recordedSynthedFps}
                   isRecordingSynthed={isRecordingSynthed}
                   isSynthCapturing={isSynthCapturing}
                   synthLockedPrompt={synthLockedPrompt}
@@ -1188,27 +759,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                   onCancelSynth={handleCancelSynth}
                   onDeleteBurn={handleDeleteBurn}
                   onTogglePause={handleTogglePause}
-                  idMascaraSam={idMascaraSam}
-                  onGenerarMascara={handleGenerateSam3Mask}
-                  sam3SinDetecciones={sam3SinDetecciones}
-                  cajaSamPromptActiva={cajaSamPromptActiva}
-                  cajaSam={cajaSam}
-                  onCajaSamChange={setCajaSam}
-                  onCajaSamPromptActiva={() => {
-                    setCajaSamPromptActiva(true);
-                    setCajaSam(null);
-                    void resumeSourceVideo();
-                  }}
-                  onCajaSamPromptCancelar={() => {
-                    setCajaSamPromptActiva(false);
-                    setCajaSam(null);
-                  }}
-                  sam3Listo={sam3Listo}
-                  estadoMascaraSam={
-                    estadoMascaraSam ||
-                    (sam3Tanzil ? t("sam3.status.downloading") : null)
-                  }
-                  sam3Ta3mel={sam3Ta3mel}
                 />
               </div>
 
@@ -1229,9 +779,6 @@ export function StreamPage({ onStatsChange }: StreamPageProps = {}) {
                     isWaitingForFrames={isWaitingForFrames}
                     sourceVideoBlocked={sourceVideoBlocked}
                     onResumeSourceVideo={resumeSourceVideo}
-                    sam3Ta3mel={sam3Ta3mel}
-                    sam3AutoPendiente={sam3AutoPendiente}
-                    estadoMascaraSam={estadoMascaraSam}
                     isBurning={isSynthCapturing}
                     onVideoPlaying={() => {
                       setIsWaitingForFrames(false);

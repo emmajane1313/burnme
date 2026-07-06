@@ -20,11 +20,6 @@ VACE_ARTIFACT = HuggingfaceRepoArtifact(
     files=["Wan2_1-VACE_module_1_3B_bf16.safetensors"],
 )
 
-SAM3_ARTIFACT = HuggingfaceRepoArtifact(
-    repo_id="facebook/sam3",
-    files=["config.json", "sam3.pt"],
-)
-
 # Pipeline-specific artifacts
 PIPELINE_ARTIFACTS = {
     "streamdiffusionv2": [
@@ -44,8 +39,5 @@ PIPELINE_ARTIFACTS = {
             repo_id="KlingTeam/MemFlow",
             files=["base.pt", "lora.pt"],
         ),
-    ],
-    "sam3": [
-        SAM3_ARTIFACT,
     ],
 }

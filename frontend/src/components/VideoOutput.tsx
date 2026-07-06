@@ -19,9 +19,6 @@ interface VideoOutputProps {
   isWaitingForFrames?: boolean;
   sourceVideoBlocked?: boolean;
   onResumeSourceVideo?: () => void;
-  sam3Ta3mel?: boolean;
-  sam3AutoPendiente?: boolean;
-  estadoMascaraSam?: string | null;
   onVideoPlaying?: () => void;
   isBurning?: boolean;
 }
@@ -41,9 +38,6 @@ export function VideoOutput({
   isWaitingForFrames = false,
   sourceVideoBlocked = false,
   onResumeSourceVideo,
-  sam3Ta3mel = false,
-  sam3AutoPendiente = false,
-  estadoMascaraSam = null,
   onVideoPlaying,
   isBurning = false,
 }: VideoOutputProps) {
@@ -51,7 +45,6 @@ export function VideoOutput({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [needsUserPlay, setNeedsUserPlay] = useState(false);
-  const isMaskLoading = sam3Ta3mel || sam3AutoPendiente;
 
   const attemptPlay = () => {
     const video = videoRef.current;
@@ -223,18 +216,6 @@ export function VideoOutput({
                   <p>{t("videoOutput.warmingPipeline")}</p>
                 </div>
               </div>
-          ) : sam3Ta3mel || sam3AutoPendiente ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-              <div className="text-center text-muted-foreground text-lg">
-                <Spinner size={24} className="mx-auto mb-3" />
-                <p>{t("videoOutput.generatingMask")}</p>
-                {estadoMascaraSam ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {estadoMascaraSam}
-                  </p>
-                ) : null}
-              </div>
-            </div>
           ) : isBurning ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
               <div className="text-center text-muted-foreground text-lg">

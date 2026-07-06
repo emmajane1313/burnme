@@ -19,22 +19,13 @@ interface InitialParameters {
   kv_cache_attention_bias?: number;
   vace_ref_images?: string[];
   vace_context_scale?: number;
-  server_video_source?: "sam3";
-  server_video_mask_id?: string;
-  server_video_loop?: boolean;
-  server_video_pause?: boolean;
-  capture_mask_indices?: boolean;
-  capture_mask_reset?: boolean;
+  mask_mode?: "inside" | "outside";
+  mask_enabled?: boolean;
 }
 
 interface UseWebRTCOptions {
   /** Callback function called when the stream stops on the backend */
   onStreamStop?: () => void;
-  onServerVideoEnded?: () => void;
-  onCaptureResetDone?: (maskId?: string | null) => void;
-  onServerVideoResetDone?: () => void;
-  onServerVideoStartReady?: (frameIndex?: number | null) => void;
-  onCaptureStartReady?: (maskId?: string | null) => void;
 }
 
 /**
@@ -131,31 +122,6 @@ export function useWebRTC(options?: UseWebRTCOptions) {
               // Notify parent component
               if (options?.onStreamStop) {
                 options.onStreamStop();
-              }
-            }
-            if (data.type === "server_video_ended") {
-              if (options?.onServerVideoEnded) {
-                options.onServerVideoEnded();
-              }
-            }
-            if (data.type === "capture_reset_done") {
-              if (options?.onCaptureResetDone) {
-                options.onCaptureResetDone(data.mask_id ?? null);
-              }
-            }
-            if (data.type === "server_video_reset_done") {
-              if (options?.onServerVideoResetDone) {
-                options.onServerVideoResetDone();
-              }
-            }
-            if (data.type === "server_video_start_ready") {
-              if (options?.onServerVideoStartReady) {
-                options.onServerVideoStartReady(data.frame_index ?? null);
-              }
-            }
-            if (data.type === "capture_start_ready") {
-              if (options?.onCaptureStartReady) {
-                options.onCaptureStartReady(data.mask_id ?? null);
               }
             }
           } catch (error) {
@@ -376,15 +342,8 @@ export function useWebRTC(options?: UseWebRTCOptions) {
       spout_receiver?: { enabled: boolean; name: string };
       vace_ref_images?: string[];
       vace_context_scale?: number;
-      sam3_mask_id?: string | null;
-      sam3_mask_mode?: "inside" | "outside";
-      server_video_source?: "sam3";
-      server_video_mask_id?: string;
-      server_video_loop?: boolean;
-      server_video_reset?: boolean;
-      server_video_pause?: boolean;
-      capture_mask_indices?: boolean;
-      capture_mask_reset?: boolean;
+      mask_mode?: "inside" | "outside";
+      mask_enabled?: boolean;
     }) => {
       if (
         dataChannelRef.current &&

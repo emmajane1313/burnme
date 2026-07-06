@@ -20,6 +20,17 @@ template do runpod: `emmajane1313/burnme:latest`
 - GPU: RTX 5090 or better
 - template do runpod: `emmajane1313/burnme:latest`
 
+## Realtime Masking (YOLO)
+
+This build uses realtime person segmentation for live camera input.
+Set the model path and device via environment variables:
+
+- `BURN_MASK_MODEL`: Ultralytics segmentation weights (default `yolov8s-seg.pt`)
+- `BURN_MASK_MODEL_URL`: Optional download URL if the weight file is missing
+- `BURN_MASK_DIR`: Optional directory for storing downloaded weights
+- `BURN_MASK_DEVICE`: CUDA device string (default `cuda`)
+- `BURN_MASK_IMGSZ`: Inference size (default `640`)
+
 ## About
 
 **Why do you want to get burned?**

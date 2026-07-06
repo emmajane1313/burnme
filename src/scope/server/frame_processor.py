@@ -6,14 +6,15 @@ import time
 from collections import deque
 from typing import Any
 
+import numpy as np
 import torch
 from aiortc.mediastreams import VideoFrame
 
 from .pipeline_manager import PipelineManager, PipelineNotAvailableException
-from .sam3_manager import sam3_mask_manager
+from .realtime_mask import realtime_person_masker
 
 logger = logging.getLogger(__name__)
-SAM3_DEBUG = os.getenv("BURN_DEBUG_SAM3") == "1"
+MASK_DEBUG = os.getenv("BURN_DEBUG_MASK") == "1"
 FRAME_DEBUG = os.getenv("BURN_DEBUG_FRAMES") == "1"
 DEBUG_ALL = os.getenv("BURN_DEBUG_ALL") == "1"
 
@@ -116,10 +117,6 @@ class FrameProcessor:
         # This determines whether we wait for video frames or generate immediately.
         self._video_mode = (initial_parameters or {}).get("input_mode") == "video"
         self._last_frame_meta_log = 0.0
-        self._capture_mask_indices = False
-        self._capture_started = False
-        self._capture_chunk_logged = False
-        self._capture_chunk_count = 0
 
     def start(self):
         if self.running:
@@ -731,33 +728,6 @@ class FrameProcessor:
                 # Merge new parameters with existing ones to preserve any missing keys
                 self.parameters = {**self.parameters, **new_parameters}
 
-                if "capture_mask_indices" in new_parameters:
-                    self._capture_mask_indices = bool(
-                        new_parameters.get("capture_mask_indices")
-                    )
-                    logger.info(
-                        "SAM3 mask capture toggled: enabled=%s",
-                        self._capture_mask_indices,
-                    )
-                    if not self._capture_mask_indices:
-                        self._capture_started = False
-                        self._capture_chunk_logged = False
-                        self._capture_chunk_count = 0
-                if new_parameters.get("capture_mask_reset"):
-                    mask_id = self.parameters.get("sam3_mask_id")
-                    if mask_id:
-                        sam3_mask_manager.reset_applied_indices(mask_id)
-                        logger.info(
-                            "SAM3 mask index capture reset: session=%s",
-                            mask_id,
-                        )
-                        self._capture_started = False
-                        self._capture_chunk_logged = False
-                        self._capture_chunk_count = 0
-                        if self.notification_callback:
-                            self.notification_callback(
-                                {"type": "capture_reset_done", "mask_id": mask_id}
-                            )
         except queue.Empty:
             pass
 
@@ -821,8 +791,7 @@ class FrameProcessor:
         try:
             # Pass parameters (excluding prepare-only parameters)
             call_params = dict(self.parameters.items())
-            mask_id = None
-            mask_indices_used = None
+            mask_frames = None
 
             # Pass reset_cache as init_cache to pipeline
             call_params["init_cache"] = not self.is_prepared
@@ -847,64 +816,35 @@ class FrameProcessor:
                     # Normal V2V mode: route to video
                     call_params["video"] = video_input
 
-                mask_id = self.parameters.get("sam3_mask_id")
-                mask_indices_used = None
-                if mask_id and frame_indices is not None:
+                mask_enabled = self.parameters.get("mask_enabled", True)
+                if mask_enabled:
                     try:
-                        use_server_video = (
-                            self.parameters.get("server_video_source") == "sam3"
-                        )
-                        use_time_mapping = (
-                            not use_server_video
-                            and frame_times is not None
-                            and any(time_val is not None for time_val in frame_times)
-                        )
-                        mask_indices_used = sam3_mask_manager.get_mask_indices(
-                            mask_id,
-                            frame_indices,
-                            frame_times,
-                            use_server_video,
-                            use_time_mapping,
-                        )
-                        if use_server_video:
-                            mask_frames = sam3_mask_manager.get_masks_for_indices(
-                                mask_id, frame_indices
-                            )
-                        elif use_time_mapping:
-                            mask_frames = sam3_mask_manager.get_masks_for_times(
-                                mask_id,
-                                frame_times,
-                                frame_indices,
-                            )
-                        else:
-                            mask_frames = sam3_mask_manager.get_masks_for_frames(
-                                mask_id, frame_indices
-                            )
-                        if SAM3_DEBUG or DEBUG_ALL:
+                        frame_arrays = [
+                            frame.squeeze(0).detach().cpu().numpy().astype(np.uint8)
+                            for frame in video_input
+                        ]
+                        mask_arrays = realtime_person_masker.generate_masks(frame_arrays)
+                        mask_frames = [
+                            torch.from_numpy(mask)
+                            .float()
+                            .unsqueeze(0)
+                            .unsqueeze(-1)
+                            for mask in mask_arrays
+                        ]
+                        if MASK_DEBUG or DEBUG_ALL:
                             logger.info(
-                                "SAM3 apply: session=%s frames=%d first=%s last=%s mode=%s map=%s times=%s..%s",
-                                mask_id,
-                                len(frame_indices),
-                                frame_indices[0] if frame_indices else None,
-                                frame_indices[-1] if frame_indices else None,
-                                self.parameters.get("sam3_mask_mode"),
-                                (
-                                    "index"
-                                    if use_server_video
-                                    else ("time" if use_time_mapping else "index")
-                                ),
-                                frame_times[0] if frame_times else None,
-                                frame_times[-1] if frame_times else None,
+                                "Mask apply: frames=%d mode=%s",
+                                len(mask_frames),
+                                self.parameters.get("mask_mode"),
                             )
-                        call_params["mask_frames"] = mask_frames
-                        mask_mode = self.parameters.get("sam3_mask_mode")
-                        if mask_mode:
-                            call_params["sam3_mask_mode"] = mask_mode
-                    except KeyError:
-                        logger.warning(
-                            "SAM3 mask session %s not found; ignoring masks.",
-                            mask_id,
-                        )
+                    except Exception as exc:
+                        logger.error("Realtime mask generation failed: %s", exc)
+                        mask_frames = None
+                if mask_frames:
+                    call_params["mask_frames"] = mask_frames
+                    mask_mode = self.parameters.get("mask_mode")
+                    if mask_mode:
+                        call_params["mask_mode"] = mask_mode
 
             output = pipeline(**call_params)
 
@@ -928,39 +868,7 @@ class FrameProcessor:
                     self.parameters.pop("transition", None)
 
             processing_time = time.time() - start_time
-            if (
-                self._capture_mask_indices
-                and mask_indices_used is not None
-                and output is not None
-                and output.shape[0] > len(mask_indices_used)
-            ):
-                logger.info(
-                    "Trimming output frames to match mask indices: output=%s mask=%s",
-                    output.shape[0],
-                    len(mask_indices_used),
-                )
-                output = output[: len(mask_indices_used)]
             num_frames = output.shape[0]
-            if self._capture_mask_indices and mask_indices_used is not None:
-                self._capture_chunk_count += 1
-                if not self._capture_chunk_logged:
-                    head = mask_indices_used[:5]
-                    tail = mask_indices_used[-5:] if len(mask_indices_used) > 5 else mask_indices_used
-                    logger.info(
-                        "SAM3 capture chunk start: frames=%s mask_len=%s head=%s tail=%s",
-                        num_frames,
-                        len(mask_indices_used),
-                        head,
-                        tail,
-                    )
-                    self._capture_chunk_logged = True
-                elif self._capture_chunk_count % 10 == 0:
-                    logger.info(
-                        "SAM3 capture chunk progress: chunk=%s frames=%s mask_len=%s",
-                        self._capture_chunk_count,
-                        num_frames,
-                        len(mask_indices_used),
-                    )
             logger.debug(
                 f"Processed pipeline in {processing_time:.4f}s, {num_frames} frames"
             )
@@ -995,32 +903,6 @@ class FrameProcessor:
             for idx, frame in enumerate(output):
                 try:
                     self.output_queue.put_nowait(frame)
-                    if (
-                        self._capture_mask_indices
-                        and mask_id
-                        and mask_indices_used is not None
-                    ):
-                        if not self._capture_started:
-                            self._capture_started = True
-                            if self.notification_callback:
-                                self.notification_callback(
-                                    {"type": "capture_start_ready", "mask_id": mask_id}
-                                )
-                            logger.info(
-                                "SAM3 capture start ready: mask_id=%s output_frames=%s",
-                                mask_id,
-                                num_frames,
-                            )
-                        if idx < len(mask_indices_used):
-                            sam3_mask_manager.append_applied_indices(
-                                mask_id, [mask_indices_used[idx]]
-                            )
-                        else:
-                            logger.warning(
-                                "SAM3 mask index missing: output_idx=%s input_len=%s",
-                                idx,
-                                len(mask_indices_used),
-                            )
                 except queue.Full:
                     logger.warning("Output queue full, dropping processed frame")
                     # Update FPS calculation based on processing time and frame count

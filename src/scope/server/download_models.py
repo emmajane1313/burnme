@@ -417,7 +417,6 @@ Examples:
   # Download specific pipeline
   python download_models.py --pipeline streamdiffusionv2
   python download_models.py --pipeline memflow
-  python download_models.py --pipeline sam3
   python download_models.py -p streamdiffusionv2
         """,
     )
@@ -427,7 +426,7 @@ Examples:
         type=str,
         default=None,
         required=True,
-        help="Pipeline ID (e.g., 'streamdiffusionv2', 'memflow', 'sam3').",
+        help="Pipeline ID (e.g., 'streamdiffusionv2', 'memflow').",
     )
 
     args = parser.parse_args()

@@ -16,7 +16,6 @@ import {
   downloadMP4P,
   addSynthedVideoBase64,
   blobToBase64,
-  generateVisualCipherPayload,
   type MP4PData,
 } from "../lib/mp4p-api";
 import { useI18n } from "../i18n";
@@ -51,17 +50,6 @@ interface InputAndControlsPanelProps {
   onCancelSynth: () => void;
   onDeleteBurn?: () => void;
   onTogglePause?: () => void;
-  idMascaraSam?: string | null;
-  onGenerarMascara?: () => void;
-  sam3SinDetecciones?: boolean;
-  cajaSamPromptActiva?: boolean;
-  cajaSam?: [number, number, number, number] | null;
-  onCajaSamChange?: (box: [number, number, number, number] | null) => void;
-  onCajaSamPromptActiva?: () => void;
-  onCajaSamPromptCancelar?: () => void;
-  sam3Listo?: boolean;
-  estadoMascaraSam?: string | null;
-  sam3Ta3mel?: boolean;
   sourceVideoBlocked?: boolean;
 }
 
@@ -130,17 +118,6 @@ export function InputAndControlsPanel({
   onCancelSynth,
   onDeleteBurn,
   onTogglePause,
-  idMascaraSam = null,
-  onGenerarMascara,
-  sam3SinDetecciones = false,
-  cajaSamPromptActiva = false,
-  cajaSam = null,
-  onCajaSamChange,
-  onCajaSamPromptActiva,
-  onCajaSamPromptCancelar,
-  sam3Listo = false,
-  estadoMascaraSam = null,
-  sam3Ta3mel = false,
   sourceVideoBlocked = false,
 }: InputAndControlsPanelProps) {
   const { t } = useI18n();
@@ -163,18 +140,6 @@ export function InputAndControlsPanel({
   };
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [pendingKeyDownload, setPendingKeyDownload] = useState<{
-    filename: string;
-    payload: string;
-  } | null>(null);
-  const [boxDisplay, setBoxDisplay] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
-  const isDrawingBoxRef = useRef(false);
-  const boxStartRef = useRef<{ x: number; y: number } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -195,81 +160,10 @@ export function InputAndControlsPanel({
   }, [isSynthCapturing]);
 
   useEffect(() => {
-    if (!cajaSamPromptActiva) {
-      setBoxDisplay(null);
-    }
-  }, [cajaSamPromptActiva]);
-
-  useEffect(() => {
-    if (!cajaSam) {
-      setBoxDisplay(null);
-    }
-  }, [cajaSam]);
-
-  useEffect(() => {
     if (prefillVideoFile) {
       setUploadedVideoFile(prefillVideoFile);
     }
   }, [prefillVideoFile]);
-
-  const handleBoxPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!cajaSamPromptActiva || !videoRef.current) {
-      return;
-    }
-    const rect = videoRef.current.getBoundingClientRect();
-    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
-    const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
-    isDrawingBoxRef.current = true;
-    boxStartRef.current = { x, y };
-    setBoxDisplay({ x, y, width: 0, height: 0 });
-    onCajaSamChange?.(null);
-  };
-
-  const handleBoxPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDrawingBoxRef.current || !boxStartRef.current || !videoRef.current) {
-      return;
-    }
-    const rect = videoRef.current.getBoundingClientRect();
-    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
-    const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
-    const start = boxStartRef.current;
-    const left = Math.min(start.x, x);
-    const top = Math.min(start.y, y);
-    const width = Math.abs(x - start.x);
-    const height = Math.abs(y - start.y);
-    setBoxDisplay({ x: left, y: top, width, height });
-  };
-
-  const handleBoxPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDrawingBoxRef.current || !boxStartRef.current || !videoRef.current) {
-      return;
-    }
-    isDrawingBoxRef.current = false;
-    const rect = videoRef.current.getBoundingClientRect();
-    const endX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
-    const endY = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
-    const start = boxStartRef.current;
-    boxStartRef.current = null;
-    const left = Math.min(start.x, endX);
-    const top = Math.min(start.y, endY);
-    const width = Math.abs(endX - start.x);
-    const height = Math.abs(endY - start.y);
-    if (width < 4 || height < 4) {
-      setBoxDisplay(null);
-      onCajaSamChange?.(null);
-      return;
-    }
-    setBoxDisplay({ x: left, y: top, width, height });
-    const videoWidth = videoRef.current.videoWidth || rect.width;
-    const videoHeight = videoRef.current.videoHeight || rect.height;
-    const scaleX = videoWidth / rect.width;
-    const scaleY = videoHeight / rect.height;
-    const x1 = Math.round(left * scaleX);
-    const y1 = Math.round(top * scaleY);
-    const x2 = Math.round((left + width) * scaleX);
-    const y2 = Math.round((top + height) * scaleY);
-    onCajaSamChange?.([x1, y1, x2, y2]);
-  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -302,8 +196,6 @@ export function InputAndControlsPanel({
 
     try {
       setIsExporting(true);
-      setPendingKeyDownload(null);
-      let keyDownload: { filename: string; payload: string } | null = null;
       let mp4pData = baseMp4pData;
       if (!mp4pData) {
         mp4pData = await createMP4P();
@@ -321,116 +213,22 @@ export function InputAndControlsPanel({
           `synthed.${extension}`
         );
 
-        let visualCipher;
-        let encryptedMaskFrames;
-        let maskFrameIndexMap;
-        let maskPayloadCodec;
-        let keyMaterial: string | null = null;
-        if (idMascaraSam && promptTexts[0]) {
-          if (!uploadedVideoFile) {
-            throw new Error(
-              "Missing original video for visual cipher payload."
-            );
-          }
-          if (!globalThis.crypto?.getRandomValues) {
-            throw new Error("Crypto API not available for key generation.");
-          }
-          const keyBytes = new Uint8Array(32);
-          globalThis.crypto.getRandomValues(keyBytes);
-          keyMaterial = Array.from(keyBytes, byte =>
-            byte.toString(16).padStart(2, "0")
-          ).join("");
-          const originalVideoBase64 = uploadedVideoFile
-            ? await blobToBase64(uploadedVideoFile, uploadedVideoFile.name)
-            : undefined;
-          const params = {
-            denoising_step_list: [1000, 750, 500, 250],
-            prompt_interpolation_method: "linear",
-            noise_scale: 1.0,
-            noise_controller: false,
-          };
-          const payload = await generateVisualCipherPayload(
-            mp4pData,
-            synthedBase64,
-            mimeType,
-            originalVideoBase64,
-            idMascaraSam,
-            promptTexts[0],
-            params,
-            seed ?? 42,
-            pipelineId,
-            "inside",
-            keyMaterial,
-            confirmedSynthedFps
-          );
-          visualCipher = payload.visualCipher;
-          encryptedMaskFrames = payload.encryptedMaskFrames;
-          maskFrameIndexMap = payload.maskFrameIndexMap;
-          maskPayloadCodec = payload.maskPayloadCodec;
-
-          mp4pData = await addSynthedVideoBase64(
-            mp4pData,
-            synthedBase64,
-            publicLabels,
-            mimeType,
-            visualCipher,
-            encryptedMaskFrames,
-            maskFrameIndexMap,
-            maskPayloadCodec
-          );
-        }
-
-        if (!idMascaraSam || !promptTexts[0]) {
-          mp4pData = await addSynthedVideoBase64(
-            mp4pData,
-            synthedBase64,
-            publicLabels,
-            mimeType,
-            visualCipher,
-            encryptedMaskFrames,
-            maskFrameIndexMap,
-            maskPayloadCodec
-          );
-        }
-
-        if (visualCipher && keyMaterial) {
-          const keyData = {
-            mp4pId: mp4pData.metadata.id,
-            burnIndex: (mp4pData.metadata.synthedVersions?.length || 1) - 1,
-            visualCipher: {
-              ...visualCipher,
-              keyMaterial,
-            },
-          };
-          const keyName = uploadedVideoFile
-            ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
-            : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
-          keyDownload = {
-            filename: `${keyName}.mp4p-key.json`,
-            payload: JSON.stringify(keyData, null, 2),
-          };
-          setPendingKeyDownload(keyDownload);
-        }
+        mp4pData = await addSynthedVideoBase64(
+          mp4pData,
+          synthedBase64,
+          publicLabels,
+          mimeType,
+          undefined,
+          undefined,
+          undefined,
+          undefined
+        );
       }
 
       const filename = uploadedVideoFile
         ? uploadedVideoFile.name.replace(/\.[^.]+$/, "")
         : `burn-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
       await downloadMP4P(mp4pData, filename);
-      if (keyDownload) {
-        const keyBlob = new Blob([keyDownload.payload], {
-          type: "application/json",
-        });
-        const keyUrl = URL.createObjectURL(keyBlob);
-        const anchor = document.createElement("a");
-        anchor.href = keyUrl;
-        anchor.download = keyDownload.filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(keyUrl);
-      }
-
       console.log("MP4P file exported successfully");
     } catch (error) {
       console.error("Failed to export MP4P:", error);
@@ -441,11 +239,9 @@ export function InputAndControlsPanel({
 
   const canStartSynth =
     !isSynthCapturing &&
-    !!uploadedVideoFile &&
     !!prompts[0]?.text?.trim() &&
     isStreaming &&
-    !isLoading &&
-    sam3Listo;
+    !isLoading;
 
   return (
     <Card className={`h-full flex flex-col mac-translucent-ruby ${className}`}>
@@ -487,29 +283,6 @@ export function InputAndControlsPanel({
                   muted
                   playsInline
                 />
-                {cajaSamPromptActiva ? (
-                  <div
-                    className="absolute inset-0 cursor-crosshair"
-                    onPointerDown={handleBoxPointerDown}
-                    onPointerMove={handleBoxPointerMove}
-                    onPointerUp={handleBoxPointerUp}
-                  >
-                    <div className="absolute left-2 top-2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white">
-                      {t("videoInput.dragBox")}
-                    </div>
-                    {boxDisplay ? (
-                      <div
-                        className="absolute border-2 border-emerald-300 bg-emerald-300/10"
-                        style={{
-                          left: boxDisplay.x,
-                          top: boxDisplay.y,
-                          width: boxDisplay.width,
-                          height: boxDisplay.height,
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                ) : null}
                 {isSynthCapturing ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
                     <Spinner size={22} />
@@ -609,76 +382,6 @@ export function InputAndControlsPanel({
           )}
         </div>
 
-        {onGenerarMascara && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">{t("sam3.title")}</h3>
-            <div className="text-xs text-muted-foreground">
-              {t("sam3.requiresAccessPrefix")}
-              {" "}
-              <a
-                href="https://huggingface.co/facebook/sam3"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                facebook/sam3
-              </a>
-              {t("sam3.requiresAccessSuffix")}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Button
-                size="xs"
-                onClick={onGenerarMascara}
-                disabled={
-                  sam3Ta3mel ||
-                  isConnecting ||
-                  isLoading ||
-                  (cajaSamPromptActiva && !cajaSam)
-                }
-              >
-                {sam3Ta3mel
-                  ? t("sam3.generating")
-                  : cajaSamPromptActiva
-                    ? t("sam3.regenerateWithBox")
-                    : t("sam3.regenerateMask")}
-              </Button>
-              {!cajaSamPromptActiva ? (
-                <Button
-                  size="xs"
-                  variant="secondary"
-                  onClick={onCajaSamPromptActiva}
-                  disabled={sam3Ta3mel || isConnecting || isLoading}
-                >
-                  {t("sam3.useBoxPrompt")}
-                </Button>
-              ) : null}
-              {cajaSamPromptActiva ? (
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  onClick={onCajaSamPromptCancelar}
-                  disabled={sam3Ta3mel}
-                >
-                  {t("sam3.cancelBox")}
-                </Button>
-              ) : null}
-            </div>
-            {sam3SinDetecciones && !cajaSamPromptActiva ? (
-              <div className="text-xs text-muted-foreground">
-                {t("sam3.noMaskDetected")}
-              </div>
-            ) : null}
-            {cajaSamPromptActiva ? (
-              <div className="text-xs text-muted-foreground">
-                {t("sam3.drawBoxHint")}
-              </div>
-            ) : null}
-            {estadoMascaraSam && (
-              <div className="text-xs text-muted-foreground">{estadoMascaraSam}</div>
-            )}
-          </div>
-        )}
-
         <div className="space-y-2">
           <h3 className="text-sm font-medium">{t("burn.title")}</h3>
           <div className="flex flex-wrap items-center text-xs gap-2">
@@ -733,30 +436,6 @@ export function InputAndControlsPanel({
           </Button>
         </div>
 
-        {pendingKeyDownload && (
-          <div>
-            <Button
-              onClick={() => {
-                const keyBlob = new Blob([pendingKeyDownload.payload], {
-                  type: "application/json",
-                });
-                const keyUrl = URL.createObjectURL(keyBlob);
-                const anchor = document.createElement("a");
-                anchor.href = keyUrl;
-                anchor.download = pendingKeyDownload.filename;
-                document.body.appendChild(anchor);
-                anchor.click();
-                document.body.removeChild(anchor);
-                URL.revokeObjectURL(keyUrl);
-              }}
-              className="w-full"
-              size="sm"
-              variant="secondary"
-            >
-              {t("export.downloadKeyFile")}
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

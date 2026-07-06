@@ -187,17 +187,6 @@ class WebRTCManager:
                 if track.kind == "video":
                     video_track.initialize_input_processing(track)
 
-            server_video_source = initial_parameters.get("server_video_source")
-            server_video_mask_id = initial_parameters.get("server_video_mask_id")
-            if server_video_source == "sam3" and server_video_mask_id:
-                try:
-                    video_track.initialize_server_video(
-                        server_video_mask_id,
-                        loop=bool(initial_parameters.get("server_video_loop", True)),
-                    )
-                except Exception as exc:
-                    logger.error("Failed to start server video input: %s", exc)
-
             @pc.on("connectionstatechange")
             async def on_connectionstatechange():
                 logger.info(

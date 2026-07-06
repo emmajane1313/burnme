@@ -113,58 +113,15 @@ class Parameters(BaseModel):
         ge=0.0,
         le=2.0,
     )
-    sam3_mask_id: str | None = Field(
-        default=None,
-        description="SAM3 mask session ID to apply on incoming frames.",
-    )
-    sam3_mask_mode: Literal["inside", "outside"] | None = Field(
+    mask_mode: Literal["inside", "outside"] | None = Field(
         default="inside",
-        description="Apply synth inside or outside the SAM3 mask.",
+        description="Apply synth inside or outside the realtime mask.",
     )
-    server_video_source: Literal["sam3"] | None = Field(
-        default=None,
-        description="Use server-side video source instead of WebRTC input.",
-    )
-    server_video_mask_id: str | None = Field(
-        default=None,
-        description="SAM3 mask ID to bind server-side video source.",
-    )
-    server_video_loop: bool | None = Field(
-        default=None,
-        description="Loop server-side video input.",
-    )
-    server_video_reset: bool | None = Field(
-        default=None,
-        description="Reset server-side video to the first frame.",
-    )
-    capture_mask_indices: bool | None = Field(
-        default=None,
-        description="Capture SAM3 mask indices during burn for exact decrypt alignment.",
+    mask_enabled: bool | None = Field(
+        default=True,
+        description="Enable realtime person masking for incoming video.",
     )
 
-
-class ServerBurnRenderRequest(BaseModel):
-    """Request schema for server-side burn rendering."""
-
-    pipelineId: str = Field(..., description="Pipeline ID to use for rendering.")
-    maskId: str = Field(..., description="SAM3 mask session ID to bind server video.")
-    params: Parameters = Field(..., description="Runtime parameters for the render.")
-    loadParams: dict[str, Any] | None = Field(
-        default=None,
-        description="Optional pipeline load parameters if pipeline is not loaded.",
-    )
-    outputFps: float | None = Field(
-        default=None,
-        description="Override output FPS for the rendered video.",
-    )
-    outputMimeType: str | None = Field(
-        default="video/mp4",
-        description="Requested output MIME type for the rendered video.",
-    )
-    capture_mask_reset: bool | None = Field(
-        default=None,
-        description="Reset captured SAM3 mask indices.",
-    )
 
 
 class SpoutConfig(BaseModel):
